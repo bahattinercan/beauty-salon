@@ -31,9 +31,9 @@ const getDashboard = async (req, res, next) => {
       Appointment.findAll({
         attributes: [
           'status',
-          [sequelize.fn('COUNT', sequelize.col('appointments.id')), 'count'],
+          [sequelize.fn('COUNT', sequelize.col('Appointment.id')), 'count'],
         ],
-        group: ['appointments.status'],
+        group: ['Appointment.status'],
         raw: true,
       }),
       Review.findAll({
@@ -48,8 +48,8 @@ const getDashboard = async (req, res, next) => {
       Appointment.findAll({
         where: { status: 'COMPLETED' },
         attributes: [
-          [sequelize.fn('SUM', sequelize.col('services.price')), 'totalRevenue'],
-          [sequelize.fn('COUNT', sequelize.col('appointments.id')), 'completedCount'],
+          [sequelize.fn('SUM', sequelize.col('service.price')), 'totalRevenue'],
+          [sequelize.fn('COUNT', sequelize.col('Appointment.id')), 'completedCount'],
         ],
         include: [
           {
@@ -64,8 +64,9 @@ const getDashboard = async (req, res, next) => {
       // Monthly appointment counts for the last 6 months
       Appointment.findAll({
         attributes: [
-          [sequelize.fn('DATE_TRUNC', 'month', sequelize.col('appointments.date')), 'month'],
-          [sequelize.fn('COUNT', sequelize.col('appointments.id')), 'count'],
+          // SQLite'ta DATE_TRUNC yok; strftime kullanılıyor
+          [sequelize.literal("strftime('%Y-%m', Appointment.date)"), 'month'],
+          [sequelize.fn('COUNT', sequelize.col('Appointment.id')), 'count'],
         ],
         where: {
           date: {
@@ -73,7 +74,7 @@ const getDashboard = async (req, res, next) => {
           },
         },
         group: ['month'],
-        order: [[sequelize.fn('month', sequelize.col('appointments.date')), 'ASC']],
+        order: [[sequelize.literal("strftime('%Y-%m', Appointment.date)"), 'ASC']],
         raw: true,
       }),
     ]);

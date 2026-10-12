@@ -33,12 +33,13 @@ const getMyFavorites = async (req, res, next) => {
       where: { userId: req.user.id },
       include: [{
         model: Salon,
+        as: 'salon',
         attributes: ['id', 'name', 'logoUrl', 'coverImageUrl', 'address', 'ratingAvg', 'reviewCount', 'city', 'district'],
       }],
       order: [['createdAt', 'DESC']],
     });
 
-    const salons = favorites.map(f => f.Salon);
+    const salons = favorites.map(f => f.salon).filter(Boolean);
     successResponse(res, salons);
   } catch (error) {
     next(error);

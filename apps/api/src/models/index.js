@@ -58,6 +58,9 @@ Review.belongsTo(Appointment, { foreignKey: 'appointment_id', as: 'appointment' 
 // Favorite ilişkileri
 User.belongsToMany(Salon, { through: Favorite, foreignKey: 'user_id', otherKey: 'salon_id', as: 'favoriteSalons' });
 Salon.belongsToMany(User, { through: Favorite, foreignKey: 'salon_id', otherKey: 'user_id', as: 'favoritedBy' });
+// Through model üzerinden doğrudan erişim (include için gerekli)
+Favorite.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+Favorite.belongsTo(Salon, { foreignKey: 'salon_id', as: 'salon' });
 
 // Product
 Salon.hasMany(Product, { foreignKey: 'salon_id', as: 'products' });

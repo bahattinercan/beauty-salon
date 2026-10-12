@@ -179,7 +179,7 @@ describe('Auth API', () => {
     });
 
     it('should return 401 for inactive user', async () => {
-      const user = await User.findOne({ where: { email: 'customer2@test.com' } });
+      const user = await User.findOne({ where: { email: 'customer@test.com' } });
       await user.update({ isActive: false });
 
       const res = await supertest(app)
@@ -363,7 +363,7 @@ describe('Auth API', () => {
 
       const expiry = new Date(Date.now() + 10 * 60 * 1000);
       await user.update({
-        passwordResetToken: '123456',
+        passwordResetToken: await bcrypt.hash('123456', 10),
         passwordResetTokenExpiry: expiry,
       });
 

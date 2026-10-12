@@ -1,5 +1,8 @@
 const nodemailer = require('nodemailer');
 
+const isTest = process.env.NODE_ENV === 'test';
+const smtpConfigured = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER);
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || '2525'),
@@ -9,8 +12,17 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Test veya SMTP'siz dev ortamında mail fiilen gönderilmez; akışın 500 dönmesi önlenir.
+const deliver = async (payload) => {
+  if (isTest || !smtpConfigured) {
+    console.log('[mailer:noop] ' + payload.to + ' | ' + payload.subject);
+    return;
+  }
+  await transporter.sendMail(payload);
+};
+
 const sendEmailChangeOtp = async (toEmail, salonName, otp) => {
-  await transporter.sendMail({
+  await deliver({
     from: `"Beauty Salon" <${process.env.SMTP_FROM || 'noreply@beautysalon.com'}>`,
     to: toEmail,
     subject: 'E-posta Değişikliği Doğrulama Kodu',
@@ -28,7 +40,7 @@ const sendEmailChangeOtp = async (toEmail, salonName, otp) => {
 };
 
 const sendPasswordChangedEmail = async (toEmail, fullName) => {
-  await transporter.sendMail({
+  await deliver({
     from: `"Beauty Salon" <${process.env.SMTP_FROM || 'noreply@beautysalon.com'}>`,
     to: toEmail,
     subject: 'Şifreniz Değiştirildi',
@@ -44,7 +56,7 @@ const sendPasswordChangedEmail = async (toEmail, fullName) => {
 };
 
 const sendPasswordResetOtp = async (toEmail, fullName, otp) => {
-  await transporter.sendMail({
+  await deliver({
     from: `"Beauty Salon" <${process.env.SMTP_FROM || 'noreply@beautysalon.com'}>`,
     to: toEmail,
     subject: 'Şifre Sıfırlama Kodu',

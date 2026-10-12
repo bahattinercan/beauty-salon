@@ -81,6 +81,17 @@ User.beforeCreate(async (user) => {
   }
 });
 
+// Güncellemede de hash'le: controller düz metin şifre geçirebiliyor,
+// hook olmadan plaintext olarak kaydedilirdi.
+User.beforeUpdate(async (user) => {
+  const changed = user.changed() || [];
+  if (!changed.includes('passwordHash')) return;
+  const value = user.getDataValue('passwordHash');
+  if (value && !String(value).startsWith('$2')) {
+    user.passwordHash = await bcrypt.hash(value, 12);
+  }
+});
+
 // Instance method: şifre karşılaştırma
 User.prototype.comparePassword = async function (password) {
   return bcrypt.compare(password, this.passwordHash);

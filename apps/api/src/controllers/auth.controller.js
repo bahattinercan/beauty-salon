@@ -155,16 +155,22 @@ const changePassword = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Yeni şifre en az 6 karakter olmalı' });
     }
 
-    const isValid = await req.user.comparePassword(currentPassword);
+    // authenticate middleware passwordHash'ı taşımıyor; güncel kullanıcıyı çek
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
+    }
+
+    const isValid = await user.comparePassword(currentPassword);
     if (!isValid) {
       return res.status(400).json({ success: false, message: 'Mevcut şifre hatalı' });
     }
 
     // passwordHash alanına atama yapınca model hook hash'ler
-    await req.user.update({ passwordHash: newPassword });
+    await user.update({ passwordHash: newPassword });
 
     // Onay e-postası gönder
-    await sendPasswordChangedEmail(req.user.email, req.user.fullName);
+    await sendPasswordChangedEmail(user.email, user.fullName);
 
     successResponse(res, { message: 'Şifre başarıyla değiştirildi' });
   } catch (error) {

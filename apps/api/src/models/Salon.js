@@ -99,8 +99,22 @@ const Salon = sequelize.define('Salon', {
     type: DataTypes.TEXT,
     defaultValue: '{}',
     field: 'working_hours',
-    get() { try { return JSON.parse(this.getDataValue('workingHours') || '{}'); } catch { return {}; } },
-    set(val) { this.setDataValue('workingHours', JSON.stringify(val)); },
+    get() {
+      let v = this.getDataValue('workingHours');
+      if (!v) return {};
+      try {
+        v = JSON.parse(v);
+        // JSON.stringify iki kez uygulanmış olabilir ("\"{...}\"")
+        if (typeof v === 'string') v = JSON.parse(v);
+        return v && typeof v === 'object' ? v : {};
+      } catch {
+        return {};
+      }
+    },
+    set(val) {
+      // Zaten JSON string ise olduğu gibi sakla; nesne ise stringify et.
+      this.setDataValue('workingHours', typeof val === 'string' ? val : JSON.stringify(val));
+    },
   },
   pendingEmail: {
     type: DataTypes.STRING,

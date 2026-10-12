@@ -2,16 +2,19 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
 const Favorite = sequelize.define('Favorite', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
   userId: {
     type: DataTypes.UUID,
     allowNull: false,
-    primaryKey: true,
     field: 'user_id',
   },
   salonId: {
     type: DataTypes.UUID,
     allowNull: false,
-    primaryKey: true,
     field: 'salon_id',
   },
 }, {
@@ -19,6 +22,8 @@ const Favorite = sequelize.define('Favorite', {
   timestamps: true,
   underscored: true,
   updatedAt: false,
+  // Bir kullanıcı bir salonu yalnızca bir kez favorileyebilir.
+  indexes: [{ unique: true, fields: ['user_id', 'salon_id'] }],
 });
 
 module.exports = Favorite;

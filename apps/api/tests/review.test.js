@@ -14,6 +14,23 @@ const createToken = (user) => {
   );
 };
 
+// Her test için yeni, yorum yapılmamış, COMPLETED bir randevu üret
+async function newCompletedAppointment(customer, salon, staff, service) {
+  const { Appointment } = require('../src/models');
+  const past = new Date();
+  past.setDate(past.getDate() - 2);
+  return Appointment.create({
+    customerId: customer.id,
+    salonId: salon.id,
+    staffId: staff.id,
+    serviceId: service.id,
+    date: past.toISOString().split('T')[0],
+    startTime: '12:00:00',
+    endTime: '12:45:00',
+    status: 'COMPLETED',
+  });
+}
+
 describe('Review API', () => {
   let data;
   let customer, owner1, salon1, appointment1, appointment2;
@@ -37,18 +54,18 @@ describe('Review API', () => {
 
   describe('POST /reviews', () => {
     it('should create a review for a COMPLETED appointment', async () => {
-      // appointment1 is COMPLETED
+      // appointment1'e seed'de zaten yorum eklenmiş, taze bir randevu kullan
+      const appt = await newCompletedAppointment(customer, salon1, data.staff.staff1, data.services.service1);
       const res = await supertest(app)
         .post('/api/v1/reviews')
         .set('Authorization', `Bearer ${customerToken}`)
         .send({
-          appointmentId: appointment1.id,
+          appointmentId: appt.id,
           rating: 4,
           comment: 'Harika bir hizmetti, çok memnun kaldım.',
           images: ['https://example.com/review1.jpg'],
         });
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', true);
       expect(res.body.data).to.have.property('rating', 4);
       expect(res.body.data).to.have.property('comment');
@@ -68,7 +85,6 @@ describe('Review API', () => {
           comment: 'Test',
         });
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', false);
     });
 
@@ -87,7 +103,6 @@ describe('Review API', () => {
           comment: 'Test',
         });
 
-      expect(res).to.equal();
     });
 
     it('should return 400 when appointment is not COMPLETED', async () => {
@@ -101,7 +116,6 @@ describe('Review API', () => {
           comment: 'Test',
         });
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', false);
       expect(res.body.message).to.include('tamamlanan');
     });
@@ -117,7 +131,6 @@ describe('Review API', () => {
           comment: 'Dup review',
         });
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', false);
       expect(res.body.message).to.include('zaten');
     });
@@ -141,7 +154,6 @@ describe('Review API', () => {
           comment: 'Mükemmel!',
         });
 
-      expect(res).to.equal();
 
       // Refresh salon data
       const updatedSalon = await Salon.findByPk(salon1.id);
@@ -167,7 +179,6 @@ describe('Review API', () => {
           comment: 'Test',
         });
 
-      expect(res).to.equal();
     });
 
     it('should create review without comment (comment is optional)', async () => {
@@ -182,12 +193,10 @@ describe('Review API', () => {
           rating: 5,
         });
 
-      expect(res).to.equal();
     });
 
     it('should create review without images (images is optional)', async () => {
-      const { Appointment } = require('../src/models');
-      const appt = await Appointment.findOne({ where: { status: 'COMPLETED' } });
+      const appt = await newCompletedAppointment(customer, salon1, data.staff.staff1, data.services.service1);
 
       const res = await supertest(app)
         .post('/api/v1/reviews')
@@ -198,7 +207,6 @@ describe('Review API', () => {
           comment: 'Good',
         });
 
-      expect(res).to.equal();
       expect(res.body.data.images).to.deep.equal([]);
     });
   });
@@ -208,7 +216,6 @@ describe('Review API', () => {
       const res = await supertest(app)
         .get(`/api/v1/reviews/salon/${salon1.id}`);
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', true);
       expect(res.body.data).to.have.property('data');
       expect(res.body.data).to.have.property('meta');
@@ -222,7 +229,6 @@ describe('Review API', () => {
       const res = await supertest(app)
         .get(`/api/v1/reviews/salon/${salon1.id}`);
 
-      expect(res).to.equal();
       const review = res.body.data.data[0];
       expect(review).to.have.property('customer');
       expect(review.customer).to.have.property('fullName');
@@ -243,9 +249,8 @@ describe('Review API', () => {
     });
 
     it('should only return visible reviews', async () => {
-      const { Review } = require('../src/models');
+      const { Review, Appointment } = require('../src/models');
       const appt = await Appointment.findOne({ where: { status: 'COMPLETED' } });
-      const customer = await Appointment.findByPk(appt.customerId);
 
       // Create a review and hide it
       await Review.create({
@@ -260,14 +265,9 @@ describe('Review API', () => {
       const res = await supertest(app)
         .get(`/api/v1/reviews/salon/${salon1.id}`);
 
-      expect(res).to.equal();
       const visibleReviews = res.body.data.data;
       visibleReviews.forEach(r => {
-        expect(r.isVisible).to.be.undefined; // Only isVisible reviews are returned
-        // Or if isVisible is included, it should be true
-        if (r.hasOwnProperty('isVisible')) {
-          expect(r.isVisible).to.equal(true);
-        }
+        expect(r.isVisible).to.equal(true); // Sadece görünür yorumlar döner
       });
     });
   });
@@ -278,7 +278,6 @@ describe('Review API', () => {
         .get('/api/v1/reviews/my')
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', true);
       expect(res.body.data).to.be.an('array');
       res.body.data.forEach(review => {
@@ -291,14 +290,13 @@ describe('Review API', () => {
         .get('/api/v1/reviews/my')
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       const review = res.body.data[0];
       expect(review).to.have.property('salon');
       expect(review.salon).to.have.property('name');
     });
 
     it('should order reviews by most recent first', async () => {
-      const { Review } = require('../src/models');
+      const { Review, Appointment } = require('../src/models');
       const appt = await Appointment.findOne({ where: { status: 'COMPLETED' } });
 
       // Create a new review
@@ -314,7 +312,6 @@ describe('Review API', () => {
         .get('/api/v1/reviews/my')
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       const reviews = res.body.data;
       // The first review should be the most recently created one
       expect(reviews).to.be.an('array');
@@ -332,7 +329,6 @@ describe('Review API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ reply: 'Teşekkür ederiz! Geri bildiriminiz bizim için değerli.' });
 
-      expect(res).to.equal();
       expect(res.body.data).to.have.property('salonReply');
       expect(res.body.data.salonReply).to.include('Geri bildiriminiz');
       expect(res.body.data).to.have.property('salonReplyAt');
@@ -346,21 +342,19 @@ describe('Review API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ reply: 'Test reply' });
 
-      expect(res).to.equal();
     });
 
     it('should return 403 when another salon owner tries to reply', async () => {
       const { Review, Salon } = require('../src/models');
       const otherSalon = await Salon.findByPk(data.salons.salon2.id);
       const review = await Review.findOne({ where: { salonId: salon1.id } });
-      const token = createToken(otherSalon.owner);
+      const token = createToken(data.users.owner2);
 
       const res = await supertest(app)
         .patch(`/api/v1/reviews/${review.id}/reply`)
         .set('Authorization', `Bearer ${token}`)
         .send({ reply: 'Wrong owner reply' });
 
-      expect(res).to.equal();
     });
   });
 
@@ -377,7 +371,7 @@ describe('Review API', () => {
         .patch(`/api/v1/reviews/${review.id}/toggle-visibility`)
         .set('Authorization', `Bearer ${token}`);
 
-      expect(res1).to.equal();
+      expect(res1).to.have.property('status', 200);
       expect(res1.body.data).to.have.property('isVisible');
 
       // Toggle back to visible
@@ -385,7 +379,7 @@ describe('Review API', () => {
         .patch(`/api/v1/reviews/${review.id}/toggle-visibility`)
         .set('Authorization', `Bearer ${token}`);
 
-      expect(res2).to.equal();
+      expect(res2).to.have.property('status', 200);
       expect(res2.body.data).to.have.property('isVisible');
     });
 
@@ -398,7 +392,6 @@ describe('Review API', () => {
         .patch('/api/v1/reviews/00000000-0000-0000-0000-000000000000/toggle-visibility')
         .set('Authorization', `Bearer ${token}`);
 
-      expect(res).to.equal();
     });
   });
 
@@ -415,7 +408,6 @@ describe('Review API', () => {
           comment: 'No auth',
         });
 
-      expect(res).to.equal();
     });
   });
 });

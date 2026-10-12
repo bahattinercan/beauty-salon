@@ -70,7 +70,7 @@ const create = async (req, res, next) => {
     });
 
     if (conflicting) {
-      return res.status(409).json({ success: false, message: 'Seçilen saatte çalışanın başka bir randevusu var' });
+      return res.status(409).json({ success: false, message: 'Seçilen saatte çalışanın başka bir randevusu var (saat çakışması)' });
     }
 
     // 7. Randevu oluştur

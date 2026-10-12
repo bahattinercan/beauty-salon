@@ -258,9 +258,17 @@ const seedTestData = async () => {
   };
 };
 
+// Birden fazla test dosyası aynı sequelize bağlantısını paylaşır: dosya sonunda close()
+// çağırmak sonraki dosyaların "before all" hook'unu kırar
+// (ConnectionManager.getConnection was called after the connection manager was closed).
+// Bağlantı proces çıkışında bir kez kapatılır.
 const teardownDB = async () => {
-  await sequelize.close();
+  // no-op: mocha --exit ile süreç sonlanırken kapatılıyor
 };
+
+process.once('exit', () => {
+  sequelize.close().catch(() => {});
+});
 
 module.exports = {
   sequelize,

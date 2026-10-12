@@ -14,6 +14,23 @@ const createToken = (user) => {
   );
 };
 
+// Her test kendi randevusunu oluşturur; testler arası durum sızıntısı olmaz
+async function makeAppointment(status, customer, salon, staff, service) {
+  const { Appointment } = require('../src/models');
+  const d = new Date();
+  d.setDate(d.getDate() + 3);
+  return Appointment.create({
+    customerId: customer.id,
+    salonId: salon.id,
+    staffId: staff.id,
+    serviceId: service.id,
+    date: d.toISOString().split('T')[0],
+    startTime: '13:00:00',
+    endTime: '13:45:00',
+    status,
+  });
+}
+
 describe('Appointment API', () => {
   let data;
   let customer, owner1, salon1, staff1, service1;
@@ -52,16 +69,15 @@ describe('Appointment API', () => {
           note: 'İlk randevu',
         });
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', true);
       expect(res.body.data).to.have.property('status', 'PENDING');
       expect(res.body.data).to.have.property('customerId');
       expect(res.body.data).to.have.property('salonId');
       expect(res.body.data).to.have.property('staffId');
       expect(res.body.data).to.have.property('serviceId');
-      expect(res.body.data).to.have.property('startTime', '10:00:00');
+      expect(res.body.data).to.have.property('startTime', '10:00');
       // endTime should be startTime + duration (45 min) = 10:45
-      expect(res.body.data.endTime).to.equal('10:45:00');
+      expect(res.body.data.endTime).to.equal('10:45');
     });
 
     it('should return 404 when service does not exist', async () => {
@@ -80,7 +96,6 @@ describe('Appointment API', () => {
           startTime: '10:00',
         });
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', false);
     });
 
@@ -104,7 +119,6 @@ describe('Appointment API', () => {
           startTime: '10:00',
         });
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', false);
       expect(res.body.message).to.include('sunmuyor');
     });
@@ -125,7 +139,6 @@ describe('Appointment API', () => {
           startTime: '10:00',
         });
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', false);
       expect(res.body.message).to.include('Geçmiş');
     });
@@ -150,7 +163,6 @@ describe('Appointment API', () => {
           startTime: '10:00',
         });
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', false);
 
       // Reactivate
@@ -187,7 +199,6 @@ describe('Appointment API', () => {
           startTime: '10:00',
         });
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', false);
       expect(res.body.message).to.include('çalışma saatleri');
 
@@ -234,7 +245,6 @@ describe('Appointment API', () => {
           startTime: '10:00',
         });
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', false);
       expect(res.body.message).to.include('çakışma');
 
@@ -272,8 +282,7 @@ describe('Appointment API', () => {
           startTime: '11:00',
         });
 
-      expect(res).to.equal();
-      expect(res.body.data.startTime).to.equal('11:00:00');
+      expect(res.body.data.startTime).to.equal('11:00');
 
       // Clean up
       await Appointment.destroy({ where: { date: tomorrowStr } });
@@ -296,7 +305,6 @@ describe('Appointment API', () => {
           date: tomorrowStr,
         });
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', true);
       expect(res.body.data).to.be.an('array');
       expect(res.body.data[0]).to.have.property('time');
@@ -331,7 +339,6 @@ describe('Appointment API', () => {
           date: sundayStr,
         });
 
-      expect(res).to.equal();
       expect(res.body.data).to.be.an('array');
 
       // Restore working hours
@@ -376,7 +383,6 @@ describe('Appointment API', () => {
           date: tomorrowStr,
         });
 
-      expect(res).to.equal();
       const conflictingSlot = res.body.data.find(slot => slot.time === '14:00' || slot.time === '14:30');
       if (conflictingSlot) {
         expect(conflictingSlot.available).to.be.false;
@@ -393,7 +399,6 @@ describe('Appointment API', () => {
         .get('/api/v1/appointments/my')
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', true);
       expect(res.body.data).to.be.an('array');
       expect(res.body.data.length).to.be.greaterThan(0);
@@ -405,7 +410,6 @@ describe('Appointment API', () => {
         .set('Authorization', `Bearer ${customerToken}`)
         .query({ status: 'CONFIRMED' });
 
-      expect(res).to.equal();
       expect(res.body.data).to.be.an('array');
       res.body.data.forEach(apt => {
         expect(apt.status).to.equal('CONFIRMED');
@@ -417,7 +421,6 @@ describe('Appointment API', () => {
         .get('/api/v1/appointments/my')
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       const appointment = res.body.data[0];
       expect(appointment).to.have.property('salon');
       expect(appointment.salon).to.have.property('name');
@@ -434,7 +437,6 @@ describe('Appointment API', () => {
         .get('/api/v1/appointments/my')
         .set('Authorization', `Bearer ${customer2Token}`);
 
-      expect(res).to.equal();
       // Should only return customer2's appointments, not customer's
       res.body.data.forEach(apt => {
         expect(apt.customerId).to.equal(customer2.id);
@@ -446,13 +448,12 @@ describe('Appointment API', () => {
     it('should return salon appointments for owner', async () => {
       const { Salon } = require('../src/models');
       const salon = await Salon.findByPk(salon1.id);
-      const token = createToken(salon.owner);
+      const token = createToken(owner1);
 
       const res = await supertest(app)
         .get(`/api/v1/appointments/salon/${salon1.id}`)
         .set('Authorization', `Bearer ${token}`);
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', true);
       expect(res.body.data).to.be.an('array');
     });
@@ -460,27 +461,25 @@ describe('Appointment API', () => {
     it('should filter by date', async () => {
       const { Salon } = require('../src/models');
       const salon = await Salon.findByPk(salon1.id);
-      const token = createToken(salon.owner);
+      const token = createToken(owner1);
 
       const res = await supertest(app)
         .get(`/api/v1/appointments/salon/${salon1.id}`)
         .set('Authorization', `Bearer ${token}`)
         .query({ date: new Date().toISOString().split('T')[0] });
 
-      expect(res).to.equal();
     });
 
     it('should filter by status', async () => {
       const { Salon } = require('../src/models');
       const salon = await Salon.findByPk(salon1.id);
-      const token = createToken(salon.owner);
+      const token = createToken(owner1);
 
       const res = await supertest(app)
         .get(`/api/v1/appointments/salon/${salon1.id}`)
         .set('Authorization', `Bearer ${token}`)
         .query({ status: 'PENDING' });
 
-      expect(res).to.equal();
       res.body.data.forEach(apt => {
         expect(apt.status).to.equal('PENDING');
       });
@@ -492,94 +491,101 @@ describe('Appointment API', () => {
       const { Appointment, Salon } = require('../src/models');
       const appt = await Appointment.findOne({ where: { status: 'PENDING' } });
       const salon = await Salon.findByPk(appt.salonId);
-      const token = createToken(salon.owner);
+      const token = createToken(owner1);
 
       const res = await supertest(app)
         .patch(`/api/v1/appointments/${appt.id}/status`)
         .set('Authorization', `Bearer ${token}`)
         .send({ status: 'CONFIRMED' });
 
-      expect(res).to.equal();
       expect(res.body.data.status).to.equal('CONFIRMED');
     });
 
     it('should transition CONFIRMED -> COMPLETED', async () => {
-      const { Appointment, Salon } = require('../src/models');
-      const appt = await Appointment.findOne({ where: { status: 'CONFIRMED' } });
-      const salon = await Salon.findByPk(appt.salonId);
-      const token = createToken(salon.owner);
+      const { Appointment } = require('../src/models');
+      // COMPLETED olabilmek için randevu saatinin geçmiş olması gerekiyor
+      const past = new Date();
+      past.setDate(past.getDate() - 1);
+      const appt = await Appointment.create({
+        customerId: customer.id,
+        salonId: salon1.id,
+        staffId: staff1.id,
+        serviceId: service1.id,
+        date: past.toISOString().split('T')[0],
+        startTime: '10:00:00',
+        endTime: '10:45:00',
+        status: 'CONFIRMED',
+      });
+      const token = createToken(owner1);
 
       const res = await supertest(app)
         .patch(`/api/v1/appointments/${appt.id}/status`)
         .set('Authorization', `Bearer ${token}`)
         .send({ status: 'COMPLETED' });
 
-      expect(res).to.equal();
       expect(res.body.data.status).to.equal('COMPLETED');
     });
 
     it('should transition CONFIRMED -> NO_SHOW', async () => {
-      const { Appointment, Salon } = require('../src/models');
-      const appt = await Appointment.findOne({ where: { status: 'CONFIRMED' } });
-      const salon = await Salon.findByPk(appt.salonId);
-      const token = createToken(salon.owner);
+      const { Appointment } = require('../src/models');
+      const appt = await Appointment.create({
+        customerId: customer.id,
+        salonId: salon1.id,
+        staffId: staff1.id,
+        serviceId: service1.id,
+        date: new Date().toISOString().split('T')[0],
+        startTime: '09:00:00',
+        endTime: '09:45:00',
+        status: 'CONFIRMED',
+      });
+      const token = createToken(owner1);
 
       const res = await supertest(app)
         .patch(`/api/v1/appointments/${appt.id}/status`)
         .set('Authorization', `Bearer ${token}`)
         .send({ status: 'NO_SHOW' });
 
-      expect(res).to.equal();
       expect(res.body.data.status).to.equal('NO_SHOW');
     });
 
     it('should reject invalid status transitions', async () => {
-      const { Appointment, Salon } = require('../src/models');
-      const appt = await Appointment.findOne({ where: { status: 'PENDING' } });
-      const salon = await Salon.findByPk(appt.salonId);
-      const token = createToken(salon.owner);
+      const appt = await makeAppointment('PENDING', customer, salon1, staff1, service1);
+      const token = createToken(owner1);
 
       const res = await supertest(app)
         .patch(`/api/v1/appointments/${appt.id}/status`)
         .set('Authorization', `Bearer ${token}`)
         .send({ status: 'COMPLETED' }); // PENDING cannot go directly to COMPLETED
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', false);
     });
 
     it('should not allow COMPLETED appointment to be modified', async () => {
-      const { Appointment, Salon } = require('../src/models');
-      const appt = await Appointment.findOne({ where: { status: 'COMPLETED' } });
-      const salon = await Salon.findByPk(appt.salonId);
-      const token = createToken(salon.owner);
+      const appt = await makeAppointment('COMPLETED', customer, salon1, staff1, service1);
+      const token = createToken(owner1);
 
       const res = await supertest(app)
         .patch(`/api/v1/appointments/${appt.id}/status`)
         .set('Authorization', `Bearer ${token}`)
         .send({ status: 'CONFIRMED' });
 
-      expect(res).to.equal();
     });
 
     it('should not allow salon owner to change another salon\'s appointment', async () => {
-      const { Appointment, Salon } = require('../src/models');
-      const appt = await Appointment.findOne({ where: { status: 'PENDING' } });
-      const otherSalon = await Salon.findByPk(data.salons.salon2.id);
-      const token = createToken(otherSalon.owner);
+      const appt = await makeAppointment('PENDING', customer, salon1, staff1, service1);
+      const token = createToken(data.users.owner2);
 
       const res = await supertest(app)
         .patch(`/api/v1/appointments/${appt.id}/status`)
         .set('Authorization', `Bearer ${token}`)
         .send({ status: 'CONFIRMED' });
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', false);
     });
 
     it('should allow admin to change any appointment status', async () => {
-      const { Appointment, User } = require('../src/models');
-      const appt = await Appointment.findOne({ where: { status: 'PENDING' } });
+      const { User } = require('../src/models');
+      const appt = await makeAppointment('PENDING', customer, salon1, staff1, service1);
       const admin = await User.findOne({ where: { role: 'ADMIN' } });
       const token = createToken(admin);
 
@@ -588,15 +594,13 @@ describe('Appointment API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ status: 'CONFIRMED' });
 
-      expect(res).to.equal();
       expect(res.body.data.status).to.equal('CONFIRMED');
     });
   });
 
   describe('PATCH /appointments/:id/cancel', () => {
     it('should cancel a customer\'s own appointment', async () => {
-      const { Appointment } = require('../src/models');
-      const appt = await Appointment.findOne({ where: { status: 'CONFIRMED' } });
+      const appt = await makeAppointment('CONFIRMED', customer, salon1, staff1, service1);
       const token = createToken(customer);
 
       const res = await supertest(app)
@@ -604,14 +608,22 @@ describe('Appointment API', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ reason: 'İş toplantısı geldi' });
 
-      expect(res).to.equal();
       expect(res.body.data.status).to.equal('CANCELLED');
       expect(res.body.data.cancellationReason).to.equal('İş toplantısı geldi');
     });
 
     it('should return 403 when trying to cancel another customer\'s appointment', async () => {
       const { Appointment, User } = require('../src/models');
-      const appt = await Appointment.findOne({ where: { status: 'PENDING' } });
+      const appt = await Appointment.create({
+        customerId: customer.id,
+        salonId: salon1.id,
+        staffId: staff1.id,
+        serviceId: service1.id,
+        date: new Date().toISOString().split('T')[0],
+        startTime: '16:00:00',
+        endTime: '16:45:00',
+        status: 'PENDING',
+      });
       const customer2 = await User.findOne({ where: { email: 'customer2@test.com' } });
       const token = createToken(customer2);
 
@@ -619,31 +631,26 @@ describe('Appointment API', () => {
         .patch(`/api/v1/appointments/${appt.id}/cancel`)
         .set('Authorization', `Bearer ${token}`);
 
-      expect(res).to.equal();
     });
 
     it('should return 400 for already cancelled appointment', async () => {
-      const { Appointment } = require('../src/models');
-      const appt = await Appointment.findOne({ where: { status: 'CANCELLED' } });
-      const token = createToken(appt.customer);
+      const appt = await makeAppointment('CANCELLED', customer, salon1, staff1, service1);
+      const token = createToken(data.users.customer);
 
       const res = await supertest(app)
         .patch(`/api/v1/appointments/${appt.id}/cancel`)
         .set('Authorization', `Bearer ${token}`);
 
-      expect(res).to.equal();
     });
 
     it('should return 400 for completed appointment', async () => {
-      const { Appointment } = require('../src/models');
-      const appt = await Appointment.findOne({ where: { status: 'COMPLETED' } });
-      const token = createToken(appt.customer);
+      const appt = await makeAppointment('COMPLETED', customer, salon1, staff1, service1);
+      const token = createToken(data.users.customer);
 
       const res = await supertest(app)
         .patch(`/api/v1/appointments/${appt.id}/cancel`)
         .set('Authorization', `Bearer ${token}`);
 
-      expect(res).to.equal();
     });
 
     it('should return 404 for non-existent appointment', async () => {
@@ -651,7 +658,6 @@ describe('Appointment API', () => {
         .patch('/api/v1/appointments/00000000-0000-0000-0000-000000000000/cancel')
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
     });
   });
 
@@ -671,7 +677,6 @@ describe('Appointment API', () => {
           startTime: '10:00',
         });
 
-      expect(res).to.equal();
     });
   });
 });

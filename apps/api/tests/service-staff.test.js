@@ -43,7 +43,7 @@ describe('Service & Staff API', () => {
   describe('GET /categories', () => {
     it('should return all categories ordered by sortOrder', async () => {
       const res = await supertest(app).get('/api/v1/categories');
-      expect(res).to.have.status(200);
+      expect(res).to.have.property('status', 200);
       expect(res.body).to.have.property('success', true);
       expect(res.body.data).to.be.an('array');
       for (let i = 0; i < res.body.data.length - 1; i++) {
@@ -58,7 +58,7 @@ describe('Service & Staff API', () => {
         .post('/api/v1/categories')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Test Category', iconName: 'star', sortOrder: 10 });
-      expect(res).to.have.status(201);
+      expect(res).to.have.property('status', 201);
       expect(res.body.data).to.have.property('name', 'Test Category');
       await Service.findByPk(res.body.data.id).catch(() => {});
     });
@@ -68,14 +68,14 @@ describe('Service & Staff API', () => {
         .post('/api/v1/categories')
         .set('Authorization', `Bearer ${ownerToken}`)
         .send({ name: 'Hacked Category', sortOrder: 99 });
-      expect(res).to.have.status(403);
+      expect(res).to.have.property('status', 403);
     });
   });
 
   describe('GET /salons/:salonId/services', () => {
     it('should return salon services grouped by category', async () => {
       const res = await supertest(app).get(`/api/v1/salons/${salon1.id}/services`);
-      expect(res).to.have.status(200);
+      expect(res).to.have.property('status', 200);
       expect(res.body).to.have.property('success', true);
       expect(res.body.data).to.be.an('array');
       res.body.data.forEach(service => {
@@ -87,7 +87,7 @@ describe('Service & Staff API', () => {
     it('should return 404 for non-existent salon', async () => {
       const res = await supertest(app)
         .get('/api/v1/salons/00000000-0000-0000-0000-000000000000/services');
-      expect(res).to.have.status(200);
+      expect(res).to.have.property('status', 200);
       expect(res.body.data).to.be.an('array').that.is.empty;
     });
   });
@@ -104,10 +104,10 @@ describe('Service & Staff API', () => {
           price: 100,
           durationMinutes: 30,
         });
-      expect(res).to.have.status(201);
+      expect(res).to.have.property('status', 201);
       expect(res.body.data).to.have.property('name', 'New Service');
-      expect(res.body.data).to.haveProperty('salonId', salon1.id);
-      expect(res.body.data).to.haveProperty('isActive', true);
+      expect(res.body.data).to.have.property('salonId', salon1.id);
+      expect(res.body.data).to.have.property('isActive', true);
       const service = await Service.findByPk(res.body.data.id);
       if (service) await service.destroy();
     });
@@ -125,7 +125,7 @@ describe('Service & Staff API', () => {
           price: 100,
           durationMinutes: 30,
         });
-      expect(res).to.have.status(403);
+      expect(res).to.have.property('status', 403);
     });
   });
 
@@ -137,7 +137,7 @@ describe('Service & Staff API', () => {
         .patch(`/api/v1/services/${service.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send({ name: 'Updated Service', price: 300 });
-      expect(res).to.have.status(200);
+      expect(res).to.have.property('status', 200);
       expect(res.body.data.name).to.equal('Updated Service');
       expect(res.body.data.price).to.equal(300);
       service.name = service.name.replace('Updated Service', service.name.split(' ')[0]);
@@ -152,14 +152,14 @@ describe('Service & Staff API', () => {
         .patch(`/api/v1/services/${service.id}`)
         .set('Authorization', `Bearer ${owner2Token}`)
         .send({ name: 'Hacked' });
-      expect(res).to.have.status(403);
+      expect(res).to.have.property('status', 403);
     });
 
     it('should return 404 for non-existent service', async () => {
       const res = await supertest(app)
         .patch('/api/v1/services/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${ownerToken}`);
-      expect(res).to.have.status(404);
+      expect(res).to.have.property('status', 404);
     });
   });
 
@@ -170,7 +170,7 @@ describe('Service & Staff API', () => {
       const res = await supertest(app)
         .delete(`/api/v1/services/${service.id}`)
         .set('Authorization', `Bearer ${token}`);
-      expect(res).to.have.status(200);
+      expect(res).to.have.property('status', 200);
       expect(res.body.data).to.have.property('message').and.include('devre dışı');
       await service.reload();
       expect(service.isActive).to.equal(false);
@@ -178,7 +178,7 @@ describe('Service & Staff API', () => {
 
     it('should not return soft-deleted service in salon services list', async () => {
       const res = await supertest(app).get(`/api/v1/salons/${salon1.id}/services`);
-      expect(res).to.have.status(200);
+      expect(res).to.have.property('status', 200);
       res.body.data.forEach(service => {
         expect(service.isActive).to.equal(true);
       });
@@ -191,7 +191,7 @@ describe('Service & Staff API', () => {
       const res = await supertest(app)
         .delete(`/api/v1/services/${service.id}`)
         .set('Authorization', `Bearer ${owner2Token}`);
-      expect(res).to.have.status(403);
+      expect(res).to.have.property('status', 403);
     });
   });
 
@@ -206,10 +206,10 @@ describe('Service & Staff API', () => {
           bio: 'Test bio',
           serviceIds: [data.services.service1.id],
         });
-      expect(res).to.have.status(201);
+      expect(res).to.have.property('status', 201);
       expect(res.body.data).to.have.property('fullName', 'Test Employee');
       expect(res.body.data).to.have.property('salonId', salon1.id);
-      expect(res.body.data).to.haveProperty('services');
+      expect(res.body.data).to.have.property('services');
       await Staff.findByPk(res.body.data.id).then(s => s.destroy());
     });
 
@@ -224,12 +224,12 @@ describe('Service & Staff API', () => {
           fullName: 'Hacked Employee',
           title: 'Hacked',
         });
-      expect(res).to.have.status(403);
+      expect(res).to.have.property('status', 403);
     });
 
     it('should get staff for a salon', async () => {
       const res = await supertest(app).get(`/api/v1/salons/${salon1.id}/staff`);
-      expect(res).to.have.status(200);
+      expect(res).to.have.property('status', 200);
       expect(res.body).to.have.property('success', true);
       expect(res.body.data).to.be.an('array');
       res.body.data.forEach(staff => {
@@ -238,13 +238,13 @@ describe('Service & Staff API', () => {
     });
 
     it('should update staff', async () => {
-      const staff = await Staff.findOne({ where: { salonId: salon1.id, fullName: 'Merve Demir' });
+      const staff = await Staff.findOne({ where: { salonId: salon1.id, fullName: 'Merve Demir' } });
       const token = createToken(owner1);
       const res = await supertest(app)
         .patch(`/api/v1/staff/${staff.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send({ title: 'Senior Stylist Updated' });
-      expect(res).to.have.status(200);
+      expect(res).to.have.property('status', 200);
       expect(res.body.data.title).to.equal('Senior Stylist Updated');
       staff.title = 'Kıdemli Kuaför';
       await staff.save();
@@ -256,7 +256,7 @@ describe('Service & Staff API', () => {
       const res = await supertest(app)
         .delete(`/api/v1/staff/${staff.id}`)
         .set('Authorization', `Bearer ${token}`);
-      expect(res).to.have.status(200);
+      expect(res).to.have.property('status', 200);
       expect(res.body.data).to.have.property('message').and.include('devre dışı');
       await staff.reload();
       expect(staff.isActive).to.equal(false);
@@ -264,7 +264,7 @@ describe('Service & Staff API', () => {
 
     it('should not return inactive staff in salon staff list', async () => {
       const res = await supertest(app).get(`/api/v1/salons/${salon1.id}/staff`);
-      expect(res).to.have.status(200);
+      expect(res).to.have.property('status', 200);
       res.body.data.forEach(staff => {
         expect(staff.isActive).to.equal(true);
       });
@@ -277,7 +277,7 @@ describe('Service & Staff API', () => {
         const res = await supertest(app)
           .get('/api/v1/admin/dashboard')
           .set('Authorization', `Bearer ${adminToken}`);
-        expect(res).to.have.status(200);
+        expect(res).to.have.property('status', 200);
         expect(res.body).to.have.property('success', true);
       });
     });
@@ -287,7 +287,7 @@ describe('Service & Staff API', () => {
         const res = await supertest(app)
           .get('/api/v1/admin/salons')
           .set('Authorization', `Bearer ${adminToken}`);
-        expect(res).to.have.status(200);
+        expect(res).to.have.property('status', 200);
         expect(res.body).to.have.property('success', true);
         expect(res.body.data).to.have.property('data');
       });
@@ -297,7 +297,7 @@ describe('Service & Staff API', () => {
           .get('/api/v1/admin/salons')
           .set('Authorization', `Bearer ${adminToken}`)
           .query({ verified: 'true' });
-        expect(res).to.have.status(200);
+        expect(res).to.have.property('status', 200);
         res.body.data.data.forEach(salon => {
           expect(salon.isVerified).to.equal(true);
         });
@@ -309,7 +309,7 @@ describe('Service & Staff API', () => {
         const res = await supertest(app)
           .get('/api/v1/admin/appointments')
           .set('Authorization', `Bearer ${adminToken}`);
-        expect(res).to.have.status(200);
+        expect(res).to.have.property('status', 200);
         expect(res.body).to.have.property('success', true);
       });
 
@@ -318,7 +318,7 @@ describe('Service & Staff API', () => {
           .get('/api/v1/admin/appointments')
           .set('Authorization', `Bearer ${adminToken}`)
           .query({ status: 'PENDING' });
-        expect(res).to.have.status(200);
+        expect(res).to.have.property('status', 200);
         res.body.data.data.forEach(apt => {
           expect(apt.status).to.equal('PENDING');
         });
@@ -330,7 +330,7 @@ describe('Service & Staff API', () => {
         const res = await supertest(app)
           .get('/api/v1/admin/reviews')
           .set('Authorization', `Bearer ${adminToken}`);
-        expect(res).to.have.status(200);
+        expect(res).to.have.property('status', 200);
         expect(res.body).to.have.property('success', true);
       });
     });
@@ -341,7 +341,7 @@ describe('Service & Staff API', () => {
         const res = await supertest(app)
           .get(endpoint)
           .set('Authorization', `Bearer ${ownerToken}`);
-        expect(res).to.have.status(403);
+        expect(res).to.have.property('status', 403);
       }
     });
   });

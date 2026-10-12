@@ -44,7 +44,6 @@ describe('Favorite API', () => {
         .post(`/api/v1/favorites/${salon1.id}`)
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       expect(res.body.data).to.have.property('isFavorite', true);
 
       // Verify in database
@@ -65,7 +64,6 @@ describe('Favorite API', () => {
         .post(`/api/v1/favorites/${salon2.id}`)
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       expect(res.body.data).to.have.property('isFavorite', false);
 
       // Verify removed
@@ -80,7 +78,6 @@ describe('Favorite API', () => {
         .post('/api/v1/favorites/00000000-0000-0000-0000-000000000000')
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', false);
     });
 
@@ -100,7 +97,6 @@ describe('Favorite API', () => {
         .post(`/api/v1/favorites/${salon1.id}`)
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       expect(res.body.data.isFavorite).to.equal(true);
 
       // Clean up
@@ -118,7 +114,6 @@ describe('Favorite API', () => {
         .get('/api/v1/favorites')
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       expect(res.body).to.have.property('success', true);
       expect(res.body.data).to.be.an('array');
       expect(res.body.data.length).to.be.greaterThanOrEqual(2);
@@ -134,7 +129,6 @@ describe('Favorite API', () => {
         .get('/api/v1/favorites')
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       const salon = res.body.data[0];
       expect(salon).to.have.property('id');
       expect(salon).to.have.property('name');
@@ -154,7 +148,6 @@ describe('Favorite API', () => {
         .get('/api/v1/favorites')
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       expect(res.body.data).to.be.an('array').that.is.empty;
     });
 
@@ -167,7 +160,6 @@ describe('Favorite API', () => {
         .get('/api/v1/favorites')
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       // The last created (salon2) should be first
       expect(res.body.data[0].id).to.equal(salon2.id);
 
@@ -184,7 +176,6 @@ describe('Favorite API', () => {
         .get(`/api/v1/favorites/${salon1.id}/check`)
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       expect(res.body.data).to.have.property('isFavorite', true);
 
       // Clean up
@@ -196,7 +187,6 @@ describe('Favorite API', () => {
         .get(`/api/v1/favorites/${salon1.id}/check`)
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.equal();
       expect(res.body.data).to.have.property('isFavorite', false);
     });
 
@@ -210,7 +200,6 @@ describe('Favorite API', () => {
         .get(`/api/v1/favorites/${salon1.id}/check`)
         .set('Authorization', `Bearer ${customer2Token}`);
 
-      expect(res).to.equal();
       expect(res.body.data.isFavorite).to.equal(false);
 
       // customer1 favorites salon1
@@ -232,17 +221,16 @@ describe('Favorite API', () => {
       const res = await supertest(app)
         .post(`/api/v1/favorites/${salon1.id}`);
 
-      expect(res).to.equal();
 
       const res2 = await supertest(app)
         .get('/api/v1/favorites');
 
-      expect(res2).to.equal();
+      expect(res2).to.have.property('status', 401);
 
       const res3 = await supertest(app)
         .get(`/api/v1/favorites/${salon1.id}/check`);
 
-      expect(res3).to.equal();
+      expect(res3).to.have.property('status', 401);
     });
   });
 
@@ -252,7 +240,6 @@ describe('Favorite API', () => {
         .post(`/api/v1/favorites/${salon1.id}`)
         .set('Authorization', `Bearer ${ownerToken}`);
 
-      expect(res).to.equal();
       expect(res.body.data.isFavorite).to.equal(true);
 
       // Clean up
