@@ -13,11 +13,11 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 
 | Durum | Sayı |
 |-------|------|
-| ✅ Tamamlandı | 34 |
-| ⚠️ Kısmen | 5 |
-| ❌ Yapılmadı | 8 |
+| ✅ Tamamlandı | 39 |
+| ⚠️ Kısmen | 4 |
+| ❌ Yapılmadı | 4 |
 
-**Gerçekten açık olan işler:** SA-004, SA-008, CA-012, CA-014, BUG-010, ADMIN-001, CROSS-003, upload endpoint testleri.
+**Gerçekten açık olan işler:** ADMIN-001 (kapsam kararı), CROSS-003 (loading state tutarlılığı), UI-001 (servis listesinde description), upload endpoint testleri.
 
 ---
 
@@ -51,9 +51,9 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 | CA-009 | Action butonları | ✅ | `url_launcher` call/directions + share |
 | CA-010 | Review pagination | ✅ | `ReviewPage` + `AsyncNotifier.family` + load-more |
 | CA-011 | Staff member details | ✅ | `staff_list_widget.dart` |
-| CA-012 | "New Salon" badge | ❌ | Kodda "new salon" mantığı yok |
+| CA-012 | "New Salon" badge | ✅ | `Salon.createdAt` parse ediliyor; `Salon.isNew` (30 gün) → discover kartında "Yeni" rozeti |
 | CA-013 | Email change | ✅ | `EmailChangeSection` + 2 use case |
-| CA-014 | Booking "Any Staff" | ⚠️ | `booking_remote_datasource` `staffId`'yi **required** geçiriyor; "herhangi bir çalışan" akışı yok |
+| CA-014 | Booking "Any Staff" | ✅ | Backend `staffId` opsiyonel: hizmeti sunan boş çalışanı atar (yoksa 409). App tarafında "herhangi bir çalışan" için tüm uygun çalışanların saatleri birleştiriliyor (`mergeSlots`) |
 
 ---
 
@@ -64,11 +64,11 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 | SA-001 | Dashboard gelir hesabı | ✅ | `dashboard_provider.dart` — aylık gelir, `Future.wait` ile paralel |
 | SA-002 | Sequential API çağrıları | ✅ | `Future.wait` (satır 93, 119) |
 | SA-003 | Salon soft delete | ✅ | backend `isActive` filtresi |
-| SA-004 | Salon profile image upload | ❌ | `salon_profile_screen.dart`'da upload yok |
+| SA-004 | Salon profile image upload | ✅ | `core/network/upload_service.dart` + profile ekranında "Fotoğraf ekle" (image_picker → `/upload/multiple`) |
 | SA-005 | Staff active/inactive toggle | ✅ | `staff_management_screen.dart` PopupMenu 'toggle' |
 | SA-006 | Service active/inactive toggle | ✅ | `service_management_screen.dart` |
 | SA-007 | Staff member details | ✅ | phone/email gösterimi + edit formu |
-| SA-008 | Reviews pagination | ❌ | `reviews_provider.dart` sayfalama içermiyor |
+| SA-008 | Reviews pagination | ✅ | `ReviewFeed` (page/limit/total/hasMore) + "Daha fazla göster" butonu |
 | SA-009 | Dashboard chart | ✅ | zaten çalışıyordu |
 | SA-010 | Verified badge | ✅ | `salon_profile_screen.dart` `isVerified` conditional |
 | SA-011 | Working hours `isClosed` toggle | ✅ | satır 815-821 toggle |
@@ -111,16 +111,16 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 | BUG-007 | Haftalık çalışma saatleri | ✅ | `WorkingHoursSection` |
 | BUG-008 | `isVerified` parse | ✅ | `SalonInfo.isVerified` + conditional badge |
 | BUG-009 | Staff phone/email gösterimi | ✅ | staff card satır 181-187 |
-| BUG-010 | Salon app gallery/cover/logo | ❌ | `SalonInfo` modelinde `galleryImages`, `coverImageUrl`, `logoUrl` yok |
+| BUG-010 | Salon app gallery/cover/logo | ✅ | `SalonInfo` artık logo/cover/gallery parse ediyor; header logosu + galeri şeridi gösteriliyor |
 
 ---
 
-## Önerilen sıradan kalan işler
+## Sıradaki işler
 
-1. **SA-008** — salon app reviews pagination (backend zaten `paginate` destekliyor)
-2. **SA-004** — salon profile görsel yükleme (`/upload/multiple` hazır)
-3. **BUG-010** — salon app `SalonInfo`'ya logo/cover/gallery alanları
-4. **CA-014** — "herhangi bir çalışan" randevu akışı
-5. **CA-012** — yeni salon badge
-6. **Upload endpoint testleri** + salon app provider/widget testleri
-7. `errorHandler`'a 404 fallback (bilinmeyen route JSON dönmüyor)
+1. **CROSS-003** — Flutter ekranlarında tutarlı skeleton/empty state
+2. **UI-001** — servis listesinde description gösterimi
+3. **Upload endpoint testleri** (API) ve salon app provider/widget testleri
+4. `errorHandler`'a 404 fallback (bilinmeyen route JSON dönmüyor)
+
+> 2026-10-12: SA-004, SA-008, BUG-010, CA-012, CA-014 kapatıldı
+> (API 245 test, customer_app 194 test, salon_app 24 test — hepsi geçiyor).
