@@ -22,7 +22,7 @@
 |------|------|-------|
 | [CA-001](CA-001-forgot-password.md) | Şifre sıfırlama akışı | ✅ uygulandı (screen + test mevcut) |
 | [CA-002](CA-002-nearby-search.md) | Nearby search | ✅ uygulandı; konum tek kaynak (`locationProvider`, Home + Discover), Discover mesafeyi `Salon.latitude/longitude` + haversine ile hesaplıyor |
-| [CA-003](CA-003-review-image-upload.md) | Review image upload | ⚠️ Kısmen — plan `getIt<ApiClient>()` + widget `try/catch` diyor; CA-014 bunu `UploadFilesUseCase` ile değiştirdi |
+| [CA-003](CA-003-review-image-upload.md) | Review image upload | ✅ uygulandı — `UploadFilesUseCase` + backend `images`; 2026-10-12'de `ReviewModel`/`SalonReviewModel` `images` parse ediyor ve kartlarda thumbnail gösteriliyor |
 | [CA-004](CA-004-notifications.md) | Bildirim ekranı | ✅ uygulandı (2026-07-27 — backend zaten hazırdı, Flutter feature sıfırdan yazıldı) |
 | [CA-005](CA-005-avatar-upload.md) | Avatar upload | ✅ uygulandı (2026-07-27, `ImagePickerService` + `UploadFilesUseCase` + `avatarUrl` parametresi) |
 | [CA-007](CA-007-discovery-filters.md) | Discovery filtreleri | ✅ uygulandı (2026-07-27, server-side: `SalonFilter` + `GET /categories`) |

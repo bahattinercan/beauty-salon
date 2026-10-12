@@ -9,6 +9,7 @@ class ReviewModel {
   final String? comment;
   final String? salonReply;
   final DateTime createdAt;
+  final List<String> images;
 
   const ReviewModel({
     required this.id,
@@ -19,6 +20,7 @@ class ReviewModel {
     this.comment,
     this.salonReply,
     required this.createdAt,
+    this.images = const [],
   });
 
   factory ReviewModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,11 @@ class ReviewModel {
       comment: json['comment']?.toString(),
       salonReply: json['salonReply']?.toString(),
       createdAt: DateTime.tryParse((json['createdAt']?.toString()) ?? '') ?? DateTime.now(),
+      images: (json['images'] as List?)
+          ?.map((e) => e?.toString() ?? '')
+          .where((e) => e.isNotEmpty)
+          .toList() ??
+          const [],
     );
   }
 
@@ -44,5 +51,6 @@ class ReviewModel {
         comment: comment,
         salonReply: salonReply,
         createdAt: createdAt,
+        images: images,
       );
 }

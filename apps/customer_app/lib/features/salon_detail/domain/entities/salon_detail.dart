@@ -46,6 +46,7 @@ class SalonReview {
   final String? reply;
   final String? serviceName;
   final String createdAt;
+  final List<String> images;
 
   const SalonReview({
     required this.id,
@@ -56,6 +57,7 @@ class SalonReview {
     this.reply,
     this.serviceName,
     required this.createdAt,
+    this.images = const [],
   });
 
   String get timeAgo => DateTime.tryParse(createdAt)?.timeAgoTr ?? '';

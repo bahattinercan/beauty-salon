@@ -86,6 +86,7 @@ class SalonReviewModel {
   final String? reply;
   final String? serviceName;
   final String createdAt;
+  final List<String> images;
 
   const SalonReviewModel({
     required this.id,
@@ -96,6 +97,7 @@ class SalonReviewModel {
     this.reply,
     this.serviceName,
     required this.createdAt,
+    this.images = const [],
   });
 
   factory SalonReviewModel.fromJson(Map<String, dynamic> json) {
@@ -119,6 +121,11 @@ class SalonReviewModel {
       reply: json['salonReply']?.toString(),
       serviceName: service['name']?.toString(),
       createdAt: (json['createdAt'] as String?) ?? '',
+      images: (json['images'] as List?)
+          ?.map((e) => e?.toString() ?? '')
+          .where((e) => e.isNotEmpty)
+          .toList() ??
+          const [],
     );
   }
 
@@ -131,6 +138,7 @@ class SalonReviewModel {
         reply: reply,
         serviceName: serviceName,
         createdAt: createdAt,
+        images: images,
       );
 }
 

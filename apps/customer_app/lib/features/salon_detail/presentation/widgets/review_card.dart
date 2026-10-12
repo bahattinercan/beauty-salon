@@ -70,6 +70,33 @@ class ReviewCard extends StatelessWidget {
               Text(review.comment!,
                   style: TextStyle(fontSize: 13, color: colors.textPrimary, height: 1.4)),
             ],
+            if (review.images.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 92,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: review.images.map((url) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        url,
+                        width: 92,
+                        height: 92,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Container(
+                          width: 92,
+                          height: 92,
+                          color: colors.secondary,
+                          child: Icon(Icons.image, color: colors.primary),
+                        ),
+                      ),
+                    ),
+                  )).toList(),
+                ),
+              ),
+            ],
             if (review.reply != null) ...[
               const SizedBox(height: 12),
               Container(

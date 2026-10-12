@@ -9,6 +9,7 @@ class Review {
   final String? comment;
   final String? salonReply;
   final DateTime createdAt;
+  final List<String> images;
 
   const Review({
     required this.id,
@@ -19,6 +20,7 @@ class Review {
     this.comment,
     this.salonReply,
     required this.createdAt,
+    this.images = const [],
   });
 
   String get timeAgo => createdAt.timeAgoShort;
