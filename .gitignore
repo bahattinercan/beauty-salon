@@ -18,6 +18,7 @@ uploads/
 # Yerel araç/editör verisi
 .pi-glla/
 .claude/settings.local.json
+.vscode/
 
 # Flutter / Dart build artefaktları
 build/
