@@ -148,24 +148,33 @@ class BookingNotifier extends AsyncNotifier<BookingState> {
     final s = _current;
     if (s == null) return;
     final service = s.service;
-    final staffId = _resolveStaffId(s);
-    if (service == null || staffId == null) return;
+    if (service == null) return;
+
+    // "Herhangi bir çalışan" seçildiğinde hizmeti sunan tüm çalışanların
+    // boş saatleri birleştirilir; tek çalışan seçildiyse sadece onun saatleri.
+    final staffIds = _candidateStaffIds(s);
+    if (staffIds.isEmpty) return;
 
     state = AsyncData(s.copyWith(loadingSlots: true, slots: const [], time: null));
 
-    final result = await getIt<GetAvailableSlotsUseCase>()(
-      salonId: salonId,
-      staffId: staffId,
-      serviceId: service.id,
-      date: _dateToString(s.date),
+    final perStaff = await Future.wait(
+      staffIds.map((staffId) => getIt<GetAvailableSlotsUseCase>()(
+        salonId: salonId,
+        staffId: staffId,
+        serviceId: service.id,
+        date: _dateToString(s.date),
+      )),
+    );
+
+    final merged = mergeSlots(
+      perStaff
+          .map((r) => r.fold((_) => const <BookingSlot>[], (List<BookingSlot> slots) => slots))
+          .toList(),
     );
 
     final cur = _current;
     if (cur == null) return;
-    state = AsyncData(cur.copyWith(
-      loadingSlots: false,
-      slots: result.fold((_) => const <BookingSlot>[], (slots) => slots),
-    ));
+    state = AsyncData(cur.copyWith(loadingSlots: false, slots: merged));
   }
 
   /// Başarılıysa appointment id döner, hata durumunda null.
@@ -220,6 +229,18 @@ class BookingNotifier extends AsyncNotifier<BookingState> {
     );
   }
 
+  List<String> _candidateStaffIds(BookingState s) {
+    if (s.staffIndex != null && s.staffIndex != -1) {
+      return [s.salon.staff[s.staffIndex!].id];
+    }
+    final service = s.service;
+    if (service == null) return const [];
+    return s.salon.staff
+        .where((m) => m.serviceNames.contains(service.name))
+        .map((m) => m.id)
+        .toList();
+  }
+
   String? _resolveStaffId(BookingState s) {
     if (s.staffIndex != null && s.staffIndex != -1) {
       return s.salon.staff[s.staffIndex!].id;
@@ -236,6 +257,22 @@ class BookingNotifier extends AsyncNotifier<BookingState> {
 
   static String _dateToString(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+}
+
+/// Çoklu çalışanların boş saatlerini tek listede birleştirir.
+List<BookingSlot> mergeSlots(List<List<BookingSlot>> perStaff) {
+  final byTime = <String, BookingSlot>{};
+  for (final slots in perStaff) {
+    for (final slot in slots) {
+      final existing = byTime[slot.time];
+      if (existing == null || (slot.available && !existing.available)) {
+        byTime[slot.time] = slot;
+      }
+    }
+  }
+  final merged = byTime.values.toList();
+  merged.sort((a, b) => a.time.compareTo(b.time));
+  return merged;
 }
 
 final bookingProvider =

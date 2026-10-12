@@ -199,6 +199,7 @@ class S {
       ? 'Distance filter needs location access'
       : 'Mesafe filtresi konum izniyle çalışır';
   String get discoverReviews       => isEn ? 'reviews'         : 'yorum';
+  String get newSalonBadge       => isEn ? 'New'           : 'Yeni';
 
   // ── Language picker ────────────────────────────────────────────────────────
   String get selectLanguage   => isEn ? 'Select Language'    : 'Dil Seçin';

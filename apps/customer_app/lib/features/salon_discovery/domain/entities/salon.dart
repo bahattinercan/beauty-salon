@@ -20,6 +20,7 @@ class Salon {
   final double? longitude;
 
   final String? phone;
+  final DateTime? createdAt;
 
   const Salon({
     required this.id,
@@ -36,6 +37,7 @@ class Salon {
     this.latitude,
     this.longitude,
     this.phone,
+    this.createdAt,
   });
 
   /// Mesafeyi dolduran kopya (entity immutable).
@@ -54,7 +56,13 @@ class Salon {
         latitude: latitude,
         longitude: longitude,
         phone: phone,
+        createdAt: createdAt,
       );
+
+  /// Son 30 gğin içinde açğılmış salonlar 'Yeni' sayılır.
+  bool get isNew =>
+      createdAt != null &&
+      DateTime.now().difference(createdAt!) < const Duration(days: 30);
 
   /// Haversine (km). Saf Dart — domain katmanı Flutter/third-party import etmez.
   double? distanceKmTo(double fromLat, double fromLng) {

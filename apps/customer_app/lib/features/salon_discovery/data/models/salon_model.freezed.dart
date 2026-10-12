@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SalonModel {
 
-@JsonKey(defaultValue: '') String get id;@JsonKey(defaultValue: '') String get name; String get address; String? get city; String? get district; double get ratingAvg; int get reviewCount; String? get logoUrl; String? get coverImageUrl; int get priceRange; double? get distance; double? get latitude; double? get longitude; String? get phone;
+@JsonKey(defaultValue: '') String get id;@JsonKey(defaultValue: '') String get name; String get address; String? get city; String? get district; double get ratingAvg; int get reviewCount; String? get logoUrl; String? get coverImageUrl; int get priceRange; double? get distance; double? get latitude; double? get longitude; String? get phone; DateTime? get createdAt;
 /// Create a copy of SalonModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $SalonModelCopyWith<SalonModel> get copyWith => _$SalonModelCopyWithImpl<SalonMo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SalonModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.city, city) || other.city == city)&&(identical(other.district, district) || other.district == district)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg)&&(identical(other.reviewCount, reviewCount) || other.reviewCount == reviewCount)&&(identical(other.logoUrl, logoUrl) || other.logoUrl == logoUrl)&&(identical(other.coverImageUrl, coverImageUrl) || other.coverImageUrl == coverImageUrl)&&(identical(other.priceRange, priceRange) || other.priceRange == priceRange)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.phone, phone) || other.phone == phone));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SalonModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.city, city) || other.city == city)&&(identical(other.district, district) || other.district == district)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg)&&(identical(other.reviewCount, reviewCount) || other.reviewCount == reviewCount)&&(identical(other.logoUrl, logoUrl) || other.logoUrl == logoUrl)&&(identical(other.coverImageUrl, coverImageUrl) || other.coverImageUrl == coverImageUrl)&&(identical(other.priceRange, priceRange) || other.priceRange == priceRange)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,address,city,district,ratingAvg,reviewCount,logoUrl,coverImageUrl,priceRange,distance,latitude,longitude,phone);
+int get hashCode => Object.hash(runtimeType,id,name,address,city,district,ratingAvg,reviewCount,logoUrl,coverImageUrl,priceRange,distance,latitude,longitude,phone,createdAt);
 
 @override
 String toString() {
-  return 'SalonModel(id: $id, name: $name, address: $address, city: $city, district: $district, ratingAvg: $ratingAvg, reviewCount: $reviewCount, logoUrl: $logoUrl, coverImageUrl: $coverImageUrl, priceRange: $priceRange, distance: $distance, latitude: $latitude, longitude: $longitude, phone: $phone)';
+  return 'SalonModel(id: $id, name: $name, address: $address, city: $city, district: $district, ratingAvg: $ratingAvg, reviewCount: $reviewCount, logoUrl: $logoUrl, coverImageUrl: $coverImageUrl, priceRange: $priceRange, distance: $distance, latitude: $latitude, longitude: $longitude, phone: $phone, createdAt: $createdAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $SalonModelCopyWith<$Res>  {
   factory $SalonModelCopyWith(SalonModel value, $Res Function(SalonModel) _then) = _$SalonModelCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(defaultValue: '') String id,@JsonKey(defaultValue: '') String name, String address, String? city, String? district, double ratingAvg, int reviewCount, String? logoUrl, String? coverImageUrl, int priceRange, double? distance, double? latitude, double? longitude, String? phone
+@JsonKey(defaultValue: '') String id,@JsonKey(defaultValue: '') String name, String address, String? city, String? district, double ratingAvg, int reviewCount, String? logoUrl, String? coverImageUrl, int priceRange, double? distance, double? latitude, double? longitude, String? phone, DateTime? createdAt
 });
 
 
@@ -65,7 +65,7 @@ class _$SalonModelCopyWithImpl<$Res>
 
 /// Create a copy of SalonModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? address = null,Object? city = freezed,Object? district = freezed,Object? ratingAvg = null,Object? reviewCount = null,Object? logoUrl = freezed,Object? coverImageUrl = freezed,Object? priceRange = null,Object? distance = freezed,Object? latitude = freezed,Object? longitude = freezed,Object? phone = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? address = null,Object? city = freezed,Object? district = freezed,Object? ratingAvg = null,Object? reviewCount = null,Object? logoUrl = freezed,Object? coverImageUrl = freezed,Object? priceRange = null,Object? distance = freezed,Object? latitude = freezed,Object? longitude = freezed,Object? phone = freezed,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -81,7 +81,8 @@ as int,distance: freezed == distance ? _self.distance : distance // ignore: cast
 as double?,latitude: freezed == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
 as double?,longitude: freezed == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
 as double?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -163,10 +164,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(defaultValue: '')  String id, @JsonKey(defaultValue: '')  String name,  String address,  String? city,  String? district,  double ratingAvg,  int reviewCount,  String? logoUrl,  String? coverImageUrl,  int priceRange,  double? distance,  double? latitude,  double? longitude,  String? phone)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(defaultValue: '')  String id, @JsonKey(defaultValue: '')  String name,  String address,  String? city,  String? district,  double ratingAvg,  int reviewCount,  String? logoUrl,  String? coverImageUrl,  int priceRange,  double? distance,  double? latitude,  double? longitude,  String? phone,  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SalonModel() when $default != null:
-return $default(_that.id,_that.name,_that.address,_that.city,_that.district,_that.ratingAvg,_that.reviewCount,_that.logoUrl,_that.coverImageUrl,_that.priceRange,_that.distance,_that.latitude,_that.longitude,_that.phone);case _:
+return $default(_that.id,_that.name,_that.address,_that.city,_that.district,_that.ratingAvg,_that.reviewCount,_that.logoUrl,_that.coverImageUrl,_that.priceRange,_that.distance,_that.latitude,_that.longitude,_that.phone,_that.createdAt);case _:
   return orElse();
 
 }
@@ -184,10 +185,10 @@ return $default(_that.id,_that.name,_that.address,_that.city,_that.district,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(defaultValue: '')  String id, @JsonKey(defaultValue: '')  String name,  String address,  String? city,  String? district,  double ratingAvg,  int reviewCount,  String? logoUrl,  String? coverImageUrl,  int priceRange,  double? distance,  double? latitude,  double? longitude,  String? phone)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(defaultValue: '')  String id, @JsonKey(defaultValue: '')  String name,  String address,  String? city,  String? district,  double ratingAvg,  int reviewCount,  String? logoUrl,  String? coverImageUrl,  int priceRange,  double? distance,  double? latitude,  double? longitude,  String? phone,  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _SalonModel():
-return $default(_that.id,_that.name,_that.address,_that.city,_that.district,_that.ratingAvg,_that.reviewCount,_that.logoUrl,_that.coverImageUrl,_that.priceRange,_that.distance,_that.latitude,_that.longitude,_that.phone);}
+return $default(_that.id,_that.name,_that.address,_that.city,_that.district,_that.ratingAvg,_that.reviewCount,_that.logoUrl,_that.coverImageUrl,_that.priceRange,_that.distance,_that.latitude,_that.longitude,_that.phone,_that.createdAt);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -201,10 +202,10 @@ return $default(_that.id,_that.name,_that.address,_that.city,_that.district,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(defaultValue: '')  String id, @JsonKey(defaultValue: '')  String name,  String address,  String? city,  String? district,  double ratingAvg,  int reviewCount,  String? logoUrl,  String? coverImageUrl,  int priceRange,  double? distance,  double? latitude,  double? longitude,  String? phone)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(defaultValue: '')  String id, @JsonKey(defaultValue: '')  String name,  String address,  String? city,  String? district,  double ratingAvg,  int reviewCount,  String? logoUrl,  String? coverImageUrl,  int priceRange,  double? distance,  double? latitude,  double? longitude,  String? phone,  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _SalonModel() when $default != null:
-return $default(_that.id,_that.name,_that.address,_that.city,_that.district,_that.ratingAvg,_that.reviewCount,_that.logoUrl,_that.coverImageUrl,_that.priceRange,_that.distance,_that.latitude,_that.longitude,_that.phone);case _:
+return $default(_that.id,_that.name,_that.address,_that.city,_that.district,_that.ratingAvg,_that.reviewCount,_that.logoUrl,_that.coverImageUrl,_that.priceRange,_that.distance,_that.latitude,_that.longitude,_that.phone,_that.createdAt);case _:
   return null;
 
 }
@@ -216,7 +217,7 @@ return $default(_that.id,_that.name,_that.address,_that.city,_that.district,_tha
 @JsonSerializable()
 
 class _SalonModel implements SalonModel {
-  const _SalonModel({@JsonKey(defaultValue: '') required this.id, @JsonKey(defaultValue: '') required this.name, this.address = '', this.city, this.district, this.ratingAvg = 0.0, this.reviewCount = 0, this.logoUrl, this.coverImageUrl, this.priceRange = 0, this.distance, this.latitude, this.longitude, this.phone});
+  const _SalonModel({@JsonKey(defaultValue: '') required this.id, @JsonKey(defaultValue: '') required this.name, this.address = '', this.city, this.district, this.ratingAvg = 0.0, this.reviewCount = 0, this.logoUrl, this.coverImageUrl, this.priceRange = 0, this.distance, this.latitude, this.longitude, this.phone, this.createdAt});
   factory _SalonModel.fromJson(Map<String, dynamic> json) => _$SalonModelFromJson(json);
 
 @override@JsonKey(defaultValue: '') final  String id;
@@ -233,6 +234,7 @@ class _SalonModel implements SalonModel {
 @override final  double? latitude;
 @override final  double? longitude;
 @override final  String? phone;
+@override final  DateTime? createdAt;
 
 /// Create a copy of SalonModel
 /// with the given fields replaced by the non-null parameter values.
@@ -247,16 +249,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SalonModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.city, city) || other.city == city)&&(identical(other.district, district) || other.district == district)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg)&&(identical(other.reviewCount, reviewCount) || other.reviewCount == reviewCount)&&(identical(other.logoUrl, logoUrl) || other.logoUrl == logoUrl)&&(identical(other.coverImageUrl, coverImageUrl) || other.coverImageUrl == coverImageUrl)&&(identical(other.priceRange, priceRange) || other.priceRange == priceRange)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.phone, phone) || other.phone == phone));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SalonModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.city, city) || other.city == city)&&(identical(other.district, district) || other.district == district)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg)&&(identical(other.reviewCount, reviewCount) || other.reviewCount == reviewCount)&&(identical(other.logoUrl, logoUrl) || other.logoUrl == logoUrl)&&(identical(other.coverImageUrl, coverImageUrl) || other.coverImageUrl == coverImageUrl)&&(identical(other.priceRange, priceRange) || other.priceRange == priceRange)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,address,city,district,ratingAvg,reviewCount,logoUrl,coverImageUrl,priceRange,distance,latitude,longitude,phone);
+int get hashCode => Object.hash(runtimeType,id,name,address,city,district,ratingAvg,reviewCount,logoUrl,coverImageUrl,priceRange,distance,latitude,longitude,phone,createdAt);
 
 @override
 String toString() {
-  return 'SalonModel(id: $id, name: $name, address: $address, city: $city, district: $district, ratingAvg: $ratingAvg, reviewCount: $reviewCount, logoUrl: $logoUrl, coverImageUrl: $coverImageUrl, priceRange: $priceRange, distance: $distance, latitude: $latitude, longitude: $longitude, phone: $phone)';
+  return 'SalonModel(id: $id, name: $name, address: $address, city: $city, district: $district, ratingAvg: $ratingAvg, reviewCount: $reviewCount, logoUrl: $logoUrl, coverImageUrl: $coverImageUrl, priceRange: $priceRange, distance: $distance, latitude: $latitude, longitude: $longitude, phone: $phone, createdAt: $createdAt)';
 }
 
 
@@ -267,7 +269,7 @@ abstract mixin class _$SalonModelCopyWith<$Res> implements $SalonModelCopyWith<$
   factory _$SalonModelCopyWith(_SalonModel value, $Res Function(_SalonModel) _then) = __$SalonModelCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(defaultValue: '') String id,@JsonKey(defaultValue: '') String name, String address, String? city, String? district, double ratingAvg, int reviewCount, String? logoUrl, String? coverImageUrl, int priceRange, double? distance, double? latitude, double? longitude, String? phone
+@JsonKey(defaultValue: '') String id,@JsonKey(defaultValue: '') String name, String address, String? city, String? district, double ratingAvg, int reviewCount, String? logoUrl, String? coverImageUrl, int priceRange, double? distance, double? latitude, double? longitude, String? phone, DateTime? createdAt
 });
 
 
@@ -284,7 +286,7 @@ class __$SalonModelCopyWithImpl<$Res>
 
 /// Create a copy of SalonModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? address = null,Object? city = freezed,Object? district = freezed,Object? ratingAvg = null,Object? reviewCount = null,Object? logoUrl = freezed,Object? coverImageUrl = freezed,Object? priceRange = null,Object? distance = freezed,Object? latitude = freezed,Object? longitude = freezed,Object? phone = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? address = null,Object? city = freezed,Object? district = freezed,Object? ratingAvg = null,Object? reviewCount = null,Object? logoUrl = freezed,Object? coverImageUrl = freezed,Object? priceRange = null,Object? distance = freezed,Object? latitude = freezed,Object? longitude = freezed,Object? phone = freezed,Object? createdAt = freezed,}) {
   return _then(_SalonModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -300,7 +302,8 @@ as int,distance: freezed == distance ? _self.distance : distance // ignore: cast
 as double?,latitude: freezed == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
 as double?,longitude: freezed == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
 as double?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 

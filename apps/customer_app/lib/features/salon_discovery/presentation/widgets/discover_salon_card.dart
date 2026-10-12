@@ -121,6 +121,21 @@ class DiscoverSalonCard extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
+                      if (salon.isNew) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: colors.primary,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            S.of(context).newSalonBadge,
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
                       if (salon.priceRangeLabel.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

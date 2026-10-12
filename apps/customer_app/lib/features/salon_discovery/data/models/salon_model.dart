@@ -21,6 +21,7 @@ sealed class SalonModel with _$SalonModel {
     double? latitude,
     double? longitude,
     String? phone,
+    DateTime? createdAt,
   }) = _SalonModel;
 
   factory SalonModel.fromJson(Map<String, dynamic> json) =>
@@ -43,5 +44,6 @@ extension SalonModelX on SalonModel {
         latitude: latitude,
         longitude: longitude,
         phone: phone,
+        createdAt: createdAt,
       );
 }

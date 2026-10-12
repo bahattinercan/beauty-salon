@@ -21,6 +21,9 @@ _SalonModel _$SalonModelFromJson(Map<String, dynamic> json) => _SalonModel(
   latitude: (json['latitude'] as num?)?.toDouble(),
   longitude: (json['longitude'] as num?)?.toDouble(),
   phone: json['phone'] as String?,
+  createdAt: json['createdAt'] == null
+      ? null
+      : DateTime.parse(json['createdAt'] as String),
 );
 
 Map<String, dynamic> _$SalonModelToJson(_SalonModel instance) =>
@@ -39,4 +42,5 @@ Map<String, dynamic> _$SalonModelToJson(_SalonModel instance) =>
       'latitude': instance.latitude,
       'longitude': instance.longitude,
       'phone': instance.phone,
+      'createdAt': instance.createdAt?.toIso8601String(),
     };
