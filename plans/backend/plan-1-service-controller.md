@@ -1,10 +1,13 @@
-# Plan 1: Service Controller Eksikliği
+# Plan 1: Service Controller
 
-## Problem
-`/services` endpoint'leri eksik. Service controller'da `getCategories`, `createCategory`, `updateCategory`, `deleteCategory`, `getBySalon`, `create`, `update`, `remove` fonksiyonları eksik.
+## Durum: ✅ tamamlandı
 
-## Çözüm
+`src/controllers/service.controller.js` + `src/routes/service.routes.js` mevcut.
+Handler'lar: `getBySalon`, `create`, `getById`, `update`, `remove`.
+Salon alt rotası: `GET/POST /salons/:salonId/services`.
 
-1. `service.controller.js` dosyasını oluştur
-2. `service.routes.js` dosyasını oluştur
-3. Test et
+## Testler
+`tests/service-staff.test.js` — POST/GET/PATCH/DELETE + yetki (owner vs başkası) senaryoları.
+
+## Kalan
+- `isActive` soft delete davranışı test edilmiyor.

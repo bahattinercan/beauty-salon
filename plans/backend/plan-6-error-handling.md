@@ -1,28 +1,13 @@
-# Plan 6: Error Handling Eksikliği
+# Plan 6: Error Handling
 
-## Problem
-Hata yönetimi eksik. Hata yönetimi eksik.
+## Durum: ✅ tamamlandı
 
-## Çözüm
+`src/middlewares/errorHandler.js` global olarak bağlı.
+Kapsanan hata tipleri: SequelizeValidationError, UniqueConstraint, ForeignKey,
+express-validator, Multer LIMIT_FILE_SIZE, generic (statusCode).
+Stack yalnızca `NODE_ENV=development`'ta dönüyor.
 
-1. Error handling oluştur
-2. Hata yönetimi oluştur
-3. Test et
-
-## Çözüm
-
-1. Error handling oluştur
-2. Hata yönetimi oluştur
-3. Test et
-
-## Çözüm
-
-1. Error handling oluştur
-2. Hata yönetimi oluştur
-3. Test et
-
-## Çözüm
-
-1. Error handling oluştur
-2. Hata yönetimi oluştur
-3. Test et
+## Kalan
+- 404 handler yok: bilinmeyen bir route Express'in default 404 HTML'ine düşüyor
+  (`GET /api/v1/olmayan-route` → JSON değil).
+- `err.statusCode` set eden yer yok; controller'lar genelde doğrudan `res.status(...)` kullanıyor.

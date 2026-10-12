@@ -1,40 +1,12 @@
-# Plan 2: Category Controller Eksikliği
+# Plan 2: Category Controller
 
-## Problem
-`/categories` endpoint'leri eksik. Category controller'da `getCategories`, `createCategory`, `updateCategory`, `deleteCategory` fonksiyonları eksik.
+## Durum: ✅ tamamlandı
 
-## Çözüm
+`src/controllers/category.controller.js` + `src/routes/category.routes.js` mevcut.
+Handler'lar: `getCategories`, `createCategory`, `updateCategory`, `deleteCategory`.
 
-1. `category.controller.js` dosyasını oluştur
-2. `category.routes.js` dosyasını oluştur
-3. Test et
+## Testler
+`tests/category.test.js`.
 
-## Çözüm
-
-1. `category.controller.js` dosyasını oluştur
-2. `category.routes.js` dosyasını oluştur
-3. Test et
-
-## Çözüm
-
-1. `category.controller.js` dosyasını oluştur
-2. `category.routes.js` dosyasını oluştur
-3. Test et
-
-## Çözüm
-
-1. `category.controller.js` dosyasını oluştur
-2. `category.routes.js` dosyasını oluştur
-3. Test et
-
-## Çözüm
-
-1. `category.controller.js` dosyasını oluştur
-2. `category.routes.js` dosyasını oluştur
-3. Test et
-
-## Çözüm
-
-1. `category.controller.js` dosyasını oluştur
-2. `category.routes.js` dosyasını oluştur
-3. Test et
+## Kalan
+- Kategori silme, bağlı hizmetler varken ne yapıyor? (FK davranışı test edilmiyor)

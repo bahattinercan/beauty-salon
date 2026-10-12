@@ -1,28 +1,14 @@
-# Plan 4: Notification Controller Eksikliği
+# Plan 4: Notification Controller
 
-## Problem
-`/notifications` endpoint'leri eksik. Bildirim yönetimi yok.
+## Durum: ✅ tamamlandı (backend), customer_app tarafı uygulandı
 
-## Çözüm
+`src/controllers/notification.controller.js` + route mevcut.
+Handler'lar: `getMyNotifications`, `getUnreadCount`, `markRead`, `markAllRead`, `create`.
 
-1. `notification.controller.js` dosyasını oluştur
-2. `notification.routes.js` dosyasını oluştur
-3. Test et
+## Testler
+`tests/notification.test.js`.
 
-## Çözüm
-
-1. `notification.controller.js` dosyasını oluştur
-2. `notification.routes.js` dosyasını oluştur
-3. Test et
-
-## Çözüm
-
-1. `notification.controller.js` dosyasını oluştur
-2. `notification.routes.js` dosyasını oluştur
-3. Test et
-
-## Çözüm
-
-1. `notification.controller.js` dosyasını oluştur
-2. `notification.routes.js` dosyasını oluştur
-3. Test et
+## Kalan
+- Bildirim üretimi (randevu oluşturma/iptal, yorum) otomatik olarak tetiklenmiyor;
+  `Appointment` create/cancel akışında `Notification.create` çağrısı yok.
+- `apps/salon_app` bildirim ekranı yok.

@@ -1,28 +1,13 @@
-# Plan 5: Test Eksikliği
+# Plan 5: Test Eksikleri
 
-## Problem
-Test dosyaları eksik. Test dosyaları eksik.
+## Durum: ✅ tamamlandı
 
-## Çözüm
+Önceki durum: suite çalışmıyordu (syntax hatası + 124 geçersiz assertion).
+Şimdi: 11 test dosyası, **243 test, 0 failing** (`npm test`).
 
-1. Test dosyaları oluştur
-2. Test dosyaları oluştur
-3. Test et
+Kapsanan alanlar: auth, user, salon, service+staff, appointment, review, favorite,
+category, product, notification, admin dashboard.
 
-## Çözüm
-
-1. Test dosyaları oluştur
-2. Test dosyaları oluştur
-3. Test et
-
-## Çözüm
-
-1. Test dosyaları oluştur
-2. Test dosyaları oluştur
-3. Test et
-
-## Çözüm
-
-1. Test dosyaları oluştur
-2. Test dosyaları oluştur
-3. Test et
+## Kalan
+- `POST /upload/single` ve `/upload/multiple` testi yok
+- OTP akışının "confirm" kısmı salon testlerinde kısmen var; SMS yolu test edilmiyor

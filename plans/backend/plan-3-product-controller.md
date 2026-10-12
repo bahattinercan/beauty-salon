@@ -1,34 +1,12 @@
-# Plan 3: Product Controller Eksikliği
+# Plan 3: Product Controller
 
-## Problem
-`/products` endpoint'leri eksik. Ürün yönetimi yok.
+## Durum: ✅ tamamlandı (backend), ⚠️ UI tarafı boş
 
-## Çözüm
+`src/controllers/product.controller.js` + `src/routes/product.routes.js` mevcut.
+Handler'lar: `getBySalon`, `getById`, `create`, `update`, `remove`.
 
-1. `product.controller.js` dosyasını oluştur
-2. `product.routes.js` dosyasını oluştur
-3. Test et
+## Testler
+`tests/product.test.js`.
 
-## Çözüm
-
-1. `product.controller.js` dosyasını oluştur
-2. `product.routes.js` dosyasını oluştur
-3. Test et
-
-## Çözüm
-
-1. `product.controller.js` dosyasını oluştur
-2. `product.routes.js` dosyasını oluştur
-3. Test et
-
-## Çözüm
-
-1. `product.controller.js` dosyasını oluştur
-2. `product.routes.js` dosyasını oluştur
-3. Test et
-
-## Çözüm
-
-1. `product.controller.js` dosyasını oluştur
-2. `product.routes.js` dosyasını oluştur
-3. Test et
+## Kalan
+- `apps/salon_app` ve `apps/customer_app` tarafında ürün ekranı yok; endpoint'lar kullanılmıyor.
