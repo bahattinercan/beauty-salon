@@ -29,16 +29,16 @@ class _SalonReviewsScreenState extends ConsumerState<SalonReviewsScreen> {
       body: reviewsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(s.errorMsg('$e'), style: const TextStyle(color: Colors.red))),
-        data: (reviews) {
+        data: (feed) {
           final filtered = switch (_filter) {
-            'unreplied' => reviews.where((r) => !r.hasReply).toList(),
-            'replied' => reviews.where((r) => r.hasReply).toList(),
-            _ => reviews,
+            'unreplied' => feed.reviews.where((r) => !r.hasReply).toList(),
+            'replied' => feed.reviews.where((r) => r.hasReply).toList(),
+            _ => feed.reviews,
           };
           final salon = salonAsync.asData?.value;
           final avgRating = salon?.ratingAvg ?? 0.0;
-          final totalCount = salon?.reviewCount ?? reviews.length;
-          final unrepliedCount = reviews.where((r) => !r.hasReply).length;
+          final totalCount = salon?.reviewCount ?? feed.total;
+          final unrepliedCount = feed.reviews.where((r) => !r.hasReply).length;
 
           return RefreshIndicator(
             onRefresh: () => ref.read(reviewsProvider.notifier).refresh(),
@@ -75,8 +75,19 @@ class _SalonReviewsScreenState extends ConsumerState<SalonReviewsScreen> {
                       ? Center(child: Text(s.noReviewsFound, style: TextStyle(color: c.textSecondary)))
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: filtered.length,
+                          itemCount: filtered.length + (feed.hasMore ? 1 : 0),
                           itemBuilder: (context, index) {
+                            if (index == filtered.length) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Center(
+                                  child: TextButton(
+                                    onPressed: () => ref.read(reviewsProvider.notifier).loadMore(),
+                                    child: Text('${s.loadMore} (${feed.total - filtered.length})'),
+                                  ),
+                                ),
+                              );
+                            }
                             final review = filtered[index];
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 12),

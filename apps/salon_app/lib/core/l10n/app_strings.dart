@@ -149,6 +149,11 @@ class S {
   String get reviewsUnanswered  => isEn ? 'Unanswered'               : 'Yanıtsız';
   String get reviewsAnswered    => isEn ? 'Answered'                 : 'Yanıtlı';
   String get noReviewsFound     => isEn ? 'No reviews found'         : 'Yorum bulunamadı';
+  String get loadMore          => isEn ? 'Load more'                : 'Daha fazla göster';
+  String get photos            => isEn ? 'Photos'                   : 'Fotoğraflar';
+  String get addPhotos         => isEn ? 'Add photos'               : 'Fotoğraf ekle';
+  String get noPhotos          => isEn ? 'No photos yet'            : 'Henüz fotoğraf yok';
+  String get photosAdded       => isEn ? 'Photos added'             : 'Fotoğraflar eklendi';
   String replyDialogTitle(String name) =>
       isEn ? 'Reply to $name' : '$name için yanıt';
   String get replyHint          => isEn ? 'Write your reply...'      : 'Yanıtınızı yazın...';

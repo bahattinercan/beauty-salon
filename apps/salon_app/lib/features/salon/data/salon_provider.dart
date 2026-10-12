@@ -39,6 +39,9 @@ class SalonInfo {
   final int reviewCount;
   final Map<String, WorkingDay> workingHours;
   final bool isVerified;
+  final String? logoUrl;
+  final String? coverImageUrl;
+  final List<String> galleryImages;
 
   const SalonInfo({
     required this.id,
@@ -51,6 +54,9 @@ class SalonInfo {
     required this.reviewCount,
     required this.workingHours,
     this.isVerified = false,
+    this.logoUrl,
+    this.coverImageUrl,
+    this.galleryImages = const [],
   });
 
   factory SalonInfo.fromJson(Map<String, dynamic> j) {
@@ -74,6 +80,12 @@ class SalonInfo {
       reviewCount: (j['reviewCount'] as num?)?.toInt() ?? 0,
       workingHours: hours,
       isVerified: (j['isVerified'] as bool?) ?? false,
+      logoUrl: j['logoUrl']?.toString(),
+      coverImageUrl: j['coverImageUrl']?.toString(),
+      galleryImages: (j['galleryImages'] as List<dynamic>? ?? const [])
+          .map((e) => e.toString())
+          .where((e) => e.isNotEmpty)
+          .toList(),
     );
   }
 }

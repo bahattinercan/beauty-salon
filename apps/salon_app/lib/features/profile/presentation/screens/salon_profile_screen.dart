@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_theme_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/l10n/locale_provider.dart';
+import '../../../../core/network/upload_service.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../auth/data/auth_provider.dart';
 import '../../../salon/data/salon_provider.dart';
@@ -68,7 +70,17 @@ class SalonProfileScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
                     ),
-                    child: const Icon(Icons.store_rounded, size: 44, color: Colors.white),
+                    child: salon?.logoUrl != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: Image.network(
+                              salon!.logoUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) =>
+                                  const Icon(Icons.store_rounded, size: 44, color: Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.store_rounded, size: 44, color: Colors.white),
                   ),
                   const SizedBox(height: 14),
                   Text(salon?.name ?? '...', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
@@ -142,6 +154,8 @@ class SalonProfileScreen extends ConsumerWidget {
                   _MenuItem(icon: Icons.description_outlined, title: s.description, subtitle: salon!.description!, onTap: () => _showEditSalonSheet(context, ref, salon)),
                 _MenuItem(icon: Icons.edit_outlined, title: s.editSalonInfo, subtitle: '', onTap: () => _showEditSalonSheet(context, ref, salon)),
               ]),
+              const SizedBox(height: 16),
+              _SalonGallerySection(salon: salon),
               const SizedBox(height: 16),
               _buildSection(context, s.workingHours, c, [
                 ..._buildWorkingHoursItems(salon, s, context, ref),
@@ -451,6 +465,106 @@ class _MenuItem {
   final VoidCallback onTap;
 
   _MenuItem({required this.icon, required this.title, required this.subtitle, required this.onTap});
+}
+
+class _SalonGallerySection extends ConsumerWidget {
+  final SalonInfo? salon;
+  const _SalonGallerySection({required this.salon});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = S.of(context);
+    final c = context.colors;
+    final gallery = salon?.galleryImages ?? const <String>[];
+    final cover = salon?.coverImageUrl;
+    final images = <String>[
+      ?cover,
+      ...gallery,
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.photo_album_outlined, size: 20, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(s.photos, style: const TextStyle(fontWeight: FontWeight.w700)),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () => _addPhotos(context, ref, gallery),
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(s.addPhotos),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (images.isEmpty)
+            Text(s.noPhotos, style: TextStyle(fontSize: 12, color: c.textSecondary))
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final url in images)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Container(
+                        width: 96,
+                        height: 96,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: c.surfaceVariant),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            url,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined, size: 28),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addPhotos(BuildContext context, WidgetRef ref, List<String> existing) async {
+    final s = S.of(context);
+    final picked = await ImagePicker().pickMultiImage(limit: 5);
+    if (picked.isEmpty) return;
+
+    try {
+      final urls = await UploadService().uploadImages(picked);
+      if (urls.isEmpty) return;
+      await ref.read(salonProvider.notifier).updateInfo({
+        'galleryImages': [...existing, ...urls],
+        if (existing.isEmpty) 'coverImageUrl': urls.first,
+      });
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${s.photosAdded} (${urls.length})')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.error),
+        );
+      }
+    }
+  }
 }
 
 class _SalonEditSheet extends StatefulWidget {
