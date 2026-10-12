@@ -1,0 +1,28 @@
+# Bağımlılıklar
+node_modules/
+
+# Ortam / gizli
+.env
+.env.*
+!.env.example
+
+# Veritabanı dosyaları
+*.sqlite
+
+# Yüklenen kullanıcı dosyaları
+uploads/
+
+# Log
+*.log
+
+# Yerel araç/editör verisi
+.pi-glla/
+.claude/settings.local.json
+
+# Flutter / Dart build artefaktları
+build/
+.dart_tool/
+
+# İşletim sistemi
+.DS_Store
+Thumbs.db
