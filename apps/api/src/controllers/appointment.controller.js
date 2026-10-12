@@ -13,29 +13,21 @@ const create = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Hizmet bulunamadı' });
     }
 
-    // 2. Çalışanın bu hizmeti sunup sunmadığı
-    const staffService = await StaffService.findOne({
-      where: { staffId, serviceId },
-    });
-    if (!staffService) {
-      return res.status(400).json({ success: false, message: 'Bu çalışan seçilen hizmeti sunmuyor' });
-    }
-
-    // 3. Geçmiş tarih kontrolü
+    // 2. Geçmiş tarih kontrolü
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (new Date(date) < today) {
       return res.status(400).json({ success: false, message: 'Geçmiş bir tarihe randevu alınamaz' });
     }
 
-    // 4. End time hesapla
+    // 3. End time hesapla
     const [startH, startM] = startTime.split(':').map(Number);
     const totalMinutes = startH * 60 + startM + service.durationMinutes;
     const endH = Math.floor(totalMinutes / 60);
     const endM = totalMinutes % 60;
     const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
 
-    // 5. Salon çalışma saatleri kontrolü
+    // 4. Salon çalışma saatleri kontrolü
     const salon = await Salon.findByPk(salonId);
     if (!salon || !salon.isActive || !salon.isVerified) {
       return res.status(404).json({ success: false, message: 'Salon bulunamadı veya aktif değil' });
@@ -57,27 +49,61 @@ const create = async (req, res, next) => {
       }
     }
 
-    // 6. Çakışma kontrolü
-    const conflicting = await Appointment.findOne({
-      where: {
-        staffId,
-        date,
-        status: { [Op.in]: ['PENDING', 'CONFIRMED'] },
-        [Op.or]: [
-          { startTime: { [Op.lt]: endTime }, endTime: { [Op.gt]: startTime } },
-        ],
-      },
-    });
+    // 5. Çalışan seçimi
+    //    staffId verilmediyse ("herhangi bir çalışan") bu hizmeti sunan,
+    //    salona ait ve seçilen saatte boş olan ilk çalışan atanır.
+    const serviceStaffIds = (await StaffService.findAll({ where: { serviceId } })).map((ss) => ss.staffId);
+    const candidates = serviceStaffIds.length
+      ? await Staff.findAll({
+          where: { id: serviceStaffIds, salonId, isActive: true },
+          order: [['fullName', 'ASC']],
+        })
+      : [];
 
-    if (conflicting) {
+    if (staffId) {
+      const chosen = candidates.find((c) => c.id === staffId);
+      if (!chosen) {
+        return res.status(400).json({ success: false, message: 'Bu çalışan seçilen hizmeti sunmuyor' });
+      }
+    }
+
+    const isFree = async (candidateId) => {
+      const conflicting = await Appointment.findOne({
+        where: {
+          staffId: candidateId,
+          date,
+          status: { [Op.in]: ['PENDING', 'CONFIRMED'] },
+          [Op.or]: [
+            { startTime: { [Op.lt]: endTime }, endTime: { [Op.gt]: startTime } },
+          ],
+        },
+      });
+      return !conflicting;
+    };
+
+    let resolvedStaffId = staffId;
+    if (!resolvedStaffId) {
+      for (const candidate of candidates) {
+        if (await isFree(candidate.id)) {
+          resolvedStaffId = candidate.id;
+          break;
+        }
+      }
+      if (!resolvedStaffId) {
+        return res.status(409).json({
+          success: false,
+          message: 'Bu hizmeti sunan hiçbir çalışan seçilen saatte boş değil',
+        });
+      }
+    } else if (!(await isFree(resolvedStaffId))) {
       return res.status(409).json({ success: false, message: 'Seçilen saatte çalışanın başka bir randevusu var (saat çakışması)' });
     }
 
-    // 7. Randevu oluştur
+    // 6. Randevu oluştur
     const appointment = await Appointment.create({
       customerId: req.user.id,
       salonId,
-      staffId,
+      staffId: resolvedStaffId,
       serviceId,
       date,
       startTime,

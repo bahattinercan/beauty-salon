@@ -33,7 +33,7 @@ async function makeAppointment(status, customer, salon, staff, service) {
 
 describe('Appointment API', () => {
   let data;
-  let customer, owner1, salon1, staff1, service1;
+  let customer, owner1, salon1, staff1, staff2, service1;
   let customerToken;
 
   before(async () => {
@@ -43,6 +43,7 @@ describe('Appointment API', () => {
     owner1 = data.users.owner1;
     salon1 = data.salons.salon1;
     staff1 = data.staff.staff1;
+    staff2 = data.staff.staff2;
     service1 = data.services.service1;
     customerToken = createToken(customer);
   });
@@ -121,6 +122,59 @@ describe('Appointment API', () => {
 
       expect(res.body).to.have.property('success', false);
       expect(res.body.message).to.include('sunmuyor');
+    });
+
+    it('should assign any available staff when staffId is omitted', async () => {
+      const d = new Date();
+      d.setDate(d.getDate() + 5);
+      const dateStr = d.toISOString().split('T')[0];
+
+      const res = await supertest(app)
+        .post('/api/v1/appointments')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          salonId: salon1.id,
+          serviceId: data.services.service3.id,
+          date: dateStr,
+          startTime: '15:00',
+        });
+
+      expect(res.body).to.have.property('success', true);
+      expect(res.body.data.staffId).to.exist;
+      expect([staff1.id, staff2.id]).to.include(res.body.data.staffId);
+    });
+
+    it('should return 409 when no staff offering the service is free', async () => {
+      const { Appointment } = require('../src/models');
+      const d = new Date();
+      d.setDate(d.getDate() + 6);
+      const dateStr = d.toISOString().split('T')[0];
+
+      for (const staff of [staff1, staff2]) {
+        await Appointment.create({
+          customerId: customer.id,
+          salonId: salon1.id,
+          staffId: staff.id,
+          serviceId: data.services.service3.id,
+          date: dateStr,
+          startTime: '14:00:00',
+          endTime: '14:45:00',
+          status: 'CONFIRMED',
+        });
+      }
+
+      const res = await supertest(app)
+        .post('/api/v1/appointments')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          salonId: salon1.id,
+          serviceId: data.services.service3.id,
+          date: dateStr,
+          startTime: '14:00',
+        });
+
+      expect(res.status).to.equal(409);
+      expect(res.body).to.have.property('success', false);
     });
 
     it('should return 400 when date is in the past', async () => {
