@@ -143,6 +143,8 @@ const STAFF = [
   { salonIndex: 0, fullName: 'Elif Öztürk', title: 'Tırnak Tasarımcısı', bio: 'Nail art ve protez tırnak uzmanı' },
   { salonIndex: 1, fullName: 'Ceren Yıldız', title: 'Saç Boyama Uzmanı', bio: 'Renk teorisi ve modern boya teknikleri uzmanı' },
   { salonIndex: 1, fullName: 'Büşra Çelik', title: 'Güzellik Uzmanı', bio: 'Makyaj ve cilt bakımı sertifikası' },
+  { salonIndex: 6, fullName: 'Deniz Aksoy', title: 'Epilasyon Uzmanı', bio: 'Lazer ve klasik epilasyonda 8 yıllık deneyim' },
+  { salonIndex: 7, fullName: 'Murat Şahin', title: 'Masaj Terapisti', bio: 'Klasik masaj, aromaterapi ve refleksoloji sertifikalı' },
 ];
 
 const SERVICES = [
@@ -157,6 +159,11 @@ const SERVICES = [
   { salonIndex: 1, name: 'Keratin Bakımı', category: 'Saç', description: 'Uzun ömürlü düzleştirme ve parlaklık', price: 800, durationMinutes: 150, staff: ['Ceren Yıldız'] },
   { salonIndex: 1, name: 'Gelin Makyajı', category: 'Makyaj', description: 'Özel gün makyajı paketi', price: 1500, durationMinutes: 90, staff: ['Büşra Çelik'] },
   { salonIndex: 1, name: 'Anti-Aging Bakım', category: 'Cilt Bakımı', description: 'Yaşlanma karşıtı özel cilt bakımı', price: 650, durationMinutes: 75, staff: ['Büşra Çelik'] },
+  { salonIndex: 6, name: 'Bacak Epilasyon', category: 'Epilasyon', description: 'Tüm bacak ağda uygulaması', price: 400, durationMinutes: 60, staff: ['Deniz Aksoy'] },
+  { salonIndex: 6, name: 'Brazilyan Epilasyon', category: 'Epilasyon', description: 'Detaylı bölge ağda uygulaması', price: 700, durationMinutes: 90, staff: ['Deniz Aksoy'] },
+  { salonIndex: 6, name: 'Lazer Epilasyon', category: 'Epilasyon', description: 'Kalıcı çözüm için 8 seanslık lazer programı', price: 1200, durationMinutes: 45, staff: ['Deniz Aksoy'] },
+  { salonIndex: 7, name: 'Klasik Masaj', category: 'SPA & Masaj', description: 'Sırt, boyun ve bacak masajı', price: 600, durationMinutes: 60, staff: ['Murat Şahin'] },
+  { salonIndex: 7, name: 'Aromaterapi Masajı', category: 'SPA & Masaj', description: 'Doğal yağlarla rahatlattıcı masaj', price: 750, durationMinutes: 90, staff: ['Murat Şahin'] },
 ];
 
 const REVIEWS = [
@@ -165,6 +172,10 @@ const REVIEWS = [
   { salonIndex: 0, service: 'Cilt Bakımı', staff: 'Selin Arslan', daysAgo: 22, startTime: '11:00:00', endTime: '12:00:00', rating: 5, comment: 'Cilt bakımı sonrası yüzüm inanılmaz ferahladı. Selin Hanım çok profesyonel.', reply: null },
   { salonIndex: 0, service: 'Manikür', staff: 'Elif Öztürk', daysAgo: 35, startTime: '14:00:00', endTime: '14:45:00', rating: 4, comment: 'Manikür çok özenli yapıldı, tırnaklar mükemmel görünüyor.', reply: 'Güzel yorumunuz için teşekkürler! 🌸' },
   { salonIndex: 0, service: 'Profesyonel Makyaj', staff: 'Selin Arslan', daysAgo: 50, startTime: '09:00:00', endTime: '10:00:00', rating: 5, comment: 'Nişan makyajım için geldim, herkes çok beğendi. Ellerine sağlık!', reply: 'Tebrikler! Mutlu günlerinizde yanınızda olmak çok güzeldi. ✨' },
+  { salonIndex: 6, service: 'Lazer Epilasyon', staff: 'Deniz Aksoy', daysAgo: 8, startTime: '11:00:00', endTime: '11:45:00', rating: 5, comment: '3. seansım, belirgin fark var. Deniz Hanım çok titiz çalışıyor.', reply: 'Memnuniyetiniz bizim için çok değerli! 🌟' },
+  { salonIndex: 6, service: 'Bacak Epilasyon', staff: 'Deniz Aksoy', daysAgo: 19, startTime: '15:30:00', endTime: '16:30:00', rating: 4, comment: 'Hızlı ve temiz bir hizmet, ağda sonrası kızarıklık hemen geçti.', reply: null },
+  { salonIndex: 7, service: 'Klasik Masaj', staff: 'Murat Şahin', daysAgo: 11, startTime: '17:00:00', endTime: '18:00:00', rating: 5, comment: 'Sırt ağrılarım tamamen geçti, ortam çok huzurlu.', reply: 'Teşekkür ederiz, tekrar bekleriz. 🌿' },
+  { salonIndex: 7, service: 'Aromaterapi Masajı', staff: 'Murat Şahin', daysAgo: 27, startTime: '13:00:00', endTime: '14:30:00', rating: 4, comment: 'Yağların kokusu ve uygulama çok güzeldi, fiyat biraz yüksek.', reply: null },
 ];
 
 const pastDate = (daysAgo) => {
