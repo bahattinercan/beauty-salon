@@ -15,8 +15,6 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
-type IconType = "scissors" | "brush" | "sparkles" | "palette" | "zap" | "flower";
-
 interface ApiCategory {
   id: string;
   name: string;
@@ -30,7 +28,7 @@ interface Category {
   id: string;
   name: string;
   description: string;
-  icon: IconType;
+  icon: string;
   serviceCount: number;
   isActive: boolean;
 }
@@ -38,36 +36,34 @@ interface Category {
 interface FormData {
   name: string;
   description: string;
-  icon: IconType;
+  icon: string;
   isActive: boolean;
 }
 
-const getIcon = (iconType: IconType) => {
-  switch (iconType) {
-    case "scissors":
-      return Scissors;
-    case "brush":
-      return Brush;
-    case "sparkles":
-      return Sparkles;
-    case "palette":
-      return Palette;
-    case "zap":
-      return Zap;
-    case "flower":
-      return Flower;
-    default:
-      return Scissors;
-  }
+// DB'deki iconName değerleri (content_cut, face, spa, self_improvement...)
+// seed'daki isimlerle birebir eşleşiyor; UI ikonlarına map'leniyor.
+const ICON_MAP: Record<string, typeof Scissors> = {
+  scissors: Scissors,
+  content_cut: Scissors,
+  brush: Brush,
+  sparkles: Sparkles,
+  face: Sparkles,
+  palette: Palette,
+  zap: Zap,
+  flower: Flower,
+  spa: Flower,
+  self_improvement: Zap,
 };
 
-const iconOptions: { value: IconType; label: string }[] = [
-  { value: "scissors", label: "Saç" },
+const getIcon = (iconName: string) => ICON_MAP[iconName] ?? Scissors;
+
+const iconOptions: { value: string; label: string }[] = [
+  { value: "content_cut", label: "Saç" },
   { value: "brush", label: "Tırnak" },
-  { value: "sparkles", label: "Cilt Bakımı" },
+  { value: "face", label: "Cilt Bakımı" },
   { value: "palette", label: "Makyaj" },
-  { value: "zap", label: "Epilasyon" },
-  { value: "flower", label: "SPA" },
+  { value: "spa", label: "Epilasyon" },
+  { value: "self_improvement", label: "SPA & Masaj" },
 ];
 
 export default function CategoriesPage() {
@@ -85,7 +81,7 @@ export default function CategoriesPage() {
           id: c.id,
           name: c.name,
           description: c.description ?? "",
-          icon: (c.iconName as IconType) || "scissors",
+          icon: c.iconName ?? "scissors",
           serviceCount: c.serviceCount ?? 0,
           isActive: c.isActive ?? true,
         }))
@@ -105,7 +101,7 @@ export default function CategoriesPage() {
   const [formData, setFormData] = useState<FormData>({
     name: "",
     description: "",
-    icon: "scissors",
+    icon: "content_cut",
     isActive: true,
   });
 
@@ -115,7 +111,7 @@ export default function CategoriesPage() {
     setFormData({
       name: "",
       description: "",
-      icon: "scissors",
+      icon: "content_cut",
       isActive: true,
     });
     setIsModalOpen(true);
@@ -140,7 +136,7 @@ export default function CategoriesPage() {
     setFormData({
       name: "",
       description: "",
-      icon: "scissors",
+      icon: "content_cut",
       isActive: true,
     });
   };
@@ -169,7 +165,7 @@ export default function CategoriesPage() {
                   ...cat,
                   name: res.data.name,
                   description: res.data.description ?? "",
-                  icon: (res.data.iconName as IconType) || cat.icon,
+                  icon: res.data.iconName ?? cat.icon,
                   isActive: res.data.isActive ?? cat.isActive,
                 }
               : cat
@@ -186,7 +182,7 @@ export default function CategoriesPage() {
             id: res.data.id,
             name: res.data.name,
             description: res.data.description ?? "",
-            icon: (res.data.iconName as IconType) || "scissors",
+            icon: res.data.iconName ?? "scissors",
             serviceCount: res.data.serviceCount ?? 0,
             isActive: res.data.isActive ?? true,
           },
@@ -407,7 +403,7 @@ export default function CategoriesPage() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      icon: e.target.value as IconType,
+                      icon: e.target.value,
                     })
                   }
                   className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
