@@ -143,7 +143,23 @@ Kalan: yok — seed ve DB sync sorunları kapatıldı (aşağıdaki "Seed & DB s
 - Doğrulama: `GET /categories` → serviceCount 5/2/2/2/0/0 (toplam 11 =
   seeded hizmet sayısı).
 
+### Admin panel → API E2E doğrulaması (2026-10-13)
+
+Headless Chrome (CDP, puppeteer yok) ile admin panel gerçekten çalıştırıldı:
+login formu, kategori create/toggle/delete, settings PUT, randevu
+"Tamamla" aksiyonu — hepsi API'de doğrulandı.
+
+Bu sırada bulunan gerçek bug: **CORS**. `app.js`'teki origin listesi
+sabit `3000/3001/8080` idi ve `methods` içinde `PUT` yoktu. Admin panel
+başka bir portta çalıştığında tüm istekler `Failed to fetch` ile
+ düşüyordu. Artık `ALLOWED_ORIGINS` env'i + development'ta
+ `localhost/127.0.0.1:*` kabul ediliyor ve PUT izinli (4 yeni test).
+
+Not: bu makinede 3000 portu başka bir uygulama tarafından kullanılıyor;
+API `PORT=3200` ile test edildi. Admin panel için `apps/admin_panel/.env.example`
+da `NEXT_PUBLIC_API_URL` değeri yazılı.
+
 "> 2026-10-12: SA-004, SA-008, BUG-010, CA-012, CA-014 kapatıldı; upload endpoint'leri
 > (12 test) ve upload middleware hataları düzeltildi. CROSS-003 (loading/empty/error
 > durum bileşenleri), UI-001, ADMIN-001 ve salon app provider testleri kapatıldı.
-> (API 281 test, customer_app 197 test, salon_app 43 test — hepsi geçiyor).
+> (API 285 test, customer_app 197 test, salon_app 43 test — hepsi geçiyor).
