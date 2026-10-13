@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/widgets/state_view.dart';
 import '../../../../core/utils/time_format.dart';
 import '../providers/booking_provider.dart';
 import 'date_strip.dart';
@@ -53,12 +54,7 @@ class DateTimeStep extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         if (state.loadingSlots)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: CircularProgressIndicator(),
-            ),
-          )
+          const SkeletonList(count: 4, itemHeight: 36)
         else if (state.slots.isEmpty)
           Container(
             padding: const EdgeInsets.all(16),

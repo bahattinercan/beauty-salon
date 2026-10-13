@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/widgets/state_view.dart';
 import '../../domain/entities/review.dart';
 import '../../domain/usecases/get_my_reviews_usecase.dart';
 import '../../../../app/route_names.dart';
@@ -36,33 +37,16 @@ class MyReviewsScreen extends ConsumerWidget {
         ),
       ),
       body: reviewsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: colors.error),
-              const SizedBox(height: 12),
-              Text(s.reviewsLoadFailed, style: TextStyle(color: colors.textSecondary)),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(myReviewsProvider),
-                child: Text(s.retry),
-              ),
-            ],
-          ),
+        loading: () => const SkeletonList(count: 3, itemHeight: 110),
+        error: (e, _) => ErrorState(
+          message: '${s.reviewsLoadFailed}: $e',
+          onRetry: () => ref.invalidate(myReviewsProvider),
         ),
         data: (reviews) {
           if (reviews.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.rate_review_outlined, size: 72, color: colors.textHint),
-                  const SizedBox(height: 16),
-                  Text(s.reviewsEmpty, style: TextStyle(fontSize: 16, color: colors.textSecondary)),
-                ],
-              ),
+            return EmptyState(
+              message: s.reviewsEmpty,
+              icon: Icons.rate_review_outlined,
             );
           }
 

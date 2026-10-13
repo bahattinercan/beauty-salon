@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/widgets/state_view.dart';
 import '../providers/salon_detail_provider.dart';
 import '../widgets/rating_summary.dart';
 import '../widgets/review_card.dart';
@@ -20,25 +20,14 @@ class ReviewListWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colors = AppColors.of(context);
     final s = S.of(context);
     final reviewsAsync = ref.watch(salonReviewsProvider(salonId));
 
     return reviewsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(s.reviewsLoadFailed,
-                style: TextStyle(color: colors.textSecondary)),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () => ref.invalidate(salonReviewsProvider(salonId)),
-              child: Text(s.retry),
-            ),
-          ],
-        ),
+      loading: () => const SkeletonList(count: 3, itemHeight: 120),
+      error: (e, _) => ErrorState(
+        message: '${s.reviewsLoadFailed}: $e',
+        onRetry: () => ref.invalidate(salonReviewsProvider(salonId)),
       ),
       data: (page) => ListView(
         padding: const EdgeInsets.all(20),
@@ -50,13 +39,7 @@ class ReviewListWidget extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
           if (page.reviews.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(s.reviewsEmpty,
-                    style: TextStyle(color: colors.textSecondary)),
-              ),
-            )
+            EmptyState(message: s.reviewsEmpty, icon: Icons.rate_review_outlined)
           else
             ...page.reviews.map((review) => ReviewCard(review: review)),
           if (page.loadingMore)

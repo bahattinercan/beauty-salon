@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/widgets/state_view.dart';
 import '../../../salon_discovery/domain/entities/salon_filter.dart';
 import '../../../salon_discovery/presentation/providers/salons_provider.dart';
 import '../providers/favorites_provider.dart';
@@ -29,45 +30,22 @@ class FavoritesScreen extends ConsumerWidget {
         ),
       ),
       body: salonsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text('${s.error}: $e', style: TextStyle(color: colors.error)),
+        loading: () => const SkeletonList(count: 4, itemHeight: 140),
+        error: (e, _) => ErrorState(
+          message: '${s.error}: $e',
+          onRetry: () =>
+              ref.read(salonsProvider(const SalonFilter()).notifier).refresh(),
         ),
         data: (salons) {
           final favorites = salons.where((salon) => favoriteIds.contains(salon.id)).toList();
 
           if (favorites.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.favorite_border, size: 72, color: colors.textHint),
-                  const SizedBox(height: 16),
-                  Text(
-                    s.favoritesEmpty,
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w600, color: colors.textPrimary),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    s.favoritesEmptySub,
-                    style: TextStyle(fontSize: 14, color: colors.textSecondary),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => context.goNamed(RouteNames.discover),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.primary,
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Text(
-                      s.favoritesExplore,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
+            return EmptyState(
+              message: s.favoritesEmpty,
+              subMessage: s.favoritesEmptySub,
+              icon: Icons.favorite_border,
+              actionLabel: s.favoritesExplore,
+              onAction: () => context.goNamed(RouteNames.discover),
             );
           }
 

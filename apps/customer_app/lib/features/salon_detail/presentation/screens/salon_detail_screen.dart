@@ -6,6 +6,7 @@ import '../../../../app/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/extensions/error_extensions.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/widgets/state_view.dart';
 import '../../../favorites/presentation/providers/favorites_provider.dart';
 import '../providers/salon_detail_provider.dart';
 import '../widgets/cover_header.dart';
@@ -51,21 +52,10 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen>
 
     return Scaffold(
       body: salonAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: colors.error),
-              const SizedBox(height: 12),
-              Text('${s.salonLoadFailed}: ${e.displayMessage}', textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(salonDetailProvider(widget.salonId)),
-                child: Text(s.retry),
-              ),
-            ],
-          ),
+        loading: () => const SkeletonList(count: 3, itemHeight: 140),
+        error: (e, _) => ErrorState(
+          message: '${s.salonLoadFailed}: ${e.displayMessage}',
+          onRetry: () => ref.invalidate(salonDetailProvider(widget.salonId)),
         ),
         data: (salon) => CustomScrollView(
           slivers: [

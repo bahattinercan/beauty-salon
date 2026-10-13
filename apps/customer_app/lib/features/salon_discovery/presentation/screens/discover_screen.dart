@@ -10,7 +10,7 @@ import '../providers/location_provider.dart';
 import '../providers/salons_provider.dart';
 import '../widgets/category_chips.dart';
 import '../widgets/discover_salon_card.dart';
-import '../widgets/discover_states.dart';
+import '../../../../core/widgets/state_view.dart';
 import '../widgets/filter_sheet.dart';
 import '../widgets/search_bar.dart';
 
@@ -121,7 +121,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             const SizedBox(height: 16),
             Expanded(
               child: salonsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const SkeletonList(count: 4, itemHeight: 160),
                 error: (e, _) => ErrorState(
                   message: e.displayMessage,
                   onRetry: () => ref.invalidate(salonsProvider(state.filter)),
@@ -129,7 +129,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 data: (_) => results.isEmpty
                     ? EmptyState(
                         message: s.discoverNoResults,
-                        onClear: () {
+                        actionLabel: s.discoverClearFilters,
+                        onAction: () {
                           _searchController.clear();
                           notifier.clear();
                         },

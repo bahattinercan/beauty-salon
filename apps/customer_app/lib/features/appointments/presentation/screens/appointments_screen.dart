@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/widgets/state_view.dart';
 import '../../domain/entities/appointment.dart';
 import '../providers/appointments_provider.dart';
 import '../widgets/appointment_card.dart';
@@ -66,15 +67,14 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen>
   }
 
   Widget _buildAppointmentList(String type) {
-    final colors = AppColors.of(context);
     final s = S.of(context);
     final appointmentsAsync = ref.watch(appointmentsProvider);
 
     return appointmentsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
-        child: Text('${s.appointmentsLoadFailed}: $e',
-            style: TextStyle(color: colors.error)),
+      loading: () => const SkeletonList(count: 3, itemHeight: 90),
+      error: (e, _) => ErrorState(
+        message: '${s.appointmentsLoadFailed}: $e',
+        onRetry: () => ref.read(appointmentsProvider.notifier).refresh(),
       ),
       data: (all) {
         final List<Appointment> items;
@@ -87,35 +87,19 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen>
         }
 
         if (items.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  type == 'cancelled'
-                      ? Icons.cancel_outlined
-                      : Icons.calendar_today_outlined,
-                  size: 64,
-                  color: colors.textHint,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  type == 'upcoming'
-                      ? s.appointmentsNoUpcoming
-                      : type == 'past'
-                          ? s.appointmentsNoPast
-                          : s.appointmentsNoCancelled,
-                  style: TextStyle(fontSize: 16, color: colors.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                if (type == 'upcoming')
-                  TextButton(
-                    onPressed: () => context.goNamed(RouteNames.discover),
-                    child: Text(s.appointmentsExplore,
-                        style: TextStyle(color: colors.primary)),
-                  ),
-              ],
-            ),
+          return EmptyState(
+            message: type == 'upcoming'
+                ? s.appointmentsNoUpcoming
+                : type == 'past'
+                    ? s.appointmentsNoPast
+                    : s.appointmentsNoCancelled,
+            icon: type == 'cancelled'
+                ? Icons.cancel_outlined
+                : Icons.calendar_today_outlined,
+            actionLabel: type == 'upcoming' ? s.appointmentsExplore : null,
+            onAction: type == 'upcoming'
+                ? () => context.goNamed(RouteNames.discover)
+                : null,
           );
         }
 

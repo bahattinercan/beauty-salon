@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/extensions/error_extensions.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/widgets/state_view.dart';
 import '../../../../core/utils/snackbar.dart';
 import '../providers/notifications_provider.dart';
 import '../widgets/notification_list_body.dart';
@@ -76,11 +77,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 children: [
                   switch (async) {
-                    AsyncLoading() => const SizedBox(
-                        height: 120,
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                    AsyncError(:final error) => _ErrorState(
+                    AsyncLoading() => const SkeletonList(count: 3, itemHeight: 70),
+                    AsyncError(:final error) => ErrorState(
                         message: error.displayMessage,
                         onRetry: () => ref.invalidate(notificationsProvider(_filter)),
                       ),
@@ -137,23 +135,3 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _ErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _ErrorState({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final colors = AppColors.of(context);
-
-    return Column(
-      children: [
-        Text(message, textAlign: TextAlign.center, style: TextStyle(color: colors.error)),
-        const SizedBox(height: 12),
-        ElevatedButton(onPressed: onRetry, child: Text(s.retry)),
-      ],
-    );
-  }
-}

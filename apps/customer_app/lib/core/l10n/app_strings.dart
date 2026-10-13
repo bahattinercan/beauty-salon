@@ -160,6 +160,8 @@ class S {
   String get cancel           => isEn ? 'Cancel'             : 'İptal';
   String get confirm          => isEn ? 'Confirm'            : 'Onayla';
   String get retry            => isEn ? 'Retry'              : 'Tekrar Dene';
+  String get errorLoading     => isEn ? 'Something went wrong' : 'Bir şeyler ters gitti';
+  String get noResults        => isEn ? 'No results'           : 'Sonuç bulunamadı';
   String get resendCode       => isEn ? 'Resend Code'        : 'Kodu Tekrar Gönder';
   String get save             => isEn ? 'Save'               : 'Kaydet';
   String get back             => isEn ? 'Back'               : 'Geri';
