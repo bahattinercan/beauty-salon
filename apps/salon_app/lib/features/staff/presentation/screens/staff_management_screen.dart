@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_theme_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/widgets/state_view.dart';
 import '../../data/staff_provider.dart';
 import '../../../services/data/services_provider.dart';
 
@@ -17,12 +18,15 @@ class StaffManagementScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(s.teamManagement)),
       body: staffAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(s.errorMsg('$e'), style: const TextStyle(color: Colors.red))),
+        loading: () => const SkeletonList(count: 4, itemHeight: 90),
+        error: (e, _) => ErrorState(
+          message: s.errorMsg('$e'),
+          onRetry: () => ref.read(staffProvider.notifier).refresh(),
+        ),
         data: (list) => RefreshIndicator(
           onRefresh: () => ref.read(staffProvider.notifier).refresh(),
           child: list.isEmpty
-              ? Center(child: Text(s.noStaffYet, style: TextStyle(color: context.colors.textSecondary)))
+              ? EmptyState(message: s.noStaffYet, icon: Icons.person_add_outlined)
               : ListView.builder(
                   padding: const EdgeInsets.all(20),
                   itemCount: list.length,

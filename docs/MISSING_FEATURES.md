@@ -17,7 +17,7 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 | ⚠️ Kısmen | 4 |
 | ❌ Yapılmadı | 4 |
 
-**Gerçekten açık olan işler:** ADMIN-001 (kapsam kararı), CROSS-003 (loading state tutarlılığı), UI-001 (servis listesinde description), salon app provider/widget testleri.
+**Gerçekten açık olan işler:** ADMIN-001 (kapsam kararı), UI-001 (servis listesinde description), salon app provider/widget testleri.
 
 ---
 
@@ -90,7 +90,7 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 |----|-------|-------|-----|
 | CROSS-001 | Test coverage | ⚠️ | API: 257 test ✅ (upload endpoint'leri dahil). customer_app: 194 test ✅. salon_app: 24 test (model ağırlıklı; widget/provider testleri zayıf). | |
 | CROSS-002 | Error handling tutarlılığı | ✅ | `errorHandler.js` Sequelize/validator/multer hatalarını tek formatta döndürüyor |
-| CROSS-003 | Loading state tutarlılığı | ❌ | Flutter ekranlarında tutarlı skeleton/empty state yok |
+| CROSS-003 | Loading state tutarlılığı | ✅ | `core/widgets/state_view.dart` (iki app): `Skeleton`/`SkeletonList`, `EmptyState`, `ErrorState` (retry), `AsyncStateView<T>` |
 
 ---
 
@@ -117,7 +117,7 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 
 ## Sıradaki işler
 
-1. **CROSS-003** — Flutter ekranlarında tutarlı skeleton/empty state
+1. ~~CROSS-003~~ tamamlandı (2026-10-12)
 2. **UI-001** — servis listesinde description gösterimi
 3. Salon app provider/widget testleri
 4. `errorHandler`'a 404 fallback (bilinmeyen route JSON dönmüyor)

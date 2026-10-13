@@ -6,6 +6,7 @@ import '../../../../app/theme/app_theme_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../salon/data/salon_provider.dart';
 import '../../data/reviews_provider.dart';
+import '../../../../core/widgets/state_view.dart';
 
 class SalonReviewsScreen extends ConsumerStatefulWidget {
   const SalonReviewsScreen({super.key});
@@ -27,8 +28,11 @@ class _SalonReviewsScreenState extends ConsumerState<SalonReviewsScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(s.reviewsTitle)),
       body: reviewsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(s.errorMsg('$e'), style: const TextStyle(color: Colors.red))),
+        loading: () => const SkeletonList(count: 4, itemHeight: 110),
+        error: (e, _) => ErrorState(
+          message: s.errorMsg('$e'),
+          onRetry: () => ref.read(reviewsProvider.notifier).refresh(),
+        ),
         data: (feed) {
           final filtered = switch (_filter) {
             'unreplied' => feed.reviews.where((r) => !r.hasReply).toList(),

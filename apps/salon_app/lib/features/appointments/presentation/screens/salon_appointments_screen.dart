@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_theme_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/widgets/state_view.dart';
 import '../../data/appointments_provider.dart';
 
 class SalonAppointmentsScreen extends ConsumerStatefulWidget {
@@ -85,7 +86,7 @@ class _SalonAppointmentsScreenState extends ConsumerState<SalonAppointmentsScree
                     return Text(s.appointmentCount(filtered.length),
                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600));
                   },
-                  loading: () => const Text('...'),
+                  loading: () => const Skeleton(width: 120, height: 20),
                   error: (_, _) => const SizedBox(),
                 ),
               ],
@@ -112,13 +113,17 @@ class _SalonAppointmentsScreenState extends ConsumerState<SalonAppointmentsScree
           ),
           Expanded(
             child: apptAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text(s.errorMsg('$e'), style: const TextStyle(color: Colors.red))),
+              loading: () => const SkeletonList(count: 4, itemHeight: 90),
+              error: (e, _) => ErrorState(
+                message: s.errorMsg('$e'),
+                onRetry: () => ref.read(salonAppointmentsProvider.notifier).refresh(),
+              ),
               data: (list) {
                 final filtered = _filterList(list);
                 if (filtered.isEmpty) {
-                  return Center(
-                    child: Text(s.noAppointmentsForDate, style: TextStyle(color: c.textSecondary)),
+                  return EmptyState(
+                    message: s.noAppointmentsForDate,
+                    icon: Icons.calendar_today_outlined,
                   );
                 }
                 return RefreshIndicator(

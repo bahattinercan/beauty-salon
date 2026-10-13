@@ -150,6 +150,9 @@ class S {
   String get reviewsAnswered    => isEn ? 'Answered'                 : 'Yanıtlı';
   String get noReviewsFound     => isEn ? 'No reviews found'         : 'Yorum bulunamadı';
   String get loadMore          => isEn ? 'Load more'                : 'Daha fazla göster';
+  String get retry             => isEn ? 'Retry'                  : 'Tekrar dene';
+  String get errorLoading      => isEn ? 'Something went wrong'     : 'Bir şeyler ters gitti';
+  String get noResults         => isEn ? 'No results'               : 'Sonuç bulunamadı';
   String get photos            => isEn ? 'Photos'                   : 'Fotoğraflar';
   String get addPhotos         => isEn ? 'Add photos'               : 'Fotoğraf ekle';
   String get noPhotos          => isEn ? 'No photos yet'            : 'Henüz fotoğraf yok';

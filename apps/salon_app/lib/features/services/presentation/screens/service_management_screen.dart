@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_theme_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/widgets/state_view.dart';
 import '../../data/services_provider.dart';
 
 class ServiceManagementScreen extends ConsumerWidget {
@@ -17,8 +18,11 @@ class ServiceManagementScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(s.serviceManagement)),
       body: servicesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(s.errorMsg('$e'), style: const TextStyle(color: Colors.red))),
+        loading: () => const SkeletonList(count: 4, itemHeight: 90),
+        error: (e, _) => ErrorState(
+          message: s.errorMsg('$e'),
+          onRetry: () => ref.read(servicesProvider.notifier).refresh(),
+        ),
         data: (services) {
           final grouped = <String, List<SalonService>>{};
           for (final svc in services) {
@@ -29,7 +33,7 @@ class ServiceManagementScreen extends ConsumerWidget {
           return RefreshIndicator(
             onRefresh: () => ref.read(servicesProvider.notifier).refresh(),
             child: services.isEmpty
-                ? Center(child: Text(s.noServicesYet, style: TextStyle(color: c.textSecondary)))
+                ? EmptyState(message: s.noServicesYet, icon: Icons.add_circle_outline)
                 : ListView(
                     padding: const EdgeInsets.all(20),
                     children: grouped.entries.map((entry) {
