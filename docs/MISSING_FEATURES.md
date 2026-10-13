@@ -13,8 +13,8 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 
 | Durum | Sayı |
 |-------|------|
-| ✅ Tamamlandı | 49 |
-| ⚠️ Kısmen | 2 |
+| ✅ Tamamlandı | 50 |
+| ⚠️ Kısmen | 1 |
 | ❌ Yapılmadı | 0 |
 
 **Kapandı (2026-10-12):** ADMIN-001, UI-001, salon app provider testleri, 404 fallback testleri.
@@ -88,7 +88,7 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 
 | ID | Madde | Durum | Not |
 |----|-------|-------|-----|
-| CROSS-001 | Test coverage | ⚠️ | API: 257 test ✅ (upload endpoint'leri dahil). customer_app: 194 test ✅. salon_app: 24 test (model ağırlıklı; widget/provider testleri zayıf). | |
+| CROSS-001 | Test coverage | ✅ | API 272, customer_app 197, salon_app 43 test. salon_app'de artık provider (fake Dio) + state-view widget testleri var. |
 | CROSS-002 | Error handling tutarlılığı | ✅ | `errorHandler.js` Sequelize/validator/multer hatalarını tek formatta döndürüyor |
 | CROSS-003 | Loading state tutarlılığı | ✅ | `core/widgets/state_view.dart` (iki app): `Skeleton`/`SkeletonList`, `EmptyState`, `ErrorState` (retry), `AsyncStateView<T>` |
 
