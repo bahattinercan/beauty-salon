@@ -122,7 +122,26 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 3. ~~Salon app provider testleri~~ tamamlandı (15 test)
 4. ~~404 fallback~~ — zaten `app.js`'te JSON 404 dönüyordu; 6 testle doğrulandı
 
-Kalan: dev DB'de `services.category_id` boş olduğu için kategori `serviceCount`'ları 0 görünüyor (seed verisi problemi, kod tarafı doğru).
+Kalan: yok — seed ve DB sync sorunları kapatıldı (aşağıdaki "Seed & DB sync" bölümü).
+
+### Seed & DB sync (2026-10-13)
+
+- **Seed idempotent hale getirildi** (`src/seeders/seed.js`): her kayıt
+  `findOrCreate` ile ekleniyor, aynı seed birden fazla kez çalıştırılabiliyor.
+  Önceki versiyon salon varsa erken `return` yapıyordu ve `phone` unique
+  constraint'ine çarpıp çöküyordu.
+- **Veri onarımı:** `category_id` NULL olan hizmetler yeniden kategorilere
+  bağlanıyor, `salon_id` NULL olan yetim hizmetler siliniyor, salon
+  `ratingAvg`/`reviewCount` değerleri gerçek yorumlardan hesaplanıyor.
+- **`npm run seed:reset`** (`src/seeders/reset.js`): FK sırasına göre tüm
+  tabloları temizleyip baştan seed eder.
+- **`sync({ alter: true })` kaldırıldı** — SQLite'ta alter, tabloyu
+  yeniden oluşturduğu için FK'lerde `SQLITE_CONSTRAINT` hatası veriyor ve
+  `*_backup` yetim tabloları bırakıyordu. Artık `sync()` + `ensureColumns()`
+  (eksik kolonları `ALTER TABLE ... ADD COLUMN` ile ekliyor) +
+  `dropBackupTables()` kullanılıyor.
+- Doğrulama: `GET /categories` → serviceCount 5/2/2/2/0/0 (toplam 11 =
+  seeded hizmet sayısı).
 
 "> 2026-10-12: SA-004, SA-008, BUG-010, CA-012, CA-014 kapatıldı; upload endpoint'leri
 > (12 test) ve upload middleware hataları düzeltildi. CROSS-003 (loading/empty/error

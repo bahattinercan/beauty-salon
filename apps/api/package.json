@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node -e \"require('dotenv').config(); require('./src/config/database').connectDB().then(() => require('./src/seeders/seed')())\"",
+    "seed": "node -e \"require('dotenv').config(); const { connectDB, sequelize, ensureColumns, dropBackupTables } = require('./src/config/database'); connectDB().then(() => sequelize.sync()).then(() => dropBackupTables()).then(() => ensureColumns()).then(() => require('./src/seeders/seed')())\"",
+    "seed:reset": "node -e \"require('dotenv').config(); require('./src/seeders/reset')()\"",
     "test": "node --env-file=.env.test ./node_modules/mocha/bin/mocha \"tests/**/*.test.js\" --timeout 10000 --exit",
     "test:watch": "node --env-file=.env.test ./node_modules/mocha/bin/mocha \"tests/**/*.test.js\" --watch",
     "test:coverage": "NODE_ENV=test nyc mocha 'tests/**/*.test.js' --timeout 10000 --exit",
