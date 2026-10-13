@@ -17,7 +17,7 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 | ⚠️ Kısmen | 4 |
 | ❌ Yapılmadı | 4 |
 
-**Gerçekten açık olan işler:** ADMIN-001 (kapsam kararı), CROSS-003 (loading state tutarlılığı), UI-001 (servis listesinde description), upload endpoint testleri.
+**Gerçekten açık olan işler:** ADMIN-001 (kapsam kararı), CROSS-003 (loading state tutarlılığı), UI-001 (servis listesinde description), salon app provider/widget testleri.
 
 ---
 
@@ -88,7 +88,7 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 
 | ID | Madde | Durum | Not |
 |----|-------|-------|-----|
-| CROSS-001 | Test coverage | ⚠️ | API: 243 test ✅. customer_app: 186 test ✅. salon_app: 22 test (model ağırlıklı; widget/provider testleri zayıf). Upload endpoint'leri test edilmiyor. |
+| CROSS-001 | Test coverage | ⚠️ | API: 257 test ✅ (upload endpoint'leri dahil). customer_app: 194 test ✅. salon_app: 24 test (model ağırlıklı; widget/provider testleri zayıf). | |
 | CROSS-002 | Error handling tutarlılığı | ✅ | `errorHandler.js` Sequelize/validator/multer hatalarını tek formatta döndürüyor |
 | CROSS-003 | Loading state tutarlılığı | ❌ | Flutter ekranlarında tutarlı skeleton/empty state yok |
 
@@ -119,8 +119,9 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 
 1. **CROSS-003** — Flutter ekranlarında tutarlı skeleton/empty state
 2. **UI-001** — servis listesinde description gösterimi
-3. **Upload endpoint testleri** (API) ve salon app provider/widget testleri
+3. Salon app provider/widget testleri
 4. `errorHandler`'a 404 fallback (bilinmeyen route JSON dönmüyor)
 
-> 2026-10-12: SA-004, SA-008, BUG-010, CA-012, CA-014 kapatıldı
-> (API 245 test, customer_app 194 test, salon_app 24 test — hepsi geçiyor).
+> 2026-10-12: SA-004, SA-008, BUG-010, CA-012, CA-014 kapatıldı; upload endpoint'leri
+> (12 test) ve upload middleware hataları düzeltildi.
+> (API 257 test, customer_app 194 test, salon_app 24 test — hepsi geçiyor).
