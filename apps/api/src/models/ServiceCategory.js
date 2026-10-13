@@ -22,6 +22,15 @@ const ServiceCategory = sequelize.define('ServiceCategory', {
     defaultValue: 0,
     field: 'sort_order',
   },
+  description: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    field: 'is_active',
+  },
 }, {
   tableName: 'service_categories',
   timestamps: true,

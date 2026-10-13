@@ -79,6 +79,20 @@ export default function AppointmentsPage() {
     fetchAppointments();
   }, [fetchAppointments]);
 
+  const updateStatus = async (id: string, status: AppointmentStatus) => {
+    try {
+      await apiFetch(`/appointments/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      setAppointments((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status } : a))
+      );
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Durum güncellenemedi");
+    }
+  };
+
   const getStatusColor = (status: AppointmentStatus): string => {
     switch (status) {
       case "PENDING":
@@ -192,6 +206,9 @@ export default function AppointmentsPage() {
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
                     Durum
                   </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    İşlem
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -240,11 +257,31 @@ export default function AppointmentsPage() {
                           {getStatusLabel(apt.status)}
                         </span>
                       </td>
+                      <td className="px-6 py-4">
+                        {apt.status === "COMPLETED" || apt.status === "CANCELLED" ? (
+                          <span className="text-xs text-gray-400">—</span>
+                        ) : (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => updateStatus(apt.id, "COMPLETED")}
+                              className="px-3 py-1 rounded-lg bg-success/10 text-success border border-success/30 text-xs font-semibold hover:bg-success/20"
+                            >
+                              Tamamla
+                            </button>
+                            <button
+                              onClick={() => updateStatus(apt.id, "CANCELLED")}
+                              className="px-3 py-1 rounded-lg bg-error/10 text-error border border-error/30 text-xs font-semibold hover:bg-error/20"
+                            >
+                              İptal
+                            </button>
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                       Randevu bulunamadı
                     </td>
                   </tr>

@@ -9,6 +9,7 @@ const Review = require('./Review');
 const Favorite = require('./Favorite');
 const Product = require('./Product');
 const Notification = require('./Notification');
+const Setting = require('./Setting');
 
 // ==================== İLİŞKİLER ====================
 
@@ -82,4 +83,5 @@ module.exports = {
   Favorite,
   Product,
   Notification,
+  Setting,
 };

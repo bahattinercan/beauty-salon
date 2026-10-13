@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import {
   Settings,
   Lock,
@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Save,
 } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 export default function SettingsPage() {
   // General Settings State
@@ -32,11 +33,47 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // Ayarları API'den yükle
+  useEffect(() => {
+    apiFetch<{ data: Record<string, unknown> }>('/settings')
+      .then(({ data }) => {
+        setPlatformName(String(data.platformName ?? 'Beauty Salon'));
+        setContactEmail(String(data.contactEmail ?? ''));
+        setSupportPhone(String(data.supportPhone ?? ''));
+        setMaxLoginAttempts(Number(data.maxLoginAttempts ?? 5));
+        setTokenDuration(String(data.tokenDuration ?? '30'));
+        setRateLimitingEnabled(Boolean(data.rateLimitingEnabled ?? true));
+        setEmailNotificationsEnabled(Boolean(data.emailNotificationsEnabled ?? true));
+        setNewSalonNotificationsEnabled(Boolean(data.newSalonNotificationsEnabled ?? true));
+        setNewReviewNotificationsEnabled(Boolean(data.newReviewNotificationsEnabled ?? true));
+        setMaintenanceModeEnabled(Boolean(data.maintenanceModeEnabled ?? false));
+      })
+      .catch((err: unknown) => {
+        setSaveMessage({
+          type: 'error',
+          message: err instanceof Error ? err.message : 'Ayarlar yüklenemedi',
+        });
+      });
+  }, []);
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await apiFetch('/settings', {
+        method: 'PUT',
+        body: JSON.stringify({
+          platformName,
+          contactEmail,
+          supportPhone,
+          maxLoginAttempts: Number(maxLoginAttempts),
+          tokenDuration,
+          rateLimitingEnabled,
+          emailNotificationsEnabled,
+          newSalonNotificationsEnabled,
+          newReviewNotificationsEnabled,
+          maintenanceModeEnabled,
+        }),
+      });
 
       setSaveMessage({
         type: 'success',

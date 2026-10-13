@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Scissors,
   Brush,
@@ -13,8 +13,18 @@ import {
   Trash2,
   Plus,
 } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 type IconType = "scissors" | "brush" | "sparkles" | "palette" | "zap" | "flower";
+
+interface ApiCategory {
+  id: string;
+  name: string;
+  iconName: string;
+  description?: string | null;
+  isActive?: boolean;
+  serviceCount?: number;
+}
 
 interface Category {
   id: string;
@@ -31,57 +41,6 @@ interface FormData {
   icon: IconType;
   isActive: boolean;
 }
-
-const mockCategories: Category[] = [
-  {
-    id: "1",
-    name: "Saç",
-    description: "Saç kesim, boyama ve şekillendirme hizmetleri",
-    icon: "scissors",
-    serviceCount: 12,
-    isActive: true,
-  },
-  {
-    id: "2",
-    name: "Tırnak",
-    description: "Manikür, pedikür ve nail art hizmetleri",
-    icon: "brush",
-    serviceCount: 8,
-    isActive: true,
-  },
-  {
-    id: "3",
-    name: "Cilt Bakımı",
-    description: "Cilt temizliği, bakım ve tedavi hizmetleri",
-    icon: "sparkles",
-    serviceCount: 15,
-    isActive: true,
-  },
-  {
-    id: "4",
-    name: "Makyaj",
-    description: "Profesyonel makyaj ve güzellik konsültasyonu",
-    icon: "palette",
-    serviceCount: 6,
-    isActive: true,
-  },
-  {
-    id: "5",
-    name: "Epilasyon",
-    description: "Vücut epilasyon ve hair removal hizmetleri",
-    icon: "zap",
-    serviceCount: 10,
-    isActive: true,
-  },
-  {
-    id: "6",
-    name: "SPA",
-    description: "Masaj, rahatlama ve wellness hizmetleri",
-    icon: "flower",
-    serviceCount: 9,
-    isActive: false,
-  },
-];
 
 const getIcon = (iconType: IconType) => {
   switch (iconType) {
@@ -112,7 +71,35 @@ const iconOptions: { value: IconType; label: string }[] = [
 ];
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>(mockCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadCategories = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiFetch<{ data: ApiCategory[] }>("/categories");
+      setCategories(
+        res.data.map((c) => ({
+          id: c.id,
+          name: c.name,
+          description: c.description ?? "",
+          icon: (c.iconName as IconType) || "scissors",
+          serviceCount: c.serviceCount ?? 0,
+          isActive: c.isActive ?? true,
+        }))
+      );
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Kategoriler yüklenemedi");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
@@ -159,45 +146,85 @@ export default function CategoriesPage() {
   };
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (editingId) {
-      // Update existing category
-      setCategories(
-        categories.map((cat) =>
-          cat.id === editingId
-            ? { ...cat, ...formData }
-            : cat
-        )
-      );
-    } else {
-      // Create new category
-      const newCategory: Category = {
-        id: Date.now().toString(),
-        ...formData,
-        serviceCount: 0,
-      };
-      setCategories([...categories, newCategory]);
-    }
+    const payload = {
+      name: formData.name,
+      iconName: formData.icon,
+      description: formData.description,
+      isActive: formData.isActive,
+    };
 
-    handleCloseModal();
+    try {
+      if (editingId) {
+        const res = await apiFetch<{ data: ApiCategory }>(
+          `/categories/${editingId}`,
+          { method: "PATCH", body: JSON.stringify(payload) }
+        );
+        setCategories(
+          categories.map((cat) =>
+            cat.id === editingId
+              ? {
+                  ...cat,
+                  name: res.data.name,
+                  description: res.data.description ?? "",
+                  icon: (res.data.iconName as IconType) || cat.icon,
+                  isActive: res.data.isActive ?? cat.isActive,
+                }
+              : cat
+          )
+        );
+      } else {
+        const res = await apiFetch<{ data: ApiCategory }>("/categories", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        setCategories([
+          ...categories,
+          {
+            id: res.data.id,
+            name: res.data.name,
+            description: res.data.description ?? "",
+            icon: (res.data.iconName as IconType) || "scissors",
+            serviceCount: res.data.serviceCount ?? 0,
+            isActive: res.data.isActive ?? true,
+          },
+        ]);
+      }
+      handleCloseModal();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Kategori kaydedilemedi");
+    }
   };
 
   // Delete category
-  const handleDelete = (id: string) => {
-    if (confirm("Bu kategoriyi silmek istediğinize emin misiniz?")) {
+  const handleDelete = async (id: string) => {
+    if (!confirm("Bu kategoriyi silmek istediğinize emin misiniz?")) return;
+    try {
+      await apiFetch(`/categories/${id}`, { method: "DELETE" });
       setCategories(categories.filter((cat) => cat.id !== id));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Kategori silinemedi");
     }
   };
 
   // Toggle active status
-  const handleToggleActive = (id: string) => {
-    setCategories(
-      categories.map((cat) =>
-        cat.id === id ? { ...cat, isActive: !cat.isActive } : cat
-      )
-    );
+  const handleToggleActive = async (id: string) => {
+    const current = categories.find((cat) => cat.id === id);
+    try {
+      const res = await apiFetch<{ data: ApiCategory }>(`/categories/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ isActive: !current?.isActive }),
+      });
+      setCategories(
+        categories.map((cat) =>
+          cat.id === id ? { ...cat, isActive: res.data.isActive ?? !cat.isActive } : cat
+        )
+      );
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Durum güncellenemedi");
+    }
   };
 
   return (
@@ -232,7 +259,22 @@ export default function CategoriesPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
+          {error}
+          <button
+            onClick={loadCategories}
+            className="ml-3 underline font-medium"
+          >
+            Tekrar dene
+          </button>
+        </div>
+      )}
+
       {/* Categories Grid */}
+      {loading ? (
+        <p className="text-text-secondary">Kategoriler yükleniyor…</p>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map((category) => {
           const IconComponent = getIcon(category.icon);
@@ -300,6 +342,7 @@ export default function CategoriesPage() {
           );
         })}
       </div>
+      )}
 
       {/* Add/Edit Modal */}
       {isModalOpen && (

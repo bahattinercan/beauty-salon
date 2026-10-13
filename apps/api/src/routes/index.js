@@ -19,6 +19,7 @@ router.get('/', (req, res) => {
       '/api/v1/favorites',
       '/api/v1/notifications',
       '/api/v1/products',
+      '/api/v1/settings',
     ],
   });
 });
@@ -36,6 +37,7 @@ router.use('/upload', require('./upload.routes'));
 router.use('/admin', require('./admin.routes'));
 router.use('/notifications', require('./notification.routes'));
 router.use('/products', require('./product.routes'));
+router.use('/settings', require('./settings.routes'));
 
 // Health check
 router.get('/health', (req, res) => {

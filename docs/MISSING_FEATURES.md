@@ -80,7 +80,7 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 
 | ID | Madde | Durum | Not |
 |----|-------|-------|-----|
-| ADMIN-001 | Admin uygulaması | ✅ | Kapsam Next.js'e çevrildi: `apps/admin_panel/` (dashboard, users, salons, reviews, categories, settings, appointments). `npm run lint` temiz, `npm run build` 9 route üretiyor. `Sidebar.tsx`'teki eksik `return (` düzeltildi. API tarafında 8 admin testi eklendi. |
+| ADMIN-001 | Admin uygulaması | ✅ | Kapsam Next.js'e çevrildi: `apps/admin_panel/` (dashboard, users, salons, reviews, categories, settings, appointments). `Sidebar.tsx`'teki eksik `return (` düzeltildi. **API'ye bağlanan ekranlar:** categories (CRUD + serviceCount), settings (yeni `Setting` modeli, GET/PUT `/settings`), appointments (Tamamla/İptal → `PATCH /appointments/:id/status`), salons (verify + soft-delete), users (toggle-active), reviews (visibility). `npm run lint` temiz, `npm run build` 9 route. |
 
 ---
 
@@ -122,9 +122,9 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 3. ~~Salon app provider testleri~~ tamamlandı (15 test)
 4. ~~404 fallback~~ — zaten `app.js`'te JSON 404 dönüyordu; 6 testle doğrulandı
 
-Kalan: ⚠️ maddelerin kapsam netleştirilmesi (ör. ADMIN-001 alt özellikleri: salon doğrulama/soft-delete UI'sı).
+Kalan: dev DB'de `services.category_id` boş olduğu için kategori `serviceCount`'ları 0 görünüyor (seed verisi problemi, kod tarafı doğru).
 
 "> 2026-10-12: SA-004, SA-008, BUG-010, CA-012, CA-014 kapatıldı; upload endpoint'leri
 > (12 test) ve upload middleware hataları düzeltildi. CROSS-003 (loading/empty/error
 > durum bileşenleri), UI-001, ADMIN-001 ve salon app provider testleri kapatıldı.
-> (API 272 test, customer_app 197 test, salon_app 43 test — hepsi geçiyor).
+> (API 281 test, customer_app 197 test, salon_app 43 test — hepsi geçiyor).

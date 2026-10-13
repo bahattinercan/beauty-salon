@@ -316,4 +316,47 @@ describe('Category API', () => {
       expect(res.status).to.equal(403);
     });
   });
+
+  describe('serviceCount, description ve isActive', () => {
+    it('GET /categories her kategori için serviceCount döner', async () => {
+      const res = await supertest(app).get('/api/v1/categories');
+      expect(res.status).to.equal(200);
+      res.body.data.forEach((cat) => {
+        expect(cat.serviceCount).to.be.a('number');
+      });
+    });
+
+    it('POST description ve isActive ile kategori oluşturur', async () => {
+      const res = await supertest(app)
+        .post('/api/v1/categories')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Epilasyon Test',
+          iconName: 'zap',
+          description: 'Lazer epilasyon hizmetleri',
+          isActive: false,
+          sortOrder: 3,
+        });
+
+      expect(res.status).to.equal(201);
+      expect(res.body.data.description).to.equal('Lazer epilasyon hizmetleri');
+      expect(res.body.data.isActive).to.equal(false);
+    });
+
+    it('PATCH isActive ve description günceller', async () => {
+      const created = await supertest(app)
+        .post('/api/v1/categories')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'SPA Test', iconName: 'flower' });
+
+      const res = await supertest(app)
+        .patch(`/api/v1/categories/${created.body.data.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ isActive: true, description: 'Masaj ve wellness' });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.data.isActive).to.equal(true);
+      expect(res.body.data.description).to.equal('Masaj ve wellness');
+    });
+  });
 });
