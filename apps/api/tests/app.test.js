@@ -63,4 +63,29 @@ describe('App-level routing & error handling', () => {
       expect(res.body.message).to.equal('Salon bulunamadı');
     });
   });
+
+  describe('CORS', () => {
+    it('izinli origin için Access-Control-Allow-Origin döner', async () => {
+      const res = await request.get('/api/v1/health').set('Origin', 'http://localhost:3000');
+      expect(res.headers['access-control-allow-origin']).to.equal('http://localhost:3000');
+    });
+
+    it('development ortamında localhost portları kabul edilir (admin panel 3400)', async () => {
+      const res = await request.get('/api/v1/health').set('Origin', 'http://127.0.0.1:3400');
+      expect(res.headers['access-control-allow-origin']).to.equal('http://127.0.0.1:3400');
+    });
+
+    it('PUT preflight izinli — settings kaydı tarayıcıdan çalışabilir', async () => {
+      const res = await request
+        .options('/api/v1/settings')
+        .set('Origin', 'http://localhost:3400')
+        .set('Access-Control-Request-Method', 'PUT');
+      expect(res.headers['access-control-allow-methods']).to.include('PUT');
+    });
+
+    it('izinli olmayan origin reddedilir', async () => {
+      const res = await request.get('/api/v1/health').set('Origin', 'http://evil.example.com');
+      expect(res.headers['access-control-allow-origin']).to.be.undefined;
+    });
+  });
 });

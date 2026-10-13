@@ -19,14 +19,27 @@ const app = express();
 app.use(helmet());
 
 // CORS - izin verilen originler
+// Env'daki ALLOWED_ORIGINS (virgülle ayrılmış) esas alınır; development'ta
+// localhost/127.0.0.1 üzerindeki herhangi bir port da kabul edilir (admin panel,
+// customer app, salon app ayrı portlarda çalışabiliyor).
+const isDev = process.env.NODE_ENV !== 'production';
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001,http://localhost:8080')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:8080',
-  ],
+  origin: (origin, callback) => {
+    // Sunucu-tarafı istekler (curl, supertest, Postman) Origin göndermez
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
