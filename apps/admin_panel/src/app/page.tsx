@@ -1,7 +1,7 @@
 'use client';
 
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Building2, Users, Calendar, Star, TrendingUp, TrendingDown, CheckCircle, Clock, XCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Building2, Users, Calendar, Star, TrendingUp, TrendingDown, CheckCircle, Clock, XCircle, Loader2, RefreshCw } from 'lucide-react';
 import { useDashboard } from '@/providers/DashboardProvider';
 
 // Stat Card Component
@@ -67,28 +67,6 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 // Status Badge Component
-function StatusBadge({ status }: { status: string }) {
-  const baseClasses = 'px-3 py-1 rounded-full text-xs font-medium';
-  if (status === 'Onaylı') {
-    return (
-      <span className={`${baseClasses} bg-green-100 text-green-800`}>
-        <div className="flex items-center gap-1">
-          <CheckCircle className="h-3 w-3" />
-          {status}
-        </div>
-      </span>
-    );
-  }
-  return (
-    <span className={`${baseClasses} bg-yellow-100 text-yellow-800`}>
-      <div className="flex items-center gap-1">
-        <Clock className="h-3 w-3" />
-        {status}
-      </div>
-    </span>
-  );
-}
-
 // Loading State
 function DashboardLoading() {
   return (

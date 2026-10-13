@@ -1,14 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import {
   Settings,
   Lock,
   Bell,
   AlertTriangle,
   Save,
-  Eye,
-  EyeOff,
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -46,7 +44,7 @@ export default function SettingsPage() {
       });
 
       setTimeout(() => setSaveMessage(null), 3000);
-    } catch (error) {
+    } catch {
       setSaveMessage({
         type: 'error',
         message: 'Ayarlar kaydedilirken bir hata oluştu.',
@@ -103,7 +101,7 @@ export default function SettingsPage() {
                 value={platformName}
                 onChange={(e) => setPlatformName(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-opacity-20"
-                style={{ '--tw-ring-color': 'rgb(183, 110, 121)' } as any}
+                style={{ '--tw-ring-color': 'rgb(183, 110, 121)' } as CSSProperties}
               />
             </div>
 
@@ -118,7 +116,7 @@ export default function SettingsPage() {
                 onChange={(e) => setContactEmail(e.target.value)}
                 placeholder="iletisim@beautyalon.com"
                 className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-opacity-20"
-                style={{ '--tw-ring-color': 'rgb(183, 110, 121)' } as any}
+                style={{ '--tw-ring-color': 'rgb(183, 110, 121)' } as CSSProperties}
               />
             </div>
 
@@ -133,7 +131,7 @@ export default function SettingsPage() {
                 onChange={(e) => setSupportPhone(e.target.value)}
                 placeholder="+90 (555) 123-4567"
                 className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-opacity-20"
-                style={{ '--tw-ring-color': 'rgb(183, 110, 121)' } as any}
+                style={{ '--tw-ring-color': 'rgb(183, 110, 121)' } as CSSProperties}
               />
             </div>
           </div>
@@ -159,7 +157,7 @@ export default function SettingsPage() {
                 min="1"
                 max="20"
                 className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-opacity-20"
-                style={{ '--tw-ring-color': 'rgb(183, 110, 121)' } as any}
+                style={{ '--tw-ring-color': 'rgb(183, 110, 121)' } as CSSProperties}
               />
               <p className="mt-1 text-xs text-gray-500">
                 Bu kadar başarısız denemeden sonra hesap kilitlenecektir.
@@ -175,7 +173,7 @@ export default function SettingsPage() {
                 value={tokenDuration}
                 onChange={(e) => setTokenDuration(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-opacity-20"
-                style={{ '--tw-ring-color': 'rgb(183, 110, 121)' } as any}
+                style={{ '--tw-ring-color': 'rgb(183, 110, 121)' } as CSSProperties}
               >
                 <option value="15">15 Dakika</option>
                 <option value="30">30 Dakika</option>
@@ -312,7 +310,7 @@ function ToggleSwitch({
       style={{
         backgroundColor: enabled ? '#7CB69D' : '#D1D5DB',
         '--tw-ring-color': 'rgb(183, 110, 121)',
-      } as any}
+      } as CSSProperties}
       aria-pressed={enabled}
     >
       <span

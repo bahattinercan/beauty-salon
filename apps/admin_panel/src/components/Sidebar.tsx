@@ -37,6 +37,8 @@ export default function Sidebar() {
     localStorage.removeItem("user");
     window.location.href = "/login";
   };
+
+  return (
     <aside className="w-64 bg-white border-r border-gray-100 h-screen flex flex-col fixed left-0 top-0">
       {/* Logo */}
       <div className="p-6 border-b border-gray-100">

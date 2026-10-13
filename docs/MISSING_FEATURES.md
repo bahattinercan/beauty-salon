@@ -13,11 +13,11 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 
 | Durum | Sayı |
 |-------|------|
-| ✅ Tamamlandı | 39 |
-| ⚠️ Kısmen | 4 |
-| ❌ Yapılmadı | 4 |
+| ✅ Tamamlandı | 49 |
+| ⚠️ Kısmen | 2 |
+| ❌ Yapılmadı | 0 |
 
-**Gerçekten açık olan işler:** ADMIN-001 (kapsam kararı), UI-001 (servis listesinde description), salon app provider/widget testleri.
+**Kapandı (2026-10-12):** ADMIN-001, UI-001, salon app provider testleri, 404 fallback testleri.
 
 ---
 
@@ -80,7 +80,7 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 
 | ID | Madde | Durum | Not |
 |----|-------|-------|-----|
-| ADMIN-001 | Admin Flutter uygulaması | ❌ (kapsam değişti) | Admin paneli **Next.js** olarak yazıldı: `apps/admin_panel/` (users, salons, reviews, appointments sayfaları). Flutter admin app planı geçersiz. |
+| ADMIN-001 | Admin uygulaması | ✅ | Kapsam Next.js'e çevrildi: `apps/admin_panel/` (dashboard, users, salons, reviews, categories, settings, appointments). `npm run lint` temiz, `npm run build` 9 route üretiyor. `Sidebar.tsx`'teki eksik `return (` düzeltildi. API tarafında 8 admin testi eklendi. |
 
 ---
 
@@ -101,7 +101,7 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 | FIELD-001 | Review field name | ✅ | backend `salonReply`, Flutter `salonReply` |
 | FIELD-002 | Nearby response alanları | ✅ | `getNearby` distance + salon alanları dönüyor |
 | FIELD-003 | Working hours parse | ✅ | `Salon.workingHours` getter JSON parse ediyor (2026-10-12'de çift-stringify bug'ı düzeltildi) |
-| UI-001 | Service list description | ⚠️ | Edit formunda description var, listede gösterilmiyor |
+| UI-001 | Service list description | ✅ | `_ServiceCard` artık description'ı (2 satır, ellipsis) listelemede gösteriyor |
 | BUG-001 | salonReply field | ✅ | |
 | BUG-002 | Discovery `phone` | ✅ | salon card phone gösteriyor |
 | BUG-003 | Nearby `distance` | ✅ | `Salon.distance` |
@@ -118,10 +118,13 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 ## Sıradaki işler
 
 1. ~~CROSS-003~~ tamamlandı (2026-10-12)
-2. **UI-001** — servis listesinde description gösterimi
-3. Salon app provider/widget testleri
-4. `errorHandler`'a 404 fallback (bilinmeyen route JSON dönmüyor)
+2. ~~UI-001~~ tamamlandı (2026-10-12)
+3. ~~Salon app provider testleri~~ tamamlandı (15 test)
+4. ~~404 fallback~~ — zaten `app.js`'te JSON 404 dönüyordu; 6 testle doğrulandı
 
-> 2026-10-12: SA-004, SA-008, BUG-010, CA-012, CA-014 kapatıldı; upload endpoint'leri
-> (12 test) ve upload middleware hataları düzeltildi.
-> (API 257 test, customer_app 194 test, salon_app 24 test — hepsi geçiyor).
+Kalan: ⚠️ maddelerin kapsam netleştirilmesi (ör. ADMIN-001 alt özellikleri: salon doğrulama/soft-delete UI'sı).
+
+"> 2026-10-12: SA-004, SA-008, BUG-010, CA-012, CA-014 kapatıldı; upload endpoint'leri
+> (12 test) ve upload middleware hataları düzeltildi. CROSS-003 (loading/empty/error
+> durum bileşenleri), UI-001, ADMIN-001 ve salon app provider testleri kapatıldı.
+> (API 272 test, customer_app 197 test, salon_app 43 test — hepsi geçiyor).
