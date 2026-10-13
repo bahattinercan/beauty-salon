@@ -164,6 +164,15 @@ class _ServiceCard extends StatelessWidget {
                     Text('${service.price.toStringAsFixed(0)} ₺', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
                   ],
                 ),
+                if (service.description != null && service.description!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    service.description!.trim(),
+                    style: TextStyle(fontSize: 12, color: c.textSecondary),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
             ),
           ),

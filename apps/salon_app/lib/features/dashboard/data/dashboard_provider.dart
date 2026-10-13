@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/network/api_client.dart';
+import '../../../core/network/api_provider.dart';
 import '../../salon/data/salon_provider.dart';
 
 class DashboardAppointment {
@@ -76,7 +76,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardData> {
       );
     }
 
-    final api = ApiClient();
+    final api = ref.read(apiClientProvider);
     final today = _dateStr(DateTime.now());
 
     // Bugünkü randevular

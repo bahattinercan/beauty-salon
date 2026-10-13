@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/network/api_client.dart';
+import '../../../core/network/api_provider.dart';
 import '../../salon/data/salon_provider.dart';
 
 class SalonReview {
@@ -66,7 +66,7 @@ class ReviewsNotifier extends AsyncNotifier<ReviewFeed> {
     final salon = await ref.watch(salonProvider.future);
     if (salon == null) return ReviewFeed.empty;
 
-    final res = await ApiClient().dio.get(
+    final res = await ref.read(apiClientProvider).dio.get(
       '/reviews/salon/${salon.id}',
       queryParameters: {'page': page, 'limit': _limit},
     );
@@ -112,7 +112,7 @@ class ReviewsNotifier extends AsyncNotifier<ReviewFeed> {
   }
 
   Future<void> reply(String reviewId, String text) async {
-    await ApiClient().dio.patch('/reviews/$reviewId/reply', data: {'reply': text});
+    await ref.read(apiClientProvider).dio.patch('/reviews/$reviewId/reply', data: {'reply': text});
     state = await AsyncValue.guard(() => _fetch(1));
   }
 }

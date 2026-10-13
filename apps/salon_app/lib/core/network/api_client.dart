@@ -6,16 +6,22 @@ class ApiClient {
   late final Dio dio;
   final FlutterSecureStorage _storage;
 
-  ApiClient({FlutterSecureStorage? storage}) : _storage = storage ?? const FlutterSecureStorage() {
-    dio = Dio(
-      BaseOptions(
-        baseUrl: ApiEnvironment.baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-        headers: {'Content-Type': 'application/json'},
-      ),
-    );
-    dio.interceptors.add(_AuthInterceptor(_storage, dio));
+  /// `dio` testlerde sahte (fake) bir transport enjekte edebilmek için verilir;
+  /// verilmediğinde gerçek API istemcisi kurulur.
+  ApiClient({FlutterSecureStorage? storage, Dio? dio})
+      : _storage = storage ?? const FlutterSecureStorage() {
+    this.dio = dio ??
+        Dio(
+          BaseOptions(
+            baseUrl: ApiEnvironment.baseUrl,
+            connectTimeout: const Duration(seconds: 10),
+            receiveTimeout: const Duration(seconds: 10),
+            headers: {'Content-Type': 'application/json'},
+          ),
+        );
+    if (dio == null) {
+      this.dio.interceptors.add(_AuthInterceptor(_storage, this.dio));
+    }
   }
 }
 

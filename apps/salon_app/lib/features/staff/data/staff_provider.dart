@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/network/api_client.dart';
+import '../../../core/network/api_provider.dart';
 import '../../salon/data/salon_provider.dart';
 
 class StaffMember {
@@ -53,7 +53,7 @@ class StaffNotifier extends AsyncNotifier<List<StaffMember>> {
   Future<List<StaffMember>> _fetch() async {
     final salon = await ref.watch(salonProvider.future);
     if (salon == null) return [];
-    final res = await ApiClient().dio.get('/salons/${salon.id}/staff');
+    final res = await ref.read(apiClientProvider).dio.get('/salons/${salon.id}/staff');
     final list = res.data['data'] as List? ?? [];
     return list.map((e) => StaffMember.fromJson(e as Map<String, dynamic>)).toList();
   }
@@ -66,17 +66,17 @@ class StaffNotifier extends AsyncNotifier<List<StaffMember>> {
   Future<void> create(Map<String, dynamic> data) async {
     final salon = ref.read(salonProvider).asData?.value;
     if (salon == null) return;
-    await ApiClient().dio.post('/salons/${salon.id}/staff', data: data);
+    await ref.read(apiClientProvider).dio.post('/salons/${salon.id}/staff', data: data);
     state = await AsyncValue.guard(_fetch);
   }
 
   Future<void> editStaff(String id, Map<String, dynamic> data) async {
-    await ApiClient().dio.patch('/staff/$id', data: data);
+    await ref.read(apiClientProvider).dio.patch('/staff/$id', data: data);
     state = await AsyncValue.guard(_fetch);
   }
 
   Future<void> delete(String id) async {
-    await ApiClient().dio.delete('/staff/$id');
+    await ref.read(apiClientProvider).dio.delete('/staff/$id');
     state = await AsyncValue.guard(_fetch);
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/network/api_client.dart';
+import '../../../core/network/api_provider.dart';
 import '../../auth/data/auth_provider.dart';
 
 class WorkingDay {
@@ -100,7 +100,7 @@ class SalonNotifier extends AsyncNotifier<SalonInfo?> {
     final auth = ref.read(authProvider).asData?.value;
     if (auth == null || !auth.isLoggedIn) return null;
 
-    final response = await ApiClient().dio.get('/salons/owner/my-salons');
+    final response = await ref.read(apiClientProvider).dio.get('/salons/owner/my-salons');
     final list = response.data['data'] as List?;
     if (list == null || list.isEmpty) return null;
     return SalonInfo.fromJson(list.first as Map<String, dynamic>);
@@ -114,39 +114,39 @@ class SalonNotifier extends AsyncNotifier<SalonInfo?> {
   Future<void> updateInfo(Map<String, dynamic> data) async {
     final id = state.asData?.value?.id;
     if (id == null) return;
-    await ApiClient().dio.patch('/salons/$id', data: data);
+    await ref.read(apiClientProvider).dio.patch('/salons/$id', data: data);
     state = await AsyncValue.guard(_fetch);
   }
 
   Future<void> requestEmailChange(String newEmail, {String verifyVia = 'email'}) async {
     final id = state.asData?.value?.id;
     if (id == null) return;
-    await ApiClient().dio.post('/salons/$id/request-email-change', data: {'newEmail': newEmail, 'verifyVia': verifyVia});
+    await ref.read(apiClientProvider).dio.post('/salons/$id/request-email-change', data: {'newEmail': newEmail, 'verifyVia': verifyVia});
   }
 
   Future<void> confirmEmailChange(String token) async {
     final id = state.asData?.value?.id;
     if (id == null) return;
-    await ApiClient().dio.post('/salons/$id/confirm-email-change', data: {'token': token});
+    await ref.read(apiClientProvider).dio.post('/salons/$id/confirm-email-change', data: {'token': token});
     state = await AsyncValue.guard(_fetch);
   }
 
   Future<void> requestPhoneChange(String newPhone, {String verifyVia = 'sms'}) async {
     final id = state.asData?.value?.id;
     if (id == null) return;
-    await ApiClient().dio.post('/salons/$id/request-phone-change', data: {'newPhone': newPhone, 'verifyVia': verifyVia});
+    await ref.read(apiClientProvider).dio.post('/salons/$id/request-phone-change', data: {'newPhone': newPhone, 'verifyVia': verifyVia});
   }
 
   Future<void> confirmPhoneChange(String token) async {
     final id = state.asData?.value?.id;
     if (id == null) return;
-    await ApiClient().dio.post('/salons/$id/confirm-phone-change', data: {'token': token});
+    await ref.read(apiClientProvider).dio.post('/salons/$id/confirm-phone-change', data: {'token': token});
     state = await AsyncValue.guard(_fetch);
   }
 
   // SA-003: Salon soft delete
   Future<void> deleteSalon(String salonId) async {
-    final api = ApiClient();
+    final api = ref.read(apiClientProvider);
     await api.dio.delete('/salons/$salonId');
     state = const AsyncData(null);
   }

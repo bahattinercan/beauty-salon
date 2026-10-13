@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/network/api_client.dart';
+import '../../../core/network/api_provider.dart';
 import '../../salon/data/salon_provider.dart';
 
 class SalonAppointment {
@@ -61,7 +61,7 @@ class SalonAppointmentsNotifier
     if (date != null) params['date'] = date;
     if (status != null) params['status'] = status;
 
-    final res = await ApiClient().dio.get(
+    final res = await ref.read(apiClientProvider).dio.get(
       '/appointments/salon/${salon.id}',
       queryParameters: params.isEmpty ? null : params,
     );
@@ -77,12 +77,12 @@ class SalonAppointmentsNotifier
   }
 
   Future<void> updateStatus(String id, String newStatus) async {
-    await ApiClient().dio.patch('/appointments/$id/status', data: {'status': newStatus});
+    await ref.read(apiClientProvider).dio.patch('/appointments/$id/status', data: {'status': newStatus});
     state = await AsyncValue.guard(_fetch);
   }
 
   Future<void> cancel(String id) async {
-    await ApiClient().dio.patch('/appointments/$id/cancel');
+    await ref.read(apiClientProvider).dio.patch('/appointments/$id/cancel');
     state = await AsyncValue.guard(_fetch);
   }
 }

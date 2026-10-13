@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/network/api_client.dart';
+import '../../../core/network/api_provider.dart';
 import '../../salon/data/salon_provider.dart';
 
 class ServiceCategory {
@@ -46,7 +46,7 @@ class SalonService {
 }
 
 final categoriesProvider = FutureProvider<List<ServiceCategory>>((ref) async {
-  final res = await ApiClient().dio.get('/categories');
+  final res = await ref.read(apiClientProvider).dio.get('/categories');
   final list = (res.data['data'] as List?) ?? [];
   return list.map((e) => ServiceCategory.fromJson(e as Map<String, dynamic>)).toList();
 });
@@ -61,7 +61,7 @@ class ServicesNotifier extends AsyncNotifier<List<SalonService>> {
   Future<List<SalonService>> _fetch() async {
     final salon = await ref.watch(salonProvider.future);
     if (salon == null) return [];
-    final res = await ApiClient().dio.get('/salons/${salon.id}/services');
+    final res = await ref.read(apiClientProvider).dio.get('/salons/${salon.id}/services');
     final list = (res.data['data'] as List?) ?? [];
     return list.map((e) => SalonService.fromJson(e as Map<String, dynamic>)).toList();
   }
@@ -74,17 +74,17 @@ class ServicesNotifier extends AsyncNotifier<List<SalonService>> {
   Future<void> create(Map<String, dynamic> data) async {
     final salon = ref.read(salonProvider).asData?.value;
     if (salon == null) return;
-    await ApiClient().dio.post('/salons/${salon.id}/services', data: data);
+    await ref.read(apiClientProvider).dio.post('/salons/${salon.id}/services', data: data);
     state = await AsyncValue.guard(_fetch);
   }
 
   Future<void> editService(String id, Map<String, dynamic> data) async {
-    await ApiClient().dio.patch('/services/$id', data: data);
+    await ref.read(apiClientProvider).dio.patch('/services/$id', data: data);
     state = await AsyncValue.guard(_fetch);
   }
 
   Future<void> delete(String id) async {
-    await ApiClient().dio.delete('/services/$id');
+    await ref.read(apiClientProvider).dio.delete('/services/$id');
     state = await AsyncValue.guard(_fetch);
   }
 }
