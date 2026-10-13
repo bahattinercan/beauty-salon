@@ -38,11 +38,16 @@ const errorHandler = (err, req, res, _next) => {
     });
   }
 
-  // Multer dosya boyutu
-  if (err.code === 'LIMIT_FILE_SIZE') {
+  // Multer dosya hataları (boyut, adet, yanlış alan adı)
+  if (err.name === 'MulterError') {
+    const messages = {
+      LIMIT_FILE_SIZE: 'Dosya boyutu çok büyük (max 5MB)',
+      LIMIT_FILE_COUNT: 'En fazla 10 dosya yüklenebilir',
+      LIMIT_UNEXPECTED_FILE: 'Beklenmeyen dosya alanı',
+    };
     return res.status(400).json({
       success: false,
-      message: 'Dosya boyutu çok büyük (max 5MB)',
+      message: messages[err.code] || 'Dosya yükleme hatası',
     });
   }
 
