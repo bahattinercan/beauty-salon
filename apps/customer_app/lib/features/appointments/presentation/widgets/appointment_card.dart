@@ -171,6 +171,9 @@ class AppointmentCard extends StatelessWidget {
           child: Text(
             text,
             style: TextStyle(fontSize: 12, color: colors.textSecondary),
+            // Tarih ("15 Ekim 2026, Perşembe") iki satıra sarabilmeli; eskiden
+            // tek satırda "...Perşe…" olarak kesiliyordu.
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ),

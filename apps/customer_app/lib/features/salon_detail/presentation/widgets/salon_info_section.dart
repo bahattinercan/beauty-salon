@@ -112,7 +112,12 @@ class SalonInfoSection extends StatelessWidget {
                     child: Text(
                       salon.priceRangeLabel,
                       style: TextStyle(
-                          color: colors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                        color: colors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        // ₺ glifleri küçük puntoda birbirine değiyor.
+                        letterSpacing: 1.5,
+                      ),
                     ),
                   ),
                 ],

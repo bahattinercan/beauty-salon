@@ -68,6 +68,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return Scaffold(
       backgroundColor: colors.background,
       body: Column(
+        // stretch: gradient başlık tam genişlikte olmalı (bkz. login_screen).
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Gradient header
           Container(
@@ -80,6 +82,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
             child: Column(
               children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    onPressed: () => context.goNamed(RouteNames.login),
+                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                    tooltip: s.back,
+                  ),
+                ),
                 Container(
                   width: 64, height: 64,
                   decoration: BoxDecoration(

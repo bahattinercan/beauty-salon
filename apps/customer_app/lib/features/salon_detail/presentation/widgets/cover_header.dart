@@ -24,7 +24,7 @@ class CircleIconButton extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: Colors.black.withValues(alpha: 0.42),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: iconColor, size: 20),
@@ -57,6 +57,10 @@ class CoverHeader extends StatelessWidget {
     return SliverAppBar(
       expandedHeight: 280,
       pinned: true,
+      // Header kapandığında beyaz ikonlar açık zeminde kalıp görünmez oluyordu
+      // (kontrast ~2.3:1). Kapanmış halde marka rengi zemin kullanılır.
+      backgroundColor: colors.primaryDark,
+      foregroundColor: Colors.white,
       leading: CircleIconButton(icon: Icons.arrow_back, onTap: onBack),
       actions: [
         CircleIconButton(

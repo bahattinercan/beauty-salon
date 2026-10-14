@@ -30,26 +30,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? selectedCategoryId;
 
-  void _showLocationDeniedSnackBar() {
-    final colors = AppColors.of(context);
-    final s = S.of(context);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(s.locationDeniedBody),
-        backgroundColor: colors.warning,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-        action: SnackBarAction(
-          label: s.profileSettings,
-          textColor: Colors.white,
-          onPressed: () => getIt<LocationService>().openAppSettings(),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -57,6 +37,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final categories = ref.watch(categoriesProvider).asData?.value ?? const [];
     final favorites = ref.watch(favoritesProvider).asData?.value ?? {};
     final nearbyAsync = ref.watch(nearbySalonsProvider);
+    // Konum reddedilirse bilgi satır içi gösterilir; eskiden kalıcı hale gelen
+    // floating SnackBar alttaki aksiyon butonlarını (booking "Devam") kapatıyordu.
+    final locationDenied =
+        ref.watch(locationProvider).error is LocationPermissionDeniedFailure;
     final allSalons =
         ref.watch(salonsProvider(const SalonFilter())).asData?.value ?? [];
     final topRated = [...allSalons]
@@ -65,14 +49,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final hasNearby = nearbyAsync.asData?.value.isNotEmpty ?? false;
     final showNearbySection = nearbyAsync.isLoading || hasNearby;
 
-    // Konum reddedildiyse kullanıcıyı bilgilendir: konum tek kaynaklı
+    // Konum reddedildiyse kullanıcıyı satır içi bilgilendir: konum tek kaynaklı
     // (`locationProvider`), Home artık kendi başına izin istemiyor.
-    ref.listen(locationProvider, (previous, next) {
-      if (next.error is LocationPermissionDeniedFailure &&
-          previous?.error != next.error) {
-        _showLocationDeniedSnackBar();
-      }
-    });
 
     void toggleFavorite(Salon salon) =>
         ref.read(favoritesProvider.notifier).toggle(salon.id);
@@ -114,6 +92,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ),
+            if (locationDenied)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: LocationNotice(
+                    onOpenSettings: () =>
+                        getIt<LocationService>().openAppSettings(),
+                  ),
+                ),
+              ),
             if (showNearbySection) ...[
               SliverToBoxAdapter(
                 child: SectionHeader(
@@ -167,6 +155,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Konum izni reddedildiğinde gösterilen satır içi bilgi kartı.
+class LocationNotice extends StatelessWidget {
+  final VoidCallback onOpenSettings;
+
+  const LocationNotice({super.key, required this.onOpenSettings});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final s = S.of(context);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+      decoration: BoxDecoration(
+        color: colors.warning.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.warning.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.location_off_outlined, color: colors.warning, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              s.locationDeniedBody,
+              style: TextStyle(fontSize: 13, color: colors.textPrimary),
+            ),
+          ),
+          TextButton(
+            onPressed: onOpenSettings,
+            style: TextButton.styleFrom(foregroundColor: colors.primary),
+            child: Text(
+              s.profileSettings,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
       ),
     );
   }

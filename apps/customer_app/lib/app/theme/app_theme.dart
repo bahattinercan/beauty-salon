@@ -120,6 +120,19 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
 
+      // Switch light temada temanın rengini kullanmıyordu (siyah outline/thumb).
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? Colors.white : c.textHint,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? c.primary : c.surfaceVariant,
+        ),
+        trackOutlineColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? Colors.transparent : c.textHint,
+        ),
+      ),
+
       dividerTheme: const DividerThemeData(color: Color(0xFFEEEBF8), thickness: 1),
 
       dialogTheme: DialogThemeData(
@@ -241,6 +254,18 @@ class AppTheme {
         selectedColor: c.primary,
         labelStyle: TextStyle(fontSize: 13, color: c.textPrimary),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? Colors.white : c.textHint,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? c.primary : c.surfaceVariant,
+        ),
+        trackOutlineColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? Colors.transparent : c.textHint,
+        ),
       ),
 
       dividerTheme: const DividerThemeData(color: Color(0xFF2D2B47), thickness: 1),

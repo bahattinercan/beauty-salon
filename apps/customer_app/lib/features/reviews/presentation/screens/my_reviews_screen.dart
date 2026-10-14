@@ -2,19 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../core/di/injection.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/widgets/state_view.dart';
 import '../../domain/entities/review.dart';
-import '../../domain/usecases/get_my_reviews_usecase.dart';
+import '../providers/my_reviews_provider.dart';
 import '../../../../app/route_names.dart';
-
-// ── Provider ────────────────────────────────────────────────────────────────
-
-final myReviewsProvider = FutureProvider.autoDispose<List<Review>>((ref) async {
-  final result = await getIt<GetMyReviewsUseCase>()();
-  return result.fold((failure) => throw failure, (reviews) => reviews);
-});
 
 // ── Screen ───────────────────────────────────────────────────────────────────
 

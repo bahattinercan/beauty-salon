@@ -98,6 +98,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: Column(
+          // stretch: gradient başlık ekranın tamamını kaplamalı (Column varsayılanı
+          // center olduğu için Container çocuğun genişliğine daralıyordu).
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
               decoration: BoxDecoration(gradient: colors.bannerGradient),

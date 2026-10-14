@@ -5,8 +5,14 @@ import '../../../../core/l10n/app_strings.dart';
 class SearchField extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onSubmit;
+  final ValueChanged<String>? onChanged;
 
-  const SearchField({super.key, required this.controller, required this.onSubmit});
+  const SearchField({
+    super.key,
+    required this.controller,
+    required this.onSubmit,
+    this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +39,7 @@ class SearchField extends StatelessWidget {
                 border: InputBorder.none,
               ),
               onSubmitted: onSubmit,
+              onChanged: onChanged,
             ),
           ),
         ],

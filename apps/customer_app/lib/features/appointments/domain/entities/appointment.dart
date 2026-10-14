@@ -72,5 +72,12 @@ class Appointment {
     return TurkishDateUtils.formatDate(dt);
   }
 
-  String get formattedTime => '$startTime - $endTime';
+  /// "09:00 - 09:45" — API bazı kayıtlarda "09:00:00" döndürüyor, saniyeyi kırp.
+  String get formattedTime => '${_hhmm(startTime)} - ${_hhmm(endTime)}';
+
+  static String _hhmm(String raw) {
+    final match = RegExp(r'^(\d{1,2}):(\d{2})').firstMatch(raw.trim());
+    if (match == null) return raw;
+    return '${match.group(1)!.padLeft(2, '0')}:${match.group(2)}';
+  }
 }

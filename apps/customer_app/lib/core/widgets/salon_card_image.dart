@@ -6,12 +6,14 @@ class CardBadge extends StatelessWidget {
   final String text;
   final Color background;
   final Color textColor;
+  final double letterSpacing;
 
   const CardBadge({
     super.key,
     required this.text,
     required this.background,
     required this.textColor,
+    this.letterSpacing = 0,
   });
 
   @override
@@ -24,7 +26,14 @@ class CardBadge extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textColor),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+          letterSpacing: letterSpacing,
+        ),
       ),
     );
   }
@@ -76,13 +85,18 @@ class SalonCardImage extends StatelessWidget {
                 gradient(child: const Center(child: Icon(Icons.spa_outlined, size: 40, color: Colors.white24))),
           ),
         ),
+        // right: 56 → konum chip'i kalp butonunun altına girmesin (dar kart).
         Positioned(
           top: 10,
           left: 10,
-          child: CardBadge(
-            text: distance,
-            background: Colors.white.withValues(alpha: 0.92),
-            textColor: const Color(0xFF1A1023),
+          right: 56,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: CardBadge(
+              text: distance,
+              background: Colors.white.withValues(alpha: 0.92),
+              textColor: const Color(0xFF1A1023),
+            ),
           ),
         ),
         Positioned(
@@ -112,6 +126,8 @@ class SalonCardImage extends StatelessWidget {
               text: priceRange,
               background: colors.primary.withValues(alpha: 0.9),
               textColor: Colors.white,
+              // ₺ glifleri 12px'te birbirine değiyordu.
+              letterSpacing: 1.5,
             ),
           ),
       ],

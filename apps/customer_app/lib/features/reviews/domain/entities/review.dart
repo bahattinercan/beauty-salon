@@ -23,5 +23,6 @@ class Review {
     this.images = const [],
   });
 
-  String get timeAgo => createdAt.timeAgoShort;
+  /// Türkçe göreli zaman ("22h" yerine "Bugün"/"3 gün önce").
+  String get timeAgo => createdAt.timeAgoTr;
 }

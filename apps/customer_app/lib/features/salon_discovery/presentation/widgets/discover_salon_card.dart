@@ -52,30 +52,42 @@ class DiscoverSalonCard extends ConsumerWidget {
                     const Center(
                       child: Icon(Icons.spa_outlined, size: 48, color: Colors.white24),
                     ),
+                    // right: 56 → konum chip'i kalp butonunun altında kalıp
+                    // metni kesmesin (dar 2 kolon kart).
                     Positioned(
                       top: 10,
                       left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.location_on, size: 14, color: colors.primary),
-                            const SizedBox(width: 3),
-                            Text(
-                              salon.distanceLabel.isNotEmpty
-                                  ? salon.distanceLabel
-                                  : salon.locationLabel,
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: colors.textPrimary),
-                            ),
-                          ],
+                      right: 56,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.92),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.location_on, size: 14, color: colors.primary),
+                              const SizedBox(width: 3),
+                              Flexible(
+                                child: Text(
+                                  salon.distanceLabel.isNotEmpty
+                                      ? salon.distanceLabel
+                                      // Dar kartta "Kadıköy, İ…" yerine yalnızca ilçe;
+                                      // adres satırı zaten tam adresi gösteriyor.
+                                      : salon.locationLabel.split(',').first.trim(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: colors.textPrimary),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -146,28 +158,35 @@ class DiscoverSalonCard extends ConsumerWidget {
                           child: Text(
                             salon.priceRangeLabel,
                             style: TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.bold, color: colors.primary),
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: colors.primary,
+                              letterSpacing: 1.5,
+                            ),
                           ),
                         ),
                       const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: colors.accent,
-                          borderRadius: BorderRadius.circular(6),
+                      // Puan chip'i yalnızca gerçek yorum varsa gösterilir;
+                      // 0 yorumlu salon "★ 0.0" göstermesin.
+                      if (salon.reviewCount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: colors.accent,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.star, size: 14, color: Colors.white),
+                              const SizedBox(width: 3),
+                              Text(
+                                salon.ratingAvg.toStringAsFixed(1),
+                                style: const TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.star, size: 14, color: Colors.white),
-                            const SizedBox(width: 3),
-                            Text(
-                              salon.ratingAvg.toStringAsFixed(1),
-                              style: const TextStyle(
-                                  fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 6),

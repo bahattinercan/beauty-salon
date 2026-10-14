@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -25,11 +27,24 @@ class DiscoverScreen extends ConsumerStatefulWidget {
 
 class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   final _searchController = TextEditingController();
+  Timer? _searchDebounce;
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Yazarken canlı arama (eskiden yalnızca Enter ile filtreliyordu).
+  void _onQueryChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      ref
+          .read(discoverProvider(widget.initialCategory).notifier)
+          .setQuery(value);
+    });
   }
 
   @override
@@ -54,7 +69,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: SearchField(controller: _searchController, onSubmit: notifier.setQuery),
+                    child: SearchField(
+                      controller: _searchController,
+                      onSubmit: notifier.setQuery,
+                      onChanged: _onQueryChanged,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   GestureDetector(
@@ -137,8 +156,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       )
                     : GridView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
+                        // Geniş ekranda 2 kolon kartları devasa yapıyordu
+                        // (1280px'te ~620x830 kutu, boş gövde).
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: _gridColumns(context),
                           childAspectRatio: 0.75,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
@@ -152,5 +173,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         ),
       ),
     );
+  }
+
+  /// Telefon 2 kolon; tablet/masaüstünde kartlar aşırı büyümesin diye artırılır.
+  int _gridColumns(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width >= 1100) return 4;
+    if (width >= 800) return 3;
+    return 2;
   }
 }

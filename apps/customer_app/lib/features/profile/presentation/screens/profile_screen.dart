@@ -5,7 +5,10 @@ import '../../../../app/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/theme_provider.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../appointments/presentation/providers/appointments_provider.dart';
+import '../../../favorites/presentation/providers/favorites_provider.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
+import '../../../reviews/presentation/providers/my_reviews_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/menu_section.dart';
 import '../widgets/profile_dialogs.dart';
@@ -20,6 +23,13 @@ class ProfileScreen extends ConsumerWidget {
     final userAsync = ref.watch(userProvider);
     final user = userAsync.asData?.value;
     final isDark = ref.watch(themeProvider).asData?.value == ThemeMode.dark;
+
+    // İstatistikler gerçek veriden gelir (eskiden const ['12','5','8'] idi).
+    final appointmentCount =
+        ref.watch(appointmentsProvider).asData?.value.length;
+    final favoriteCount = ref.watch(favoritesProvider).asData?.value.length;
+    final reviewCount = ref.watch(myReviewsProvider).asData?.value.length;
+    String statText(int? value) => value?.toString() ?? '—';
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -38,7 +48,11 @@ class ProfileScreen extends ConsumerWidget {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 StatsRow(
-                  values: const ['12', '5', '8'],
+                  values: [
+                    statText(appointmentCount),
+                    statText(favoriteCount),
+                    statText(reviewCount),
+                  ],
                   labels: [s.statAppointments, s.statFavorites, s.statReviews],
                 ),
                 const SizedBox(height: 20),
@@ -86,7 +100,6 @@ class ProfileScreen extends ConsumerWidget {
                     trailing: Switch(
                       value: isDark,
                       onChanged: (_) => ref.read(themeProvider.notifier).toggle(),
-                      activeThumbColor: colors.primary,
                     ),
                   ),
                 ]),
