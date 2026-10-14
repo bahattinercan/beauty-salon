@@ -6,6 +6,10 @@ class ApiEnvironment {
 
   /// Base URL for the API
   static String get baseUrl {
+    // Derlemede override edilebilir: --dart-define=API_BASE_URL=http://localhost:3200/api/v1
+    const override = String.fromEnvironment('API_BASE_URL');
+    if (override.isNotEmpty) return override;
+
     if (kIsWeb) {
       return 'http://localhost:3000/api/v1';
     }
@@ -20,6 +24,9 @@ class ApiEnvironment {
 
   /// WebSocket base URL (for real-time notifications)
   static String get wsUrl {
+    const override = String.fromEnvironment('WS_BASE_URL');
+    if (override.isNotEmpty) return override;
+
     if (kIsWeb) {
       return 'http://localhost:3000';
     }
@@ -31,6 +38,12 @@ class ApiEnvironment {
 
   /// Image/media CDN base URL
   static String get mediaUrl {
+    const override = String.fromEnvironment('MEDIA_BASE_URL');
+    if (override.isNotEmpty) return override;
+
+    if (kIsWeb) {
+      return 'http://localhost:3000';
+    }
     if (kDebugMode) {
       return 'http://10.0.2.2:3000';
     }
