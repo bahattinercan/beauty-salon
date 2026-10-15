@@ -22,12 +22,41 @@ const USERS = [
   { email: 'musteri@beautysalon.com', phone: '+905339876543', fullName: 'Zeynep Kaya', role: 'CUSTOMER' },
 ];
 
-const PASSWORDS = {
+// Demo kullanıcı şifreleri. Bu varsayılanlar YALNIZCA yerel geliştirme
+// içindir: `npm run seed` ve ilk açılışta boş veritabanını doldurmak için
+// kullanılır. Üretimde (NODE_ENV=production) repodaki varsayılanla seed
+// çalışması reddedilir; şifreler `SEED_*_PASSWORD` env değişkenleriyle
+// verilmek zorundadır — aksi halde canlı kurulumda herkesin bildiği bir
+// yönetici şifresi oluşurdu.
+const DEV_DEFAULT_PASSWORDS = {
   'admin@beautysalon.com': 'Admin123!',
   'salon@beautysalon.com': 'Salon123!',
   'salon2@beautysalon.com': 'Salon123!',
   'musteri@beautysalon.com': 'Musteri123!',
 };
+
+const PASSWORD_ENV = {
+  'admin@beautysalon.com': 'SEED_ADMIN_PASSWORD',
+  'salon@beautysalon.com': 'SEED_SALON_PASSWORD',
+  'salon2@beautysalon.com': 'SEED_SALON_PASSWORD',
+  'musteri@beautysalon.com': 'SEED_CUSTOMER_PASSWORD',
+};
+
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+if (IS_PRODUCTION) {
+  const missing = [...new Set(Object.values(PASSWORD_ENV))].filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    throw new Error(
+      `Üretimde seed için zorunlu şifre değişkenleri eksik: ${missing.join(', ')}. `
+        + 'Repodaki geliştirme varsayılanları üretimde kullanılmaz.',
+    );
+  }
+}
+
+const PASSWORDS = Object.fromEntries(
+  USERS.map(({ email }) => [email, process.env[PASSWORD_ENV[email]] || DEV_DEFAULT_PASSWORDS[email]]),
+);
 
 const CATEGORIES = [
   { name: 'Saç', iconName: 'content_cut', sortOrder: 1 },
@@ -361,9 +390,13 @@ const seed = async () => {
   }
 
   console.log(`Seed tamamlandı! ${salons.length} salon, ${SERVICES.length} hizmet, ${CATEGORIES.length} kategori.`);
-  console.log('Admin: admin@beautysalon.com / Admin123!');
-  console.log('Salon Sahibi: salon@beautysalon.com / Salon123!');
-  console.log('Müşteri: musteri@beautysalon.com / Musteri123!');
+  if (IS_PRODUCTION) {
+    console.log(`Demo kullanıcılar oluşturuldu: ${USERS.map((u) => u.email).join(', ')}`);
+    console.log('Şifreler SEED_*_PASSWORD env değişkenlerinden alındı (repoda tutulmaz).');
+  } else {
+    USERS.forEach(({ email }) => console.log(`${email} / ${PASSWORDS[email]}`));
+    console.log('(yerel geliştirme varsayılanları — üretimde SEED_*_PASSWORD zorunlu)');
+  }
 };
 
 module.exports = seed;

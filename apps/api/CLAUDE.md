@@ -251,12 +251,9 @@ User 1──N Notification
 
 ## Seed Verileri
 ### Test Kullanıcıları
-| Email | Password | Role |
-|-------|----------|------|
-| admin@beautysalon.com | Admin123! | ADMIN |
-| salon@beautysalon.com | Salon123! | SALON_OWNER |
-| salon2@beautysalon.com | Salon123! | SALON_OWNER |
-| musteri@beautysalon.com | Musteri123! | CUSTOMER |
+E-postalar `src/seeders/seed.js` -> `USERS` içinde. Şifreler repoda
+tutulmaz: yerelde seed varsayılanını kullanır, üretimde `SEED_*_PASSWORD`
+env değişkenleri zorunludur (NODE_ENV=production'da varsayılan reddedilir).
 
 ### Seed İçerikleri
 - 6 kategori: Saç, Tırnak, Cilt Bakımı, Makyaj, Epilasyon, SPA & Masaj

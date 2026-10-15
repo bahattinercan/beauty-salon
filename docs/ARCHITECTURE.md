@@ -387,12 +387,11 @@ User 1──N Notification
 
 ### Seed Verileri
 ### Test Kullanıcıları
-| Email | Password | Role |
-|-------|----------|------|
-| admin@beautysalon.com | Admin123! | ADMIN |
-| salon@beautysalon.com | Salon123! | SALON_OWNER |
-| salon2@beautysalon.com | Salon123! | SALON_OWNER |
-| musteri@beautysalon.com | Musteri123! | CUSTOMER |
+
+E-postalar `apps/api/src/seeders/seed.js` içindeki `USERS` listesinde tanımlı.
+Şifreler repoda tutulmaz: yerelde seed varsayılanını kullanır, üretimde
+`SEED_ADMIN_PASSWORD` / `SEED_SALON_PASSWORD` / `SEED_CUSTOMER_PASSWORD`
+zorunludur (bkz. `.env.example`).
 
 ### Seed İçerikleri
 - 6 kategori: Saç, Tırnak, Cilt Bakımı, Makyaj, Epilasyon, SPA & Masaj

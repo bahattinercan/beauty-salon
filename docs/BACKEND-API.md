@@ -582,14 +582,18 @@ Tüm route'lar `router.use(authenticate)` ile korunur; sorgular `user_id` ile s�
 
 ## 13. Seed (`src/seeders/seed.js`)
 
-Test kullanıcıları:
+Test kullanıcıları (`src/seeders/seed.js` -> `USERS`):
 
-| E-posta | Şifre | Rol |
-|---|---|---|
-| admin@beautysalon.com | Admin123! | ADMIN |
-| salon@beautysalon.com | Salon123! | SALON_OWNER |
-| salon2@beautysalon.com | Salon123! | SALON_OWNER |
-| musteri@beautysalon.com | Musteri123! | CUSTOMER |
+| E-posta | Rol |
+|---|---|
+| admin@beautysalon.com | ADMIN |
+| salon@beautysalon.com | SALON_OWNER |
+| salon2@beautysalon.com | SALON_OWNER |
+| musteri@beautysalon.com | CUSTOMER |
+
+Şifreler repoda tutulmaz. Yerelde seed varsayılanı kullanılır; üretimde
+`SEED_ADMIN_PASSWORD`, `SEED_SALON_PASSWORD`, `SEED_CUSTOMER_PASSWORD`
+zorunludur ve varsayılanla seed çalışmayı reddeder.
 
 İçerik: 6 kategori (Saç, Tırnak, Cilt Bakımı, Makyaj, Epilasyon, SPA & Masaj), 12 salon (İstanbul ilçeleri, `isVerified:true`, `workingHours` dolu), salon1 için 3 çalışan + 7 hizmet + StaffService bağları, salon2 için 2 çalışan + 4 hizmet, 5 COMPLETED randevu + yorum (3'ü salon yanıtlı), salon1 rating güncellemesi.
 
