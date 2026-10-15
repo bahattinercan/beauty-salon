@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/network/media_url.dart';
 
 /// Avatar + kamera rozeti. `pickedFile` seçilen dosyanın önizlemesi,
 /// `avatarUrl` sunucudaki mevcut avatar; ikisi de yoksa initials gösterilir.
@@ -29,7 +30,7 @@ class AvatarPicker extends StatelessWidget {
 
     final ImageProvider? image = pickedFile != null
         ? FileImage(pickedFile!)
-        : (avatarUrl != null ? NetworkImage(avatarUrl!) : null);
+        : (avatarUrl != null ? NetworkImage(resolveMediaUrl(avatarUrl)) : null);
 
     return Stack(
       children: [

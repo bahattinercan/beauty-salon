@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../core/network/media_url.dart';
 
 class GalleryStrip extends StatelessWidget {
   final List<String> images;
@@ -20,7 +21,7 @@ class GalleryStrip extends StatelessWidget {
           return ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Image.network(
-              images[index],
+              resolveMediaUrl(images[index]),
               width: 90,
               height: 90,
               fit: BoxFit.cover,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/network/media_url.dart';
 import '../../domain/entities/salon_detail.dart';
 
 class ReviewCard extends StatelessWidget {
@@ -81,7 +82,7 @@ class ReviewCard extends StatelessWidget {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: Image.network(
-                        url,
+                        resolveMediaUrl(url),
                         width: 92,
                         height: 92,
                         fit: BoxFit.cover,

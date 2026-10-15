@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../app/theme/app_colors.dart';
+import '../network/media_url.dart';
 
 class CardBadge extends StatelessWidget {
   final String text;
@@ -76,7 +77,7 @@ class SalonCardImage extends StatelessWidget {
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
           child: CachedNetworkImage(
-            imageUrl: imageUrl,
+            imageUrl: resolveMediaUrl(imageUrl),
             height: 140,
             width: double.infinity,
             fit: BoxFit.cover,

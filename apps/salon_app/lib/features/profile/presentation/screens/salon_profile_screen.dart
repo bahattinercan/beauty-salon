@@ -6,6 +6,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_theme_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/l10n/locale_provider.dart';
+import '../../../../core/network/media_url.dart';
 import '../../../../core/network/upload_service.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../auth/data/auth_provider.dart';
@@ -74,7 +75,7 @@ class SalonProfileScreen extends ConsumerWidget {
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(24),
                             child: Image.network(
-                              salon!.logoUrl!,
+                              resolveMediaUrl(salon!.logoUrl),
                               fit: BoxFit.cover,
                               errorBuilder: (_, _, _) =>
                                   const Icon(Icons.store_rounded, size: 44, color: Colors.white),
@@ -525,7 +526,7 @@ class _SalonGallerySection extends ConsumerWidget {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: Image.network(
-                            url,
+                            resolveMediaUrl(url),
                             fit: BoxFit.cover,
                             errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined, size: 28),
                           ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/network/media_url.dart';
 import '../../../../core/widgets/state_view.dart';
 import '../../domain/entities/review.dart';
 import '../providers/my_reviews_provider.dart';
@@ -90,7 +91,7 @@ class _ReviewCard extends StatelessWidget {
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: Image.network(
-                              review.salonLogoUrl!,
+                              resolveMediaUrl(review.salonLogoUrl),
                               fit: BoxFit.cover,
                               errorBuilder: (_, _, _) => Icon(Icons.spa, color: colors.primary, size: 20),
                             ),
@@ -131,7 +132,7 @@ class _ReviewCard extends StatelessWidget {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: Image.network(
-                          url,
+                          resolveMediaUrl(url),
                           width: 88,
                           height: 88,
                           fit: BoxFit.cover,

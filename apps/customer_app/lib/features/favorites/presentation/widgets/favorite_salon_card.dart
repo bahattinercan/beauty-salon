@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/network/media_url.dart';
 
 class FavoriteSalonCard extends StatelessWidget {
   final String name;
@@ -42,7 +43,7 @@ class FavoriteSalonCard extends StatelessWidget {
                 borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
                 child: imageUrl != null && imageUrl!.isNotEmpty
                     ? Image.network(
-                        imageUrl!,
+                        resolveMediaUrl(imageUrl),
                         width: 110,
                         height: 130,
                         fit: BoxFit.cover,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../core/network/media_url.dart';
 import '../../domain/entities/salon_detail.dart';
 
 class CircleIconButton extends StatelessWidget {
@@ -78,7 +79,7 @@ class CoverHeader extends StatelessWidget {
           children: [
             salon.coverImageUrl != null
                 ? Image.network(
-                    salon.coverImageUrl!,
+                    resolveMediaUrl(salon.coverImageUrl),
                     fit: BoxFit.cover,
                     errorBuilder: (_, _, _) => _placeholder(colors),
                   )
