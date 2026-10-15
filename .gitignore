@@ -24,6 +24,26 @@ uploads/
 build/
 .dart_tool/
 
+# Doğrulama ekran görüntüleri: koşu artefaktı (~20 MB), yeniden üretilebilir.
+# screenshots/_harness/*.js paylaşılır kalır (CDP plan aracı).
+screenshots/**/*.png
+screenshots/**/*.jpg
+screenshots/**/*.jpeg
+
+# Hata ayıklama dökümleri / kaza ile eklenen kareler
+errors/
+
+# Python
+__pycache__/
+*.pyc
+
+# Geçici ve editör dosyaları
+*.tmp
+*.bak
+*~
+.idea/
+*.iml
+
 # İşletim sistemi
 .DS_Store
 Thumbs.db
