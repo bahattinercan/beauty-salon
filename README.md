@@ -17,7 +17,7 @@ platform yöneticisi tüm kiracıları denetler — hepsi tek bir backend üzeri
 
 </div>
 
-<p align="center"><img src="screenshots/salon_app/02_dashboard_desktop.png" alt="Salon uygulaması panel ekranı" width="880"></p>
+<p align="center"><img src="docs/media/hero.webp" alt="Solda müşteri uygulaması, sağda platform yönetim paneli" width="880"></p>
 
 ---
 
