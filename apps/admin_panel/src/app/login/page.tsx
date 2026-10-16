@@ -6,10 +6,17 @@ import { Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
+// Yerel geliştirmede demo admin ile hızlı giriş için forma ön doldurma.
+// Üretim derlemesinde NODE_ENV = 'production' olduğu için Next.js bu bloğu
+// dead-code olarak eler; demo şifresi bundle'a hiç girmez.
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const DEV_PREFILL_EMAIL = IS_PRODUCTION ? '' : 'admin@beautysalon.com';
+const DEV_PREFILL_PASSWORD = IS_PRODUCTION ? '' : 'Admin123!';
+
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@beautysalon.com');
-  const [password, setPassword] = useState('Admin123!');
+  const [email, setEmail] = useState(DEV_PREFILL_EMAIL);
+  const [password, setPassword] = useState(DEV_PREFILL_PASSWORD);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
