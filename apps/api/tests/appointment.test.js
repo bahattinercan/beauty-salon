@@ -538,6 +538,25 @@ describe('Appointment API', () => {
         expect(apt.status).to.equal('PENDING');
       });
     });
+
+    it('should filter by date range (from/to)', async () => {
+      const { Salon } = require('../src/models');
+      const salon = await Salon.findByPk(salon1.id);
+      const token = createToken(owner1);
+      const today = new Date().toISOString().split('T')[0];
+      const monthStart = today.slice(0, 8) + '01';
+
+      const res = await supertest(app)
+        .get(`/api/v1/appointments/salon/${salon1.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .query({ from: monthStart, to: today });
+
+      expect(res.body.data).to.be.an('array');
+      res.body.data.forEach(apt => {
+        const d = String(apt.date).split('T')[0];
+        expect(d >= monthStart && d <= today).to.be.true;
+      });
+    });
   });
 
   describe('PATCH /appointments/:id/status', () => {

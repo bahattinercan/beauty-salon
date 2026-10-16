@@ -212,7 +212,12 @@ const getMyAppointments = async (req, res, next) => {
 const getSalonAppointments = async (req, res, next) => {
   try {
     const where = { salonId: req.params.salonId };
-    if (req.query.date) where.date = req.query.date;
+    // Tek istekte tarih aralığı verilebilir (dashboard N+1'i için): ?from=YYYY-MM-DD&to=YYYY-MM-DD
+    if (req.query.from && req.query.to) {
+      where.date = { [Op.between]: [req.query.from, req.query.to] };
+    } else if (req.query.date) {
+      where.date = req.query.date;
+    }
     if (req.query.status) where.status = req.query.status;
 
     const appointments = await Appointment.findAll({

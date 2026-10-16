@@ -7,7 +7,9 @@ import {
   Bell,
   AlertTriangle,
   Save,
+  Palette,
 } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 import { apiFetch } from '@/lib/api';
 
 export default function SettingsPage() {
@@ -119,6 +121,20 @@ export default function SettingsPage() {
             {saveMessage.message}
           </div>
         )}
+
+        {/* Section 0: Görünüm (yalnızca bu tarayıcıda saklanır) */}
+        <div className="mb-6 rounded-lg border border-border bg-surface p-6 shadow-sm">
+          <div className="mb-2 flex items-center gap-2">
+            <Palette className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold text-fg">Görünüm</h2>
+          </div>
+          <p className="mb-4 text-sm text-fg-muted">
+            Tema tercihi bu tarayıcıda saklanır; sunucu ayarlarına kaydedilmez.
+          </p>
+          <div className="max-w-xs">
+            <ThemeToggle />
+          </div>
+        </div>
 
         {/* Section 1: Genel Ayarlar */}
         <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">

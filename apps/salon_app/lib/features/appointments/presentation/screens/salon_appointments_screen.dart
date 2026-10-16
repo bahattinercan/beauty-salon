@@ -92,22 +92,18 @@ class _SalonAppointmentsScreenState extends ConsumerState<SalonAppointmentsScree
               ],
             ),
           ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-            child: Row(
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
               children: [
                 _filterChip(s.all, null, c),
-                const SizedBox(width: 6),
                 _filterChip(s.filterPending, 'PENDING', c),
-                const SizedBox(width: 6),
                 _filterChip(s.filterConfirmed, 'CONFIRMED', c),
-                const SizedBox(width: 6),
-                _filterChip('Tamamlandı', 'COMPLETED', c),
-                const SizedBox(width: 6),
-                _filterChip('İptal', 'CANCELLED', c),
-                const SizedBox(width: 6),
-                _filterChip('Gelmedi', 'NO_SHOW', c),
+                _filterChip(s.filterCompleted, 'COMPLETED', c),
+                _filterChip(s.filterCancelled, 'CANCELLED', c),
+                _filterChip(s.filterNoShow, 'NO_SHOW', c),
               ],
             ),
           ),
@@ -138,6 +134,7 @@ class _SalonAppointmentsScreenState extends ConsumerState<SalonAppointmentsScree
                         appointment: apt,
                         onConfirm: apt.status == 'PENDING' ? () => _updateStatus(apt.id, 'CONFIRMED') : null,
                         onComplete: apt.status == 'CONFIRMED' ? () => _updateStatus(apt.id, 'COMPLETED') : null,
+                        onNoShow: apt.status == 'CONFIRMED' ? () => _updateStatus(apt.id, 'NO_SHOW') : null,
                         onCancel: (apt.status == 'PENDING' || apt.status == 'CONFIRMED')
                             ? () => _showCancelDialog(apt.id, apt.customerName)
                             : null,
@@ -182,7 +179,11 @@ class _SalonAppointmentsScreenState extends ConsumerState<SalonAppointmentsScree
       await ref.read(salonAppointmentsProvider.notifier).updateStatus(id, newStatus);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(newStatus == 'CONFIRMED' ? s.appointmentConfirmed : s.appointmentCompleted)),
+          SnackBar(content: Text(switch (newStatus) {
+            'CONFIRMED' => s.appointmentConfirmed,
+            'NO_SHOW' => s.appointmentNoShow,
+            _ => s.appointmentCompleted,
+          })),
         );
       }
     } catch (e) {
@@ -224,12 +225,14 @@ class _AppointmentTile extends StatelessWidget {
   final VoidCallback? onConfirm;
   final VoidCallback? onCancel;
   final VoidCallback? onComplete;
+  final VoidCallback? onNoShow;
 
   const _AppointmentTile({
     required this.appointment,
     this.onConfirm,
     this.onCancel,
     this.onComplete,
+    this.onNoShow,
   });
 
   @override
@@ -287,6 +290,7 @@ class _AppointmentTile extends StatelessWidget {
                 children: [
                   if (onConfirm != null) _actionBtn(s.confirm, Icons.check, AppColors.success, onConfirm!),
                   if (onComplete != null) _actionBtn(s.complete, Icons.done_all, AppColors.info, onComplete!),
+                  if (onNoShow != null) _actionBtn(s.markNoShow, Icons.person_off_outlined, AppColors.warning, onNoShow!),
                   if (onCancel != null) _actionBtn(s.cancel, Icons.close, AppColors.error, onCancel!),
                 ],
               ),

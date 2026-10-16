@@ -55,8 +55,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
 
     return Scaffold(
-      body: Column(
-        children: [
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
           Container(
             decoration: const BoxDecoration(
               gradient: AppColors.headerGradient,
@@ -82,7 +86,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 Text(s.appTitle,
                     style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.5)),
                 const SizedBox(height: 6),
-                Text(s.loginSubtitle,
+                Text(s.registerSubtitle,
                     style: const TextStyle(fontSize: 14, color: Colors.white70),
                     textAlign: TextAlign.center),
               ],
@@ -188,7 +192,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 height: 24,
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                               )
-                            : Text(s.loginButton,
+                            : Text(s.registerButton,
                                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
                       ),
                     ),
@@ -196,7 +200,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     Align(
                       child: TextButton(
                         onPressed: () => context.pop(),
-                        child: Text(s.loginSubtitle, style: const TextStyle(color: AppColors.primary)),
+                        child: Text(s.backToLogin, style: const TextStyle(color: AppColors.primary)),
                       ),
                     ),
                   ],
@@ -205,6 +209,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }

@@ -4,6 +4,13 @@ import 'package:flutter/foundation.dart';
 
 class ApiEnvironment {
   static String get baseUrl {
+    // Derlemede override edilebilir: --dart-define=API_BASE_URL=http://localhost:3200/api/v1
+    const override = String.fromEnvironment('API_BASE_URL');
+    if (override.isNotEmpty) return override;
+
+    // 10.0.2.2 yalnızca Android emülatörünün host'a erişim adresidir; web'de çalışmaz.
+    if (kIsWeb) return 'http://localhost:3000/api/v1';
+
     if (kDebugMode) {
       return 'http://10.0.2.2:3000/api/v1'; // Android emulator
     }

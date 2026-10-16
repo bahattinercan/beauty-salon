@@ -3,6 +3,7 @@
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Building2, Users, Calendar, Star, TrendingUp, TrendingDown, CheckCircle, Clock, XCircle, Loader2, RefreshCw } from 'lucide-react';
 import { useDashboard } from '@/providers/DashboardProvider';
+import { useChartTheme } from '@/lib/chartTheme';
 
 // Stat Card Component
 function StatCard({
@@ -103,6 +104,7 @@ function DashboardError({ message, onRetry }: { message: string; onRetry: () => 
 
 export default function Dashboard() {
   const { data, loading, error, refetch } = useDashboard();
+  const chart = useChartTheme();
   const today = new Date();
   const formattedDate = today.toLocaleDateString('tr-TR', {
     weekday: 'long',
@@ -204,11 +206,11 @@ export default function Dashboard() {
             {monthlyAppointments.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={monthlyAppointments}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="appointments" fill="#B76E79" radius={[8, 8, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+                  <XAxis dataKey="name" stroke={chart.axis} tick={{ fill: chart.axis, fontSize: 12 }} />
+                  <YAxis stroke={chart.axis} tick={{ fill: chart.axis, fontSize: 12 }} />
+                  <Tooltip {...chart.tooltip} />
+                  <Bar dataKey="appointments" fill={chart.bar} radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -231,14 +233,15 @@ export default function Dashboard() {
                     labelLine={false}
                     label={({ name, value }) => `${name} (${value})`}
                     outerRadius={80}
-                    fill="#8884d8"
+                    stroke={chart.pieStroke}
+                    strokeWidth={2}
                     dataKey="value"
                   >
                     {appointmentsByStatus.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell key={`cell-${index}`} fill={entry.color} stroke={chart.pieStroke} strokeWidth={2} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip {...chart.tooltip} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (

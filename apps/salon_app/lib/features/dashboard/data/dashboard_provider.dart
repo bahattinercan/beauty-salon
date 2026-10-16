@@ -77,56 +77,44 @@ class DashboardNotifier extends AsyncNotifier<DashboardData> {
     }
 
     final api = ref.read(apiClientProvider);
-    final today = _dateStr(DateTime.now());
+    final now = DateTime.now();
+    final today = _dateStr(now);
+    final monthStart = _dateStr(DateTime(now.year, now.month, 1));
+    final weekStart = _dateStr(now.subtract(const Duration(days: 6)));
+    // Haftalık grafik son 7 günü, gelir kartı ayın tamamını istiyor.
+    // Aralığın başı ikisinin minimumu olmalı; aksi halde ay başında (ör. 3 Ekim)
+    // son 7 günün bir kısmı sorgu kapsamı dışında kalıp grafikte 0 görünüyordu.
+    final from = weekStart.compareTo(monthStart) < 0 ? weekStart : monthStart;
 
-    // Bugünkü randevular
-    final todayRes = await api.dio.get(
+    // Tek istek: from -> bugün. Önceki hali gün başına istek atıyor,
+    // dashboard açılışında ~39 istek (1 + 7 + 31) üretip rate limit'i (100/dk) tetikliyordu.
+    final res = await api.dio.get(
       '/appointments/salon/${salon.id}',
-      queryParameters: {'date': today},
+      queryParameters: {'from': from, 'to': today},
     );
-    final todayList = ((todayRes.data['data'] as List?) ?? [])
+    final rangeList = ((res.data['data'] as List?) ?? [])
         .map((e) => DashboardAppointment.fromJson(e as Map<String, dynamic>))
         .toList();
 
-    // Haftalık chart — paralel çağrı (N+1 düzeltildi)
-    final now = DateTime.now();
-    final weeklyChartFuture = Future.wait(
-      List.generate(7, (i) async {
-        final day = now.subtract(Duration(days: 6 - i));
-        final res = await api.dio.get(
-          '/appointments/salon/${salon.id}',
-          queryParameters: {'date': _dateStr(day)},
-        );
-        return ((res.data['data'] as List?)?.length ?? 0);
-      }),
-    );
-    final weeklyChart = await weeklyChartFuture;
-    final weekTotal = weeklyChart.reduce((a, b) => a + b);
-
-    // SA-001: Bu ayki tüm günler için paralel çağrı ile aylık gelir hesabı
-    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
-    final monthlyFutures = List.generate(daysInMonth, (i) async {
-      final day = DateTime(now.year, now.month, i + 1);
-      if (day.isAfter(now)) return <DashboardAppointment>[];
-      final res = await api.dio.get(
-        '/appointments/salon/${salon.id}',
-        queryParameters: {'date': _dateStr(day)},
-      );
-      return ((res.data['data'] as List?) ?? [])
-          .map((e) => DashboardAppointment.fromJson(e as Map<String, dynamic>))
-          .toList();
+    final todayList = rangeList.where((a) => _dayOf(a.date) == today).toList();
+    final weeklyChart = List.generate(7, (i) {
+      final day = _dateStr(now.subtract(Duration(days: 6 - i)));
+      return rangeList.where((a) => _dayOf(a.date) == day).length;
     });
-    final monthlyAppointments = (await Future.wait(monthlyFutures)).expand((x) => x);
+
+    // Gelir yalnızca ay içindeki randevlardan hesaplanır (from ay başından önce olabilir).
     double monthRevenue = 0;
-    for (final appt in monthlyAppointments) {
-      if (appt.status == 'COMPLETED' && appt.servicePrice != null) {
+    for (final appt in rangeList) {
+      if (appt.status == 'COMPLETED' &&
+          appt.servicePrice != null &&
+          _dayOf(appt.date).compareTo(monthStart) >= 0) {
         monthRevenue += appt.servicePrice!;
       }
     }
 
     return DashboardData(
       todayCount: todayList.length,
-      weekCount: weekTotal,
+      weekCount: weeklyChart.reduce((a, b) => a + b),
       monthRevenue: monthRevenue,
       avgRating: salon.ratingAvg,
       todayAppointments: todayList,
@@ -141,4 +129,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardData> {
 
   String _dateStr(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  /// API bazen tam ISO timestamp döndürüyor; karşılaştırma için YYYY-MM-DD'e indirgenir.
+  String _dayOf(String date) => date.split('T').first;
 }

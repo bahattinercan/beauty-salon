@@ -1,25 +1,128 @@
 @import "tailwindcss";
 
+/* Class tabanlı dark mode (Tailwind v4 default'u media-query'dir!) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------- Light (bugünkü değerler korunur) ---------- */
+:root {
+  --background: #FAFAFA;
+  --surface: #FFFFFF;
+  --surface-variant: #F5F5F5;
+  --border: #E5E7EB;
+  --border-strong: #D1D5DB;
+  --fg: #2D2D2D;
+  --fg-muted: #6B7280;
+  --fg-subtle: #9CA3AF;
+
+  --primary: #B76E79;
+  --primary-dark: #8B4D57;
+  --primary-light: #D4979F;
+  /* Solid dolgu (buton/aktif menü) — beyaz metin 4.5:1 AA'yı geçsin diye
+     marka accent'ından bir ton koyu tutulur. */
+  --primary-solid: #A6616C;
+  --primary-solid-hover: #8B4D57;
+  --on-primary: #FFFFFF;
+  --secondary: #F5E6E8;
+  --accent: #D4A373;
+
+  --success: #7CB69D;
+  --error: #E57373;
+  --warning: #FFB74D;
+  --info: #64B5F6;
+}
+
+/* ---------- Dark (marka uyumlu rose-nötr; .dark :root'tan SONRA gelmeli) ---------- */
+.dark {
+  --background: #131013;
+  --surface: #1C181B;
+  --surface-variant: #262023;
+  --border: #332B2F;
+  --border-strong: #453A3F;
+  --fg: #F0ECEE;
+  --fg-muted: #B0A6AB;
+  --fg-subtle: #7C7276;
+
+  --primary: #D9959F;
+  --primary-dark: #A85F6B;
+  --primary-light: #E8B4BB;
+  /* Dark'ta solid açılır, hover daha da açılır; metin koyu (on-primary). */
+  --primary-solid: #D9959F;
+  --primary-solid-hover: #E8B4BB;
+  --on-primary: #1C181B; /* açık rose üzerinde beyaz okunmaz → koyu metin */
+  --secondary: #2B2226;
+  --accent: #E0B183;
+
+  --success: #7CCBA2;
+  --error: #F28B82;
+  --warning: #FDD663;
+  --info: #8AB4F8;
+}
+
+/* ---------- Tailwind'e tanıt (inline => var() referansı korunur) ---------- */
 @theme inline {
-  --color-primary: #B76E79;
-  --color-primary-dark: #8B4D57;
-  --color-primary-light: #D4979F;
-  --color-secondary: #F5E6E8;
-  --color-accent: #D4A373;
-  --color-success: #7CB69D;
-  --color-error: #E57373;
-  --color-warning: #FFB74D;
-  --color-info: #64B5F6;
-  --color-background: #FAFAFA;
-  --color-surface: #FFFFFF;
-  --color-surface-variant: #F5F5F5;
-  --color-text-primary: #2D2D2D;
-  --color-text-secondary: #757575;
-  --color-text-hint: #BDBDBD;
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-variant: var(--surface-variant);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
+  --color-primary-solid: var(--primary-solid);
+  --color-primary-solid-hover: var(--primary-solid-hover);
+  --color-on-primary: var(--on-primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
 }
 
 body {
   background: var(--color-background);
-  color: var(--color-text-primary);
+  color: var(--color-fg);
   font-family: 'Inter', 'Poppins', sans-serif;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* ---------- Tekrar eden kombinasyonlar ---------- */
+@utility badge-base {
+  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold;
+}
+
+@utility badge-success {
+  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300;
+}
+
+@utility badge-error {
+  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300;
+}
+
+@utility badge-warning {
+  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300;
+}
+
+@utility badge-info {
+  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300;
+}
+
+@utility badge-purple {
+  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300;
+}
+
+@utility badge-neutral {
+  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-surface-variant text-fg dark:text-fg-muted;
 }

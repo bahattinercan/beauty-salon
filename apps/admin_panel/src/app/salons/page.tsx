@@ -228,12 +228,12 @@ export default function SalonsPage() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+      <div className="rounded-lg border border-red-200 bg-red-50 p-6 dark:border-red-500/30 dark:bg-red-500/10">
         <div className="flex items-start gap-3">
-          <XCircle className="mt-1 h-5 w-5 text-red-500" />
+          <XCircle className="mt-1 h-5 w-5 text-red-500 dark:text-red-400" />
           <div className="flex-1">
-            <h3 className="font-medium text-red-800">Veri Yükleme Hatası</h3>
-            <p className="mt-1 text-sm text-red-600">{error}</p>
+            <h3 className="font-medium text-red-800 dark:text-red-300">Veri Yükleme Hatası</h3>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-300">{error}</p>
             <button
               onClick={() => fetchSalons(currentPage)}
               className="mt-3 flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
@@ -491,7 +491,7 @@ export default function SalonsPage() {
                     onClick={() => setCurrentPage(page)}
                     className={`px-3 py-2 rounded-lg border transition-colors text-sm font-medium ${
                       page === currentPage
-                        ? "bg-primary text-white border-primary"
+                        ? "bg-primary text-on-primary border-primary"
                         : "border-gray-200 text-text-primary hover:bg-secondary"
                     }`}
                   >

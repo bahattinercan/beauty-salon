@@ -45,8 +45,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     return Scaffold(
-      body: Column(
-        children: [
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
           // Gradient top section
           Container(
             decoration: const BoxDecoration(
@@ -165,6 +169,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }

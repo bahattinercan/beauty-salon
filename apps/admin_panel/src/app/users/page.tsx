@@ -110,11 +110,11 @@ export default function UsersPage() {
   const getRoleColor = (role: UserRole): string => {
     switch (role) {
       case 'CUSTOMER':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300';
       case 'SALON_OWNER':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300';
       case 'ADMIN':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -195,7 +195,7 @@ export default function UsersPage() {
         </div>
 
         {error && (
-          <div className="p-4 mb-4 bg-red-50 text-red-700 rounded-lg text-sm">
+          <div className="p-4 mb-4 bg-red-50 text-red-700 rounded-lg text-sm dark:bg-red-500/10 dark:text-red-300">
             {error}
           </div>
         )}
@@ -238,7 +238,7 @@ export default function UsersPage() {
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-sm">
+                          <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-semibold text-sm">
                             {getInitials(user.fullName)}
                           </div>
                           <div>
@@ -272,12 +272,12 @@ export default function UsersPage() {
                         <div className="flex items-center gap-2">
                           <div
                             className={`w-2 h-2 rounded-full ${
-                              user.isActive ? 'bg-green-500' : 'bg-red-500'
+                              user.isActive ? 'bg-green-500 dark:bg-green-400' : 'bg-red-500 dark:bg-red-400'
                             }`}
                           />
                           <span
                             className={`text-sm font-medium ${
-                              user.isActive ? 'text-green-600' : 'text-red-600'
+                              user.isActive ? 'text-green-600 dark:text-green-300' : 'text-red-600 dark:text-red-400'
                             }`}
                           >
                             {user.isActive ? 'Aktif' : 'Pasif'}
@@ -295,7 +295,7 @@ export default function UsersPage() {
                             {togglingId === user.id ? (
                               <Loader2 className="w-5 h-5 animate-spin" />
                             ) : user.isActive ? (
-                              <ToggleRight className="w-5 h-5 text-green-600" />
+                              <ToggleRight className="w-5 h-5 text-green-600 dark:text-green-300" />
                             ) : (
                               <ToggleLeft className="w-5 h-5 text-gray-400" />
                             )}

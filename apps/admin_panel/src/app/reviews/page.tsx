@@ -188,7 +188,7 @@ export default function ReviewsPage() {
         </div>
 
         {error && (
-          <div className="p-4 mb-4 bg-red-50 text-red-700 rounded-lg text-sm">
+          <div className="p-4 mb-4 bg-red-50 text-red-700 rounded-lg text-sm dark:bg-red-500/10 dark:text-red-300">
             {error}
           </div>
         )}
@@ -212,7 +212,7 @@ export default function ReviewsPage() {
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold text-sm">
+                        <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-semibold text-sm">
                           {getInitials(customerName)}
                         </div>
                         <div>
@@ -228,7 +228,7 @@ export default function ReviewsPage() {
                               key={star}
                               className={`w-4 h-4 ${
                                 star <= review.rating
-                                  ? 'fill-amber-400 text-amber-400'
+                                  ? 'fill-amber-400 text-amber-400 dark:fill-amber-300 dark:text-amber-300'
                                   : 'text-gray-300'
                               }`}
                             />
@@ -241,14 +241,14 @@ export default function ReviewsPage() {
                           className={`p-2 rounded-lg transition-colors ${
                             review.isVisible
                               ? 'text-gray-600 hover:bg-gray-100'
-                              : 'text-amber-600 hover:bg-amber-50'
+                              : 'text-amber-600 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-500/10'
                           }`}
                           title={review.isVisible ? 'Yorumu Gizle' : 'Yorumu Göster'}
                         >
                           {togglingId === review.id ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : review.isVisible ? (
-                            <Eye className="w-4 h-4 text-green-600" />
+                            <Eye className="w-4 h-4 text-green-600 dark:text-green-300" />
                           ) : (
                             <EyeOff className="w-4 h-4 text-gray-400" />
                           )}

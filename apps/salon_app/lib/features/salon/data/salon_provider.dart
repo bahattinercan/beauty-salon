@@ -97,8 +97,10 @@ class SalonNotifier extends AsyncNotifier<SalonInfo?> {
   Future<SalonInfo?> build() => _fetch();
 
   Future<SalonInfo?> _fetch() async {
-    final auth = ref.read(authProvider).asData?.value;
-    if (auth == null || !auth.isLoggedIn) return null;
+    // Oturum durumu henüz çözülmemiş olabilir (ilk açılış / deep link). Senkron okuma
+    // bu durumda null döndürüp salonu — dolayısıyla tüm ekranların verisini — boş bırakıyordu.
+    final auth = await ref.read(authProvider.future);
+    if (!auth.isLoggedIn) return null;
 
     final response = await ref.read(apiClientProvider).dio.get('/salons/owner/my-salons');
     final list = response.data['data'] as List?;

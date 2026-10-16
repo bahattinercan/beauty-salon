@@ -224,4 +224,15 @@ class S {
   String get themeLight         => isEn ? 'Light'                    : 'Açık';
   String get themeDark          => isEn ? 'Dark'                     : 'Koyu';
   String get themeSystem        => isEn ? 'System'                   : 'Sistem';
+
+  // ── Kurtarma: reset'te silinen i18n anahtarları ──
+  String get appointmentNoShow       => isEn ? 'Marked as no-show'          : 'Randevu gelmedi olarak işaretlendi';
+  String get backToLogin          => isEn ? 'Already have an account? Sign In'     : 'Zaten hesabın var mı? Giriş Yap';
+  String get filterCancelled         => isEn ? 'Cancelled'                  : 'İptal';
+  String get filterCompleted         => isEn ? 'Completed'                  : 'Tamamlandı';
+  String get filterNoShow            => isEn ? 'No-show'                    : 'Gelmedi';
+  String get markNoShow              => isEn ? 'Mark no-show'               : 'Gelmedi olarak işaretle';
+  String get monthlyRevenue          => isEn ? 'Monthly Revenue'            : 'Aylık Gelir';
+  String get registerButton       => isEn ? 'Register'                             : 'Kayıt Ol';
+  String get registerSubtitle     => isEn ? 'Create an account to manage your salon' : 'Salonunu yönetmek için hesap oluştur';
 }

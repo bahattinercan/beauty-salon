@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +22,7 @@ class _RouterNotifier extends ChangeNotifier {
     _ref.listen(authProvider, (_, _) => notifyListeners());
   }
   bool get isLoggedIn => _ref.read(authProvider).asData?.value.isLoggedIn ?? false;
+  bool get isResolving => _ref.read(authProvider).isLoading;
 }
 
 final _routerNotifierProvider = Provider<_RouterNotifier>((ref) => _RouterNotifier(ref));
@@ -28,12 +30,26 @@ final _routerNotifierProvider = Provider<_RouterNotifier>((ref) => _RouterNotifi
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = ref.watch(_routerNotifierProvider);
 
+  // Web'de açılış yolu tarayıcı URL'inden alınmalı. go_router yalnızca platform
+  // varsayılanı '/' iken initialLocation'ı kullanıyor; Flutter web'de defaultRouteName
+  // her zaman '/' olduğu için deep linkler (/reviews gibi) initialLocation'a düşüyor
+  // ve kullanıcı hangi yoldan gelirse dashboard'a yönlendiriliyordu.
+  final webPath = kIsWeb ? Uri.base.path : '';
+  final initialLocation = webPath.isNotEmpty && webPath != '/' ? webPath : '/login';
+
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/login',
+    initialLocation: initialLocation,
     refreshListenable: notifier,
     redirect: (context, state) {
       final isLoginRoute = state.matchedLocation == '/login' || state.matchedLocation == '/register';
+      // Oturum durumu henüz çözülmedi (secure storage okunuyor). Bu aşamada yönlendirme
+      // deep link'i kaybediyor: web'de /reviews ile açılan uygulama /login'e düşüyor,
+      // sonra login ekranı /dashboard'a atıyordu. Yalnızca kök yolu login'e gönderiyoruz;
+      // refreshListenable durum çözülünce tekrar değerlendirir.
+      if (notifier.isResolving) {
+        return state.matchedLocation == '/' ? '/login' : null;
+      }
       if (!notifier.isLoggedIn && !isLoginRoute) return '/login';
       if (notifier.isLoggedIn && isLoginRoute) return '/dashboard';
       return null;

@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:salon_app/features/appointments/data/appointments_provider.dart';
 import 'package:salon_app/features/dashboard/data/dashboard_provider.dart';
@@ -234,9 +233,12 @@ void main() {
   });
 
   group('DashboardNotifier', () {
+    // Tarih bugüne göre kurulur: aralıklı tek istek bugünü kapsamalı.
+    final now = DateTime.now();
+    final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     final appt = {
       'id': 'ap-1',
-      'date': '2026-10-12',
+      'date': today,
       'startTime': '10:00',
       'endTime': '10:45',
       'status': 'COMPLETED',
@@ -255,6 +257,19 @@ void main() {
       expect(data.weeklyChart, hasLength(7));
       expect(data.weekCount, greaterThan(0));
       expect(data.monthRevenue, greaterThan(0));
+    });
+
+    test('build() randevular için tek istek yapar (gün başına N+1 yok)', () async {
+      final api = FakeApi(responses: {
+        '/salons/owner/my-salons': salonResponses,
+        '/appointments/salon/salon-1': {'data': [appt]},
+      });
+      final container = makeContainer(api);
+      await settle(container, authProvider);
+
+      await container.read(dashboardProvider.future);
+      final apptCalls = api.requests.where((r) => r.contains('/appointments/salon/')).length;
+      expect(apptCalls, 1);
     });
 
     test('salon yoksa istatistikler sıfır döner', () async {

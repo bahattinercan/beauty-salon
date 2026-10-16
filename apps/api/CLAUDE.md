@@ -1,7 +1,9 @@
 # Beauty Salon API — CLAUDE.md
 
 ## Dokümantasyon
-Detaylı ve kodla doğrulanmış tek kaynak: `docs/BACKEND-API.md`. Bu dosyadaki endpoint listesi özet halindedir ve `Notifications` / `Products` endpoint'lerini içermez; `sync({ alter: true })` ve `available-slots` auth durumu gibi noktelerde `docs/BACKEND-API.md` esas alınmalıdır.
+- Modüler ayrıntılı set: **`docs/api/`** (README + 01…12 + `openapi.yaml`) — 2026-10-15 doğrulaması.
+- Tek sayfalık özet: `docs/BACKEND-API.md` (aynı tarihe hizalandı).
+- Bu dosyadaki endpoint listesi özet halindedir. `available-slots` auth gerektirmez; `Notifications`, `Products` ve `Settings` endpoint'leri aşağıda eklenmiştir.
 
 ## Proje Özeti
 Güzellik salonları için REST API. Müşteriler salon arayabilir, hizmet seçebilir, çalışan bazlı randevu alabilir, yorum yapabilir ve favorilere ekleyebilir. Salon sahipleri çalışan/hizmet yönetir, randevuları onaylar/iptal eder. Admin platform genelini denetler.
@@ -29,9 +31,12 @@ npm run seed       # manuel seed çalıştırma
 
 `src/server.js` başlangıçta:
 1. `connectDB()` ile SQLite'a bağlanır
-2. `sequelize.sync({ alter: true })` ile tabloları oluşturur
-3. User/ Salon count sıfırsa `seed()` çalıştırır
-4. `app.listen(PORT)` ile sunucuyu açar
+2. `sequelize.sync()` ile eksik tabloları oluşturur (`alter: true` kullanılmaz)
+3. `dropBackupTables()` + `ensureColumns()` ile şemayı tamamlar
+4. User/ Salon count sıfırsa `seed()` çalıştırır
+5. `app.listen(PORT)` ile sunucuyu açar
+
+> Runtime DB dosyası fiilen `apps/api/src/database.sqlite`'dir (`config/database.js` → `path.join(__dirname, '..', ...)`, `__dirname = src/config`).
 
 ## API Base Path
 `/api/v1` (`.env` → `API_PREFIX` ile değiştirilebilir)
@@ -102,7 +107,7 @@ npm run seed       # manuel seed çalıştırma
 | Method | Path | Auth | Açıklama |
 |--------|------|------|----------|
 | POST | `/appointments` | required | Randevu oluştur (salonId, staffId, serviceId, date, startTime, note) |
-| GET | `/appointments/available-slots` | required | Boş slotları getir (30dk aralıklı, salon workingHours + çakışma kontrolü) |
+| GET | `/appointments/available-slots` | **public** | Boş slotları getir (30dk aralıklı, salon workingHours + çakışma kontrolü) |
 | GET | `/appointments/my` | required | Kendi randevularım |
 | GET | `/appointments/salon/:salonId` | SALON_OWNER, ADMIN | Salon randevuları (date, status filter) |
 | PATCH | `/appointments/:id/status` | SALON_OWNER, ADMIN | Randevu durumu güncelle |
@@ -127,6 +132,32 @@ npm run seed       # manuel seed çalıştırma
 | GET | `/favorites` | required | Favori salonlarım |
 | POST | `/favorites/:salonId` | required | Toggle favori (varsa sil, yoksa ekle) |
 | GET | `/favorites/:salonId/check` | required | Favori mi kontrolü |
+
+### Notifications
+| Method | Path | Auth | Açıklama |
+|--------|------|------|----------|
+| GET | `/notifications` | required | Sayfalı liste (`isRead`, `type` filtresi) |
+| GET | `/notifications/unread-count` | required | Okunmamış sayı |
+| PATCH | `/notifications/:id/read` | required | Okundu işaretle |
+| PATCH | `/notifications/read-all` | required | Tümünü okundu |
+| DELETE | `/notifications/:id` | required | Sil |
+
+> Bu tabloya yazan kod yoktur — salt okunur sistem.
+
+### Products
+| Method | Path | Auth | Açıklama |
+|--------|------|------|----------|
+| GET | `/salons/:salonId/products` | public | Aktif ürünler (`search`, `category`, `sortBy`) |
+| POST | `/salons/:salonId/products` | SALON_OWNER | Oluşturma |
+| GET | `/products/:id` | public | Detay |
+| PATCH | `/products/:id` | SALON_OWNER | Güncelle |
+| DELETE | `/products/:id` | SALON_OWNER | Soft delete |
+
+### Settings
+| Method | Path | Auth | Açıklama |
+|--------|------|------|----------|
+| GET | `/settings` | ADMIN | Ayarlar (DB + DEFAULTS) |
+| PUT | `/settings` | ADMIN | key/value upsert |
 
 ### Upload
 | Method | Path | Auth | Açıklama |
@@ -163,7 +194,7 @@ npm run seed       # manuel seed çalıştırma
 - `id`, `salon_id`, `category_id`, `name`, `description`, `price` (DECIMAL), `duration_minutes`, `image_url`, `isActive`
 
 ### StaffService (join table, no timestamps)
-- `staff_id` (PK), `service_id` (PK)
+- `staff_id`, `service_id` — modelde `primaryKey: true` iddiası var ama Sequelize composite PK desteklemez; fiili şemada PK yoktur (duplicate join kaydı engellenmez)
 
 ### Appointment
 - `id`, `customer_id`, `salon_id`, `staff_id`, `service_id`, `date` (DATEONLY), `start_time` (TIME), `end_time` (TIME), `status` (ENUM: PENDING/CONFIRMED/CANCELLED/COMPLETED/NO_SHOW), `note`, `cancellation_reason`
@@ -172,8 +203,12 @@ npm run seed       # manuel seed çalıştırma
 ### Review
 - `id`, `customer_id`, `salon_id`, `appointment_id` (unique), `rating` (1-5), `comment`, `images` (JSONB), `salon_reply`, `salon_reply_at`, `is_visible`
 
-### Favorite (composite PK, no updatedAt)
-- `user_id` (PK), `salon_id` (PK)
+### Favorite (id PK, no updatedAt)
+- `id` (UUID PK), `user_id`, `salon_id`, `created_at`
+- **UNIQUE index:** `[user_id, salon_id]`
+
+### Setting (no updatedAt)
+- `key` (PK, unique), `value` (JSON)
 
 ### Product
 - `id`, `salon_id`, `name`, `description`, `price`, `stock_quantity`, `images` (JSONB), `category`, `isActive`
@@ -198,11 +233,12 @@ Appointment 1──1 Review
 User N──M Salon (Favorite)
 Salon 1──N Product
 User 1──N Notification
+Setting (key/value)
 ```
 
 ## Middleware Sırası
 1. `helmet()` → güvenlik headerları
-2. `cors()` → localhost:3000, 3001, 8080
+2. `cors()` → `ALLOWED_ORIGINS` env (+ development'ta localhost herhangi port)
 3. `rateLimit()` → genel: 100/60sn
 4. `authLimiter()` → /auth/login, /auth/register: 10/60sn
 5. `refreshLimiter()` → /auth/refresh: 60/60sn
@@ -279,8 +315,11 @@ PORT, NODE_ENV, API_PREFIX
 UPLOAD_DEST, MAX_FILE_SIZE
 SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
 RATE_LIMIT_WINDOW, RATE_LIMIT_MAX
+ALLOWED_ORIGINS (virgülle ayrılmış CORS origin listesi)
 TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER (opsiyonel)
 ```
 
 ## Test Kullanıcıları (API)
 Backend testleri için seed verilerindeki kullanıcıları kullan.
+
+Testler 2026-10-15 itibarıyla tamamen geçiyor (14 dosya, 286 test). Ayrıntı: `docs/api/10-tests.md`.

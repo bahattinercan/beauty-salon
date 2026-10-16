@@ -1,9 +1,10 @@
 # 🏨 Beauty Salon Backend — Detaylı Dokümantasyon
 
-> **Tek kaynak budur.** Eski (bozuk) içerik `docs/BACKEND-API.md.bak` dosyasında yedeklendi.
 > Kapsam: `apps/api/` (Node.js 24 / Express 5 / Sequelize 6 / SQLite)
-> Kaynak: `src/` kodundan, `tests/` suite'inden ve canlı sunucu üzerinde yapılan gerçek isteklerden çıkarılmıştır.
-> Doğrulama tarihi: 2026-10-12
+> Kaynak: `src/` kodundan, `tests/` suite'inden, `src/database.sqlite` şemasından ve canlı sunucu üzerinde yapılan gerçek isteklerden çıkarılmıştır.
+> **Doğrulama tarihi: 2026-10-15** (`npm test` → 286 passing, canlı probe ile teyit edildi)
+>
+> 📁 Modüler asıl dokümantasyon: **`docs/api/`** (README + 01…12 + `openapi.yaml`). Bu dosya tek sayfalık özettir; ayrıntı ve güncel doğrulama `docs/api/` setindedir. Eski (bozuk) içerik `docs/BACKEND-API.md.bak` dosyasında yedeklendi.
 
 ---
 
@@ -28,19 +29,26 @@ npm install
 npm run dev        # nodemon (NODE_ENV=development → morgan logging + SQL logging açık)
 npm start          # production
 npm run seed       # manuel seed
-npm test           # mocha (NODE_ENV=test)
+npm test           # node --env-file=.env.test mocha "tests/**/*.test.js"
 npm run migrate    # sequelize-cli (Postgres config'i — bkz. §14)
 ```
+
+`.env` `PORT=3000` yazar; bu makinede 3000 başka bir projeye ait olduğu için API **3200** ile çalıştırılıyor:
+`PORT=3200 NODE_ENV=development node src/server.js`.
 
 `src/server.js` açılış sırası:
 
 1. `dotenv` yüklenir
-2. `connectDB()` → SQLite dosyasına bağlanır (`database.sqlite`, test modunda `test-database.sqlite`)
-3. `sequelize.sync({ alter: true })` → tablolar oluşturulur/alter edilir
-4. `User.count() == 0 || Salon.count() == 0` ise `seed()` çalışır
-5. `app.listen(PORT)`
+2. `connectDB()` → SQLite dosyasına bağlanır
+3. `sequelize.sync()` → eksik tabloları oluşturur (**`alter: true` artık kullanılmıyor**)
+4. `dropBackupTables()` → eski `*_backup` tablolarını siler
+5. `ensureColumns()` → eksik kolonları `ALTER TABLE ... ADD COLUMN` ile ekler
+6. `User.count() == 0 || Salon.count() == 0` ise `seed()` çalışır
+7. `app.listen(PORT)`
 
-> ⚠️ `alter: true` her açılışta tabloyu backup-tablo üzerinden yeniden yaratır. Production'da kullanılmamalıdır. CLAUDE.md "alter: false" der, kod `true` kullanır.
+> ⚠️ `ensureColumns()` bir modelin tablosu yoksa patlar (`PRAGMA table_info` boş döner → `ALTER TABLE` "no such table"). Bu yüzden `sync()` **önce** çalışmalıdır.
+
+> ⚠️ **DB dosyası yolu:** `config/database.js` içinde `path.join(__dirname, '..', ...)` ve `__dirname = src/config` → fiilen kullanılan dosyalar `apps/api/src/database.sqlite` ve `apps/api/src/test-database.sqlite`. `apps/api/database.sqlite` eski/yedek dosyadır, kod kullanmaz.
 
 ---
 
@@ -58,7 +66,8 @@ npm run migrate    # sequelize-cli (Postgres config'i — bkz. §14)
 | `RATE_LIMIT_WINDOW` | 60000 ms | genel limiter |
 | `RATE_LIMIT_MAX` | 100 | genel limiter |
 | `MAX_FILE_SIZE` | 5242880 (5MB) | Multer `limits.fileSize` |
-| `UPLOAD_DEST` | `./uploads` | **kodda kullanılmıyor** (Multer sabit `./uploads`) |
+| `UPLOAD_DEST` | `./uploads` | Multer hedefi — **artık kullanılıyor** (cwd'e göre çözülür) |
+| `ALLOWED_ORIGINS` | `http://localhost:3000,3001,8080` | `app.js` CORS; development'ta localhost/127.0.0.1 herhangi port da kabul edilir |
 | `SMTP_HOST/PORT/USER/PASS/FROM` | Mailtrap sandbox | `utils/mailer.js` |
 | `DB_HOST/PORT/NAME/NAME_TEST/USER/PASSWORD` | postgres | **yalnızca `sequelize-cli`** (runtime SQLite kullanır) |
 | `TWILIO_ACCOUNT_SID/AUTH_TOKEN/PHONE_NUMBER` | yok | `utils/sms.js` (yoksa konsola OTP yazar) |
@@ -75,17 +84,18 @@ apps/api/
 │   ├── config/
 │   │   ├── database.js           # Sequelize instance (SQLite, underscored, timestamps)
 │   │   └── sequelize-config.js   # sequelize-cli config (Postgres — runtime'da kullanılmaz)
-│   ├── models/                   # 11 model + index.js (ilişkiler)
+│   ├── models/                   # 12 model + index.js (ilişkiler)
 │   ├── controllers/              # 14 controller
 │   ├── routes/                   # 14 route dosyası + index.js
 │   ├── middlewares/              # auth, errorHandler, upload, validate
 │   ├── validators/               # auth, salon, appointment, review, product
 │   ├── utils/                    # helpers, mailer, sms
-│   ├── seeders/seed.js
-│   └── database/migrations/      # 11 migration (Postgres/JSONB tabanlı)
-├── tests/                        # 11 dosya, ~223 test
+│   ├── seeders/                  # seed.js, reset.js
+│   └── database/migrations/      # 12 migration (Postgres/JSONB tabanlı)
+├── tests/                        # 14 dosya, 286 test
 ├── uploads/                      # yüklenen dosyalar
-├── database.sqlite               # runtime DB (sync ile oluşur)
+├── src/database.sqlite           # ← gerçek runtime DB
+├── database.sqlite               # eski/yedek dosya (kod kullanmıyor)
 └── .sequelizerc
 ```
 
@@ -95,12 +105,14 @@ apps/api/
 
 ```
 1. helmet()                 → güvenlik headerları
-2. cors()                   → origin: localhost:3000, 3001, 8080 · credentials:true
-                             methods: GET, POST, PATCH, DELETE
+2. cors()                   → ALLOWED_ORIGINS + development'ta localhost/127.0.0.1 herhangi port
+                             Origin göndermeyen istekler (curl/Postman/supertest) kabul edilir
+                             credentials:true · methods: GET, POST, PUT, PATCH, DELETE
                              headers: Content-Type, Authorization
 3. limiter                  → genel: RATE_LIMIT_WINDOW / RATE_LIMIT_MAX (standardHeaders:true)
 4. authLimiter              → /auth/login, /auth/register: 10 istek / 60 sn (hardcoded)
 5. refreshLimiter           → /auth/refresh: 60 istek / 60 sn (hardcoded)
+                             (3-5 test ortamında devre dışı)
 6. express.json (10mb), express.urlencoded (10mb), cookieParser()
 7. morgan('dev')            → yalnızca NODE_ENV=development
 8. /uploads static          → apps/api/uploads
@@ -109,7 +121,7 @@ apps/api/
 11. errorHandler            → global (bkz. §7)
 ```
 
-Route mount listesi (`src/routes/index.js`): `auth, users, salons, staff, services, categories, appointments, reviews, favorites, upload, admin, notifications, products` + `GET /` (endpoint dizisi) + `GET /health`.
+Route mount listesi (`src/routes/index.js`): `auth, users, salons, staff, services, categories, appointments, reviews, favorites, upload, admin, notifications, products, settings` + `GET /` (endpoint dizisi) + `GET /health`.
 
 ---
 
@@ -177,7 +189,7 @@ GET /api/v1/nope
 | Genel | 500 | `Sunucu hatası` (development'ta `stack` eklenir) |
 
 > `err.type === 'validation'` dalı pratikte çalışmaz: `validate` middleware'i doğrulama hatalarını kendi yanıtlar ve `next(error)` çağırmaz.
-> Multer `fileFilter` reddi `Error` olarak düşer → **500** (400 değil).
+> Multer `fileFilter` reddi `error.statusCode = 400` ile düşer → **400** (canlı doğrulandı).
 
 ---
 
@@ -284,7 +296,7 @@ Instance metotları: `comparePassword(p)`, `toSafeJSON()` (passwordHash + refres
 
 **Indexler:** `(latitude, longitude)`, `(city, district)`, `(is_active, is_verified)`.
 
-> `working_hours` getter'ı `JSON.parse` yapar. Değeri **string olarak** set edilirse (ör. `JSON.stringify(...)`) getter string döner → `workingHours[day]` `undefined` olur. Testlerde bu şekilde yazıldığı için slot/çalışma saati kontrolleri testte çalışmaz.
+> `working_hours` getter'ı çift-parse toleranslıdır: değer string gelirse `JSON.parse` eder, sonuç hâlâ string ise bir kez daha parse eder. Bu yüzden `JSON.stringify(...)` ile set edilen değerler de çalışır (eski sürümde string set edilirse getter string döner, slot/çalışma saati kontrolleri kırılırdı).
 
 ### staff
 
@@ -292,7 +304,7 @@ Instance metotları: `comparePassword(p)`, `toSafeJSON()` (passwordHash + refres
 
 ### service_categories
 
-`id`, `name` (unique), `icon_name`, `sort_order` (default 0), `created_at` (**updated_at yok**).
+`id`, `name` (unique), `icon_name`, `sort_order` (default 0), `description` VARCHAR(255), `is_active` default true, `created_at` (**updated_at yok**).
 
 ### services
 
@@ -300,7 +312,9 @@ Instance metotları: `comparePassword(p)`, `toSafeJSON()` (passwordHash + refres
 
 ### staff_services (join)
 
-`staff_id` (PK) + `service_id` (PK), **timestamps yok**.
+`staff_id` (modelde `primaryKey: true`) + `service_id` (`ON DELETE CASCADE ON UPDATE CASCADE`), **timestamps yok**.
+
+> Sequelize `primaryKey: ['staff_id','service_id']` composite PK desteklemez; fiili şemada PK yoktur → duplicate join kaydı engellenmez.
 
 ### appointments
 
@@ -322,7 +336,9 @@ Instance metotları: `comparePassword(p)`, `toSafeJSON()` (passwordHash + refres
 
 ### favorites
 
-`user_id` (PK) + `salon_id` (PK), `created_at` (**updated_at yok**).
+`id` (PK) + `user_id` + `salon_id`, `created_at` (**updated_at yok**).
+
+**Index:** `UNIQUE (user_id, salon_id)` — bir kullanıcı bir salonu yalnız bir kez favoriler.
 
 ### products
 
@@ -333,6 +349,10 @@ Instance metotları: `comparePassword(p)`, `toSafeJSON()` (passwordHash + refres
 `id`, `user_id`, `title`, `body`, `type` ENUM(APPOINTMENT/REVIEW/ORDER/SYSTEM), `data` JSONB, `is_read` default false, `created_at` (**updated_at yok**).
 
 > **Bildirim üreten hiçbir kod yoktur.** Sadece okuma/silme endpoint'leri vardır; bildirimler testte elle oluşturuluyor. Randevu/yorum/sipariş akışlarında `Notification.create` çağrısı yok.
+
+### settings
+
+`key` VARCHAR(255) PK (unique), `value` JSON NOT NULL, `created_at` (**updated_at yok**). Admin panel ayarları key/value olarak saklanır; DB'de olmayan anahtarlar `settings.controller.js` → `DEFAULTS` ile doldurulur.
 
 ---
 
@@ -454,15 +474,17 @@ Base: `http://localhost:3000/api/v1`
 
 **POST /appointments kuralları (sırayla):**
 1. `serviceId` var ve `isActive` olmalı → 404
-2. `StaffService` kaydı olmalı (çalışan bu hizmeti sunuyor mu) → 400
-3. Tarih geçmiş olamaz → 400
-4. `endTime` = `startTime + service.durationMinutes` (HH:MM)
-5. Salon `isActive && isVerified` olmalı → 404
-6. Salonun o günkü `workingHours` içinde olmalı → 400 *(gün tanımı yoksa kontrol **atlanır**)*
+2. Tarih geçmiş olamaz → 400
+3. `endTime` = `startTime + service.durationMinutes` (HH:MM)
+4. Salon `isActive && isVerified` olmalı → 404
+5. Salonun o günkü `workingHours` içinde olmalı → 400 *(gün tanımı yoksa kontrol **atlanır**)*
+6. `StaffService` üzerinden bu hizmeti sunan, **bu salona ait** aktif çalışanlar aday listesi olur (`fullName ASC`):
+   - `staffId` verilirse adaylar arasında olmalı → yoksa 400
+   - `staffId` verilmezse ilk boş aday otomatik atanır; hiç boş yoksa 409
 7. Aynı çalışan için `PENDING/CONFIRMED` çakışma → 409
 8. Oluşturulur → 201, `status = PENDING`
 
-> Staff'ın ve service'in **aynı salona ait olduğu doğrulanmaz**.
+> Staff salon uyumu artık kontrol ediliyor (adaylar `salon_id` ile filtrelenir). **`serviceId`'nin `salonId` ile uyumu hâlâ doğrulanmaz.**
 
 **Durum geçişleri:**
 ```
@@ -473,6 +495,8 @@ COMPLETED / CANCELLED / NO_SHOW → terminal (işlem yapılamaz, 400)
 `COMPLETED` yalnızca randevu saati geçmişse yapılabilir (`date + endTime`), aksi hâlde 400.
 
 **`available-slots`:** salonun o günkü açık saatlerinde 30 dk aralıklarla slot üretir; `min + duration <= close` koşulunu sağlayan slotlar listelenir; `PENDING/CONFIRMED` randevularla çakışanlar `available:false` işaretlenir. Gün kapalıysa `[]` döner. Yanıt: `[{ "time": "09:00", "available": true }, ...]`.
+
+> `staffId` opsiyoneldir ama doğrulanır; verilmezse `where: { staffId: undefined }` → Sequelize bu filtreyi yok sayar ve **tüm çalışanların** randevuları dikkate alınır.
 
 ### 10.9 Reviews
 
@@ -531,7 +555,7 @@ Tüm route'lar `router.use(authenticate)` ile korunur; sorgular `user_id` ile s�
 
 - İzin verilen MIME: `image/jpeg`, `image/png`, `image/webp`, `image/gif`
 - Max boyut: `MAX_FILE_SIZE` (5 MB)
-- Dosya adı: `uuid + ext`, hedef `./uploads`
+- Dosya adı: `uuid + ext`, hedef `UPLOAD_DEST` (default `./uploads`, cwd'e göre)
 - Yanıt: `{ url: "/uploads/<uuid>.png", originalName, size }`
 - Statik erişim: `GET /uploads/<filename>`
 
@@ -546,7 +570,17 @@ Tüm route'lar `router.use(authenticate)` ile korunur; sorgular `user_id` ile s�
 
 `dashboard` stats: `totalUsers`, `totalSalons` (aktif), `totalAppointments`, `pendingSalons` (aktif+onaysız), `recentAppointments` (son 7 gün), `newUsersThisWeek`, `totalRevenue` (COMPLETED randevuların hizmet fiyat toplamı, string), `completedAppointments`.
 
-> ⚠️ **SQLite'ta dashboard 500 verir.** `DATE_TRUNC('month', ...)` Postgres'e özgüdür. Canlı test: `GET /api/v1/admin/dashboard` → 500.
+> ✅ SQLite uyumu düzeltildi: `DATE_TRUNC` yerine `strftime('%Y-%m', Appointment.date)` kullanılıyor → canlı testte 200.
+> `totalRevenue` **string** döner (`toFixed(2)`); `monthlyAppointments` yalnız son 6 ayı ve **ay adını** verir (yıl bilgisi yoktur).
+
+### 10.15 Settings
+
+| Method | Path | Auth | Açıklama |
+|---|---|---|---|
+| GET | `/settings` | ADMIN | DB değerleri + `DEFAULTS` ile tamamlanır |
+| PUT | `/settings` | ADMIN | `{ key: value, ... }` → her anahtar için `Setting.upsert` |
+
+Bu ayarlar API davranışını **etkilemez** — yalnız depolanır ve admin panelde gösterilir.
 
 ---
 
@@ -576,34 +610,36 @@ Tüm route'lar `router.use(authenticate)` ile korunur; sorgular `user_id` ile s�
 
 **`utils/sms.js`** — `sendSmsOtp(toPhone, otp)`: `TWILIO_ACCOUNT_SID` + `TWILIO_AUTH_TOKEN` tanımlıysa Twilio ile gönderir, yoksa konsola `📱 [SMS DEV] Alıcı ... OTP ...` yazar.
 
+> `mailer.js` test modunda veya SMTP yapılandırılmamışsa `[mailer:noop]` yazıp çıkar (gerçek SMTP'ye bağlanmaz).
+
 > `twilio` `package.json`'de **yok**. Twilio env'i tanımlıysa `require('twilio')` throw eder → SMS akışı 500 ile patlar.
 
 ---
 
 ## 13. Seed (`src/seeders/seed.js`)
 
-Test kullanıcıları (`src/seeders/seed.js` -> `USERS`):
+Test kullanıcıları (`src/seeders/seed.js` → `USERS`):
 
-| E-posta | Rol |
-|---|---|
-| admin@beautysalon.com | ADMIN |
-| salon@beautysalon.com | SALON_OWNER |
-| salon2@beautysalon.com | SALON_OWNER |
-| musteri@beautysalon.com | CUSTOMER |
+| E-posta | Şifre (dev default) | Rol |
+|---|---|---|
+| admin@beautysalon.com | `Admin123!` | ADMIN |
+| salon@beautysalon.com | `Salon123!` | SALON_OWNER |
+| salon2@beautysalon.com | `Salon123!` | SALON_OWNER |
+| musteri@beautysalon.com | `Musteri123!` | CUSTOMER |
 
-Şifreler repoda tutulmaz. Yerelde seed varsayılanı kullanılır; üretimde
+Şifreler repoda tutulmaz. Yerelde yukarıdaki dev default'ları kullanılır; üretimde
 `SEED_ADMIN_PASSWORD`, `SEED_SALON_PASSWORD`, `SEED_CUSTOMER_PASSWORD`
-zorunludur ve varsayılanla seed çalışmayı reddeder.
+zorunludur ve eksikse seed çalışmayı reddeder.
 
-İçerik: 6 kategori (Saç, Tırnak, Cilt Bakımı, Makyaj, Epilasyon, SPA & Masaj), 12 salon (İstanbul ilçeleri, `isVerified:true`, `workingHours` dolu), salon1 için 3 çalışan + 7 hizmet + StaffService bağları, salon2 için 2 çalışan + 4 hizmet, 5 COMPLETED randevu + yorum (3'ü salon yanıtlı), salon1 rating güncellemesi.
+İçerik: 6 kategori (Saç, Tırnak, Cilt Bakımı, Makyaj, Epilasyon, SPA & Masaj), 12 salon (İstanbul ilçeleri, `isVerified:true`, `workingHours` dolu), 7 çalışan (salon 0: 3, salon 1: 2, salon 6: 1, salon 7: 1), 16 hizmet + StaffService bağları, 9 yorum (5'i salon yanıtlı) → her yorum için bir COMPLETED randevu, tüm salonların rating ortalamaları gerçek yorumlardan hesaplanır. Diğer 8 salonun çalışanı/hizmeti yoktur.
 
-Seed idempotent değildir: kullanıcılar `findOne` ile korunur, salonlar `count>0` ise atlanır.
+Seed **idempotenttir**: her kayıt `findOrCreate` ile eklenir, `category_id` NULL kalmış hizmetleri onarır. `npm run seed:reset` tüm tabloları FK sırasıyla temizler.
 
 ---
 
 ## 14. Migration'lar
 
-`src/database/migrations/` içinde 11 migration var (`20240101000001…11`). `.sequelizerc` → `src/config/sequelize-config.js` (dialect **postgres**).
+`src/database/migrations/` içinde 12 migration var (`20240101000001…12`). `.sequelizerc` → `src/config/sequelize-config.js` (dialect **postgres**).
 
 Runtime ise `src/config/database.js` ile **SQLite** kullanır. Sonuçlar:
 - `npm run migrate` Postgres'e gider, runtime DB'yi etkilemez.
@@ -614,28 +650,33 @@ Runtime ise `src/config/database.js` ile **SQLite** kullanır. Sonuçlar:
 
 ## 15. Testler
 
-11 dosya, ~223 test:
+14 dosya, **286 test** — 2026-10-15'te bu ortamda tamamı geçiyor:
 
-| Dosya | Test | Durum (bu ortamda) |
-|---|---|---|
-| `category.test.js` | 20 | ✅ 20 passing |
-| `product.test.js` | 23 | ✅ 23 passing |
-| `notification.test.js` | 22 | ✅ 22 passing |
-| `auth.test.js` | 26 | 18 passing / 8 failing |
-| `user.test.js` | 23 | 3 passing / 20 failing |
-| `review.test.js` | 22 | 1 passing / 21 failing |
-| `salon.test.js` | 37 | 1 passing / 36 failing |
-| `favorite.test.js` | 13 | 0 passing / 13 failing |
-| `appointment.test.js` | 31 | 0 passing / 31 failing |
-| `service-staff.test.js` | 26 | ❌ çalışmıyor (syntax error) |
+| Dosya | Test |
+|---|---|
+| `salon.test.js` | 37 ✅ |
+| `appointment.test.js` | 34 ✅ |
+| `auth.test.js` | 26 ✅ |
+| `service-staff.test.js` | 26 ✅ |
+| `category.test.js` | 23 ✅ |
+| `product.test.js` | 23 ✅ |
+| `notification.test.js` | 22 ✅ |
+| `review.test.js` | 22 ✅ |
+| `user.test.js` | 23 ✅ |
+| `favorite.test.js` | 13 ✅ |
+| `upload.test.js` | 12 ✅ |
+| `app.test.js` | 11 ✅ |
+| `admin.test.js` | 8 ✅ |
+| `settings.test.js` | 6 ✅ |
 
-Failing sebepleri (kod hatası değil, test altyapısı):
+Altyapı notları:
 
-1. **Bozuk assertion:** birçok testte `expect(res).to.equal();` (argümansız) → `expected Response to equal undefined`.
-2. **SMTP:** `.env.test` Mailtrap test credentials'i gerçek sunucuya bağlanıyor → `Invalid login: 535` → `forgot-password`, `change-password` testleri patlıyor.
-3. **Rate limit:** `authLimiter` `max: 10` hardcoded; `.env.test`'teki `RATE_LIMIT_MAX=10000` bunu etkilemiyor → testler 429 alıyor.
-4. **Syntax error:** `tests/service-staff.test.js:241` — `where: { salonId: ..., fullName: '...' });` kapanış parantezi eksik.
-5. **Paylaşılan connection:** `tests/setup.js` tek `sequelize` instance'ı kullanır ve her dosya `after`'da `teardownDB()` ile kapatır → birden fazla dosya birlikte çalıştırıldığında ikinci dosya `SQLITE_MISUSE: Database is closed` alır. Testler dosya bazında çalıştırılmalıdır.
+1. **Paylaşılan connection:** `tests/setup.js` tek `sequelize` instance'ı kullanır; `teardownDB()` bilinçli olarak **no-op**'dur (dosya sonunda `close()` çağırmak sonraki dosyanın `before all` hook'unu kırardı). Bağlantı süreç çıkışında kapatılır.
+2. **Test DB:** `apps/api/src/test-database.sqlite`, `drop()` + `sync({ force: true })` ile kurulur.
+3. **Rate limit:** `NODE_ENV=test` ise limiter'lar devre dışı (aksi halde supertest 429 alırdı).
+4. **E-posta:** `NODE_ENV=test` veya SMTP yoksa `[mailer:noop]` — gerçek SMTP'ye bağlanmaz.
+5. **Chai:** `expect(res).to.have.status(N)` kullanılmıyor, `to.have.property('status', N)` tercih ediliyor.
+6. `npm test` Windows cmd'de `NODE_ENV=test mocha` biçimiyle kırılıyordu; script `node --env-file=.env.test ./node_modules/mocha/bin/mocha` olarak düzeltildi.
 
 ---
 
@@ -645,20 +686,30 @@ Failing sebepleri (kod hatası değil, test altyapısı):
 |---|---|---|
 | 1 | `GET /appointments/available-slots`'te `authenticate` yok | CLAUDE.md "required" diyor; fiilen public |
 | 2 | `GET /appointments/salon/:salonId` sahiplik kontrolü yok | Her SALON_OWNER her salonu görür |
-| 3 | Randevu oluştururken staff/service salon uyumu kontrol edilmiyor | Yanlış salon kombinasyonu kabul edilir |
+| 3 | Randevuda `serviceId` salon uyumu kontrol edilmiyor (staff uyumu kontrol ediliyor) | Yanlış salon kombinasyonu kabul edilebilir |
 | 4 | `workingHours` gün tanımı yoksa çalışma saati kontrolü atlanıyor | Kapalı güne randevu alınabilir |
-| 5 | `workingHours` string set edilirse getter string döner | Slot/çalışma saati mantığı kırılır (testlerde bu yolla yazılıyor) |
-| 6 | `DATE_TRUNC` SQLite'ta yok | `/admin/dashboard` 500 |
+| 5 | `workingHours` getter'ı çift-parse toleranslı | Çözüldü — string set edilen değerler de çalışıyor |
+| 6 | `DATE_TRUNC` yerine `strftime` kullanılıyor | Çözüldü — `/admin/dashboard` SQLite'ta 200 |
 | 7 | `twilio` bağımlılığı eksik | SMS akışı Twilio env'i ile 500 |
 | 8 | `sharp` bağımlılığı tanımlı ama hiçbir yerde kullanılmıyor | Ölü bağımlılık |
 | 9 | `swagger-jsdoc` + `swagger-ui-express` tanımlı ama swagger mount edilmemiş | OpenAPI çıktısı yok |
 | 10 | `pg`/`pg-hstore` runtime'da kullanılmıyor (SQLite) | Ölü bağımlılık |
 | 11 | `cookie-parser` kullanılmıyor, `optionalAuth` kullanılmıyor, `createProductValidator`/`queryProductValidator` kullanılmıyor | Ölü kod |
-| 12 | `UPLOAD_DEST` env'i Multer'da kullanılmıyor (`./uploads` hardcoded) | cwd'e bağlı yazım |
-| 13 | Multer `fileFilter` reddi 500 üretir | 400 olmalı |
+| 12 | `UPLOAD_DEST` kullanılıyor ama cwd'e göre çözülür | Farklı çalışma diziminde farklı `uploads/` |
+| 13 | Multer `fileFilter` reddi `statusCode = 400` ile düşer | Çözüldü — 400 dönüyor |
 | 14 | `errorHandler`'daki `err.type === 'validation'` dalı ölü | `validate` kendi yanıtlıyor |
 | 15 | User e-posta değişikliği `passwordResetToken` alanını paylaşıyor | İki akış birbirini bozabilir |
-| 16 | `sync({ alter: true })` her boot'ta tablo yeniden yaratıyor | Production için riskli, yavaş |
+| 16 | `sync()` + `ensureColumns()` kullanılıyor (`alter: true` yok) | Çözüldü; ancak `ensureColumns()` eksik tabloda patlar |
+| 17 | Runtime DB fiilen `apps/api/src/database.sqlite`; `apps/api/database.sqlite` eski/yedek | Şema karışıklığı, yanlış dosyaya bakma |
+| 18 | `toSafeJSON()` `passwordResetToken` / expiry alanlarını çıkarmaz | Login/register yanıtlarında hassas alan sızıntısı |
+| 19 | `PATCH /users/:id/toggle-active` rol kontrolü yapar, sahiplik kontrolü yapmaz | Kullanıcı kendi aktifliğini kapatabilir |
+| 20 | Settings ayarları hiçbir davranışı etkilemez (`maxLoginAttempts`, `rateLimitingEnabled`, `maintenanceModeEnabled` okunmaz) | Yalnız depolanır/panelde gösterilir |
+| 21 | Review görünürlüğü değişince `ratingAvg` yeniden hesaplanmaz | Puan eski değerinde kalır |
+| 22 | `staff_services` fiili şemada PK yok | Duplicate join kaydı engellenmez |
+| 23 | `POST /salons/:id/staff`, `/services`, `/products` body doğrulanmaz | Yalnız model seviyesi zorunluluklar |
+| 24 | `querySalonValidator` `sortBy`, `priceRange`, `categoryId`, `verified` doğrulamaz | Yanlış parametre sessizce yok sayılır |
+| 25 | `GET /` endpoint listesi eksik (`/staff`, `/upload`, `/admin`) | Keşif yanıltıcı |
+| 26 | Rate limit testte kapalı, production'ta açık | 429 davranışı test edilmiyor |
 | 17 | Migration'lar ile model tanımları uyuşmuyor (nullable, JSONB, DECIMAL) | Şema tutarsızlığı |
 | 18 | `toJSON()` bazı alanları iki kez basar (`ownerId` + `owner_id`) | İstemci kafa karışıklığı |
 | 19 | Notification üreten kod yok | Bildirim sistemi salt okunur |
@@ -671,7 +722,7 @@ Failing sebepleri (kod hatası değil, test altyapısı):
 ## 17. Hızlı Başlangıç (curl)
 
 ```bash
-BASE=http://localhost:3000/api/v1
+BASE=http://localhost:3200/api/v1   # .env default 3000; bu makinede 3200 kullanılıyor
 
 # Health
 curl $BASE/health
@@ -705,6 +756,8 @@ curl -s -X POST $BASE/upload/single -H "Authorization: Bearer $TOKEN" -F "file=@
 
 ## 18. Dokümantasyon Notu
 
-Bu dosya `apps/api/` kodunun gerçek davranışını esas alır. 2026-10-12 öncesindeki sürümde şema tablolarındaki `nullable` bilgileri hatalıydı, `Notifications` ve `Products` endpoint'leri eksikti ve son ~120 satır kopyalanmış "JWT doğrulama" metinlerinden oluşuyordu. Eski hali `docs/BACKEND-API.md.bak` içinde duruyor (gereksizse silinebilir).
+Bu dosya `apps/api/` kodunun gerçek davranışını esas alır ve **2026-10-15** doğrulamasıyla hizalandı (canlı probe + `npm test` → 286 passing + `src/database.sqlite` şeması). Modüler ayrıntılı set: `docs/api/`.
 
-Ayrıca `apps/api/CLAUDE.md` ile çelişen noktalar: `sync({ alter: true })` (CLAUDE.md `alter: false` der), `available-slots` auth gerektirmez, `Notifications`/`Products` endpoint'leri CLAUDE.md'de listelenmemiştir.
+2026-10-12 öncesindeki sürümde şema tablolarındaki `nullable` bilgileri hatalıydı, `Notifications` ve `Products` endpoint'leri eksikti ve son ~120 satır kopyalanmış "JWT doğrulama" metinlerinden oluşuyordu. Eski hali `docs/BACKEND-API.md.bak` içinde duruyor (gereksizse silinebilir).
+
+`apps/api/CLAUDE.md` ile hâlâ çelişen noktalar: `available-slots` auth gerektirmez, `Notifications`/`Products`/`Settings` endpoint'leri CLAUDE.md'de listelenmemiştir, CLAUDE.md `sync({ alter: true })` der ama kod `sync()` + `ensureColumns()` kullanır, CLAUDE.md `cors()` originlerini sabit listeler ama kod `ALLOWED_ORIGINS` env'ini kullanır. CLAUDE.md'deki test durum tablosu (17 passing / 16 failing) artık geçersiz — suite tamamen geçiyor.

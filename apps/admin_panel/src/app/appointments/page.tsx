@@ -96,13 +96,13 @@ export default function AppointmentsPage() {
   const getStatusColor = (status: AppointmentStatus): string => {
     switch (status) {
       case "PENDING":
-        return "bg-amber-100 text-amber-800";
+        return "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300";
       case "CONFIRMED":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300";
       case "COMPLETED":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300";
       case "CANCELLED":
-        return "bg-red-100 text-red-800";
+        return "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300";
       case "NO_SHOW":
         return "bg-gray-100 text-gray-800";
       default:
@@ -174,7 +174,7 @@ export default function AppointmentsPage() {
         </div>
 
         {error && (
-          <div className="p-4 mb-4 bg-red-50 text-red-700 rounded-lg text-sm">
+          <div className="p-4 mb-4 bg-red-50 text-red-700 rounded-lg text-sm dark:bg-red-500/10 dark:text-red-300">
             {error}
           </div>
         )}

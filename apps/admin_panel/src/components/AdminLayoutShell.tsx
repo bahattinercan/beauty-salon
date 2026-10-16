@@ -13,11 +13,11 @@ export default function AdminLayoutShell({
   const isLoginPage = pathname === '/login';
 
   if (isLoginPage) {
-    return <main className="min-h-screen bg-gray-50">{children}</main>;
+    return <main className="min-h-screen bg-background">{children}</main>;
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-background">
       <Sidebar />
       <main className="flex-1 ml-64 p-8">
         <DashboardProvider>{children}</DashboardProvider>

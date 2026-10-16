@@ -82,12 +82,14 @@ export default function Sidebar() {
       {/* Footer */}
       <div className="p-4 border-t border-gray-100">
         <div className="flex items-center gap-3 px-4 py-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white text-sm font-bold">
+          <div className="w-9 h-9 shrink-0 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white text-sm font-bold">
             A
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-text-primary">Admin</p>
-            <p className="text-xs text-text-secondary">admin@beautysalon.com</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-text-primary truncate">Admin</p>
+            <p className="text-xs text-text-secondary truncate" title="admin@beautysalon.com">
+              admin@beautysalon.com
+            </p>
           </div>
           <button
             onClick={handleLogout}

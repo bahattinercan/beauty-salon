@@ -1,0 +1,924 @@
+openapi: 3.0.3
+
+info:
+  title: Beauty Salon API
+  version: "1.0.0"
+  description: |
+    Güzellik salonları platformu REST API. Roller: CUSTOMER, SALON_OWNER, ADMIN.
+    Yanıt formatı: `{ success, data, timestamp }`; sayfalı listelerde `data = { data, meta }`.
+    Not: Bu şema `docs/api/openapi.yaml` içinde elle tutulur; uygulamada swagger mount edilmemiştir.
+
+servers:
+  - url: http://localhost:3200/api/v1
+    description: Yerel geliştirme (bu makinede port 3200)
+  - url: http://localhost:3000/api/v1
+    description: .env default PORT
+
+tags:
+  - name: General
+  - name: Auth
+  - name: Users
+  - name: Salons
+  - name: Staff
+  - name: Services
+  - name: Categories
+  - name: Appointments
+  - name: Reviews
+  - name: Favorites
+  - name: Notifications
+  - name: Products
+  - name: Upload
+  - name: Admin
+  - name: Settings
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [General]
+      security: []
+      summary: Sağlık kontrolü
+      responses: { "200": { content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, message: { type: string }, timestamp: { type: string, format: date-time } } } } } } }
+
+  /:
+    get:
+      tags: [General]
+      security: []
+      summary: Endpoint dizisi
+      responses: { "200": { description: endpoint listesi } }
+
+  # ── AUTH ────────────────────────────────────────────────────────────────
+  /auth/register:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Kayıt (10/60sn limit)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, fullName]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8, description: "en az 1 büyük + 1 küçük + 1 rakam" }
+                fullName: { type: string, minLength: 2, maxLength: 100 }
+                phone: { type: string, pattern: "^\\+?[1-9]\\d{9,14}$" }
+                role: { type: string, enum: [CUSTOMER, SALON_OWNER] }
+      responses:
+        "201": { description: "user + accessToken + refreshToken" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Giriş (10/60sn limit)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        "200": { description: "user + token çifti" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Refresh token ile yeni çift (60/60sn limit)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [refreshToken], properties: { refreshToken: { type: string } } }
+      responses:
+        "200": { description: "yeni accessToken + refreshToken" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Refresh token'ı siler
+      responses: { "200": { description: ok }, "401": { $ref: "#/components/responses/Unauthorized" } }
+
+  /auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Şifre değiştirme (onay e-postası gönderilir)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword: { type: string }
+                newPassword: { type: string, minLength: 6 }
+      responses:
+        "200": { description: ok }
+        "400": { $ref: "#/components/responses/ValidationError" }
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      security: []
+      summary: 6 haneli OTP e-posta (10 dk geçerli)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [email], properties: { email: { type: string } } } } }
+      responses: { "200": { description: "kullanıcı olmasa da aynı mesaj döner" } }
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Şifre sıfırlama
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, token, newPassword]
+              properties:
+                email: { type: string }
+                token: { type: string, description: "6 haneli OTP" }
+                newPassword: { type: string, minLength: 6 }
+      responses:
+        "200": { description: ok }
+        "400": { $ref: "#/components/responses/ValidationError" }
+
+  # ── USERS ───────────────────────────────────────────────────────────────
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Profil
+      responses: { "200": { description: user }, "401": { $ref: "#/components/responses/Unauthorized" } }
+    patch:
+      tags: [Users]
+      summary: fullName, phone, avatarUrl (email değiştirilemez)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName: { type: string }
+                phone: { type: string }
+                avatarUrl: { type: string }
+      responses: { "200": { description: updated user } }
+
+  /users/me/request-email-change:
+    post:
+      tags: [Users]
+      summary: OTP iste (mevcut e-postaya gönderilir)
+      requestBody:
+        content: { application/json: { schema: { type: object, required: [newEmail], properties: { newEmail: { type: string } } } } }
+      responses: { "200": { description: ok }, "400": { description: geçersiz/aynı e-posta }, "409": { description: e-posta kullanımda } }
+
+  /users/me/confirm-email-change:
+    post:
+      tags: [Users]
+      summary: OTP doğrula
+      requestBody:
+        content: { application/json: { schema: { type: object, required: [token], properties: { token: { type: string } } } } }
+      responses: { "200": { description: ok }, "400": { description: kod hatalı/süresi dolmuş } }
+
+  /users:
+    get:
+      tags: [Users]
+      summary: Tüm kullanıcılar (ADMIN)
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses: { "200": { description: paginated }, "403": { $ref: "#/components/responses/Forbidden" } }
+
+  /users/{id}/toggle-active:
+    patch:
+      tags: [Users]
+      summary: isActive tersine çevir (ADMIN)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: "{ id, isActive }" }, "404": { $ref: "#/components/responses/NotFound" } }
+
+  # ── SALONS ──────────────────────────────────────────────────────────────
+  /salons:
+    get:
+      tags: [Salons]
+      security: []
+      summary: Salon listesi (yalnız isActive && isVerified)
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+        - { name: search, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: city, in: query, schema: { type: string } }
+        - { name: district, in: query, schema: { type: string } }
+        - { name: minRating, in: query, schema: { type: number, minimum: 0, maximum: 5 } }
+        - { name: priceRange, in: query, schema: { type: integer, enum: [1, 2, 3] }, description: "validator tarafından doğrulanmaz" }
+        - { name: verified, in: query, schema: { type: string, enum: ["true"] }, description: "validator tarafından doğrulanmaz" }
+        - { name: categoryId, in: query, schema: { type: string, format: uuid }, description: "INNER JOIN" }
+        - { name: sortBy, in: query, schema: { type: string, enum: [rating, newest] }, description: "validator tarafından doğrulanmaz" }
+      responses: { "200": { description: paginated } }
+    post:
+      tags: [Salons]
+      summary: Salon oluştur (SALON_OWNER)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, phone, address, latitude, longitude, city, district]
+              properties:
+                name: { type: string, minLength: 2, maxLength: 100 }
+                phone: { type: string, pattern: "^\\+?[1-9]\\d{9,14}$" }
+                email: { type: string, format: email }
+                address: { type: string, minLength: 5 }
+                latitude: { type: number, minimum: -90, maximum: 90 }
+                longitude: { type: number, minimum: -180, maximum: 180 }
+                city: { type: string }
+                district: { type: string }
+                description: { type: string, maxLength: 1000 }
+                workingHours: { type: "object" }
+      responses: { "201": { description: salon }, "400": { $ref: "#/components/responses/ValidationError" } }
+
+  /salons/nearby:
+    get:
+      tags: [Salons]
+      security: []
+      summary: Haversine ile yakındaki salonlar
+      parameters:
+        - { name: latitude, in: query, required: true, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: longitude, in: query, required: true, schema: { type: number, minimum: -180, maximum: 180 } }
+        - { name: radius, in: query, schema: { type: number, minimum: 0.1, maximum: 100, default: 10 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses: { "200": { description: "paginated, her öğede distance (km)" } }
+
+  /salons/owner/my-salons:
+    get:
+      tags: [Salons]
+      summary: Kendi aktif salonları (SALON_OWNER)
+      responses: { "200": { description: list }, "403": { $ref: "#/components/responses/Forbidden" } }
+
+  /salons/{id}:
+    get:
+      tags: [Salons]
+      security: []
+      summary: Salon detayı (owner + aktif staff + aktif services)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: salon }, "404": { $ref: "#/components/responses/NotFound" } }
+    patch:
+      tags: [Salons]
+      summary: Güncelle (sahibi veya ADMIN). email/pendingEmail/token alanları body'den silinir.
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: updated }, "403": { $ref: "#/components/responses/Forbidden" } }
+    delete:
+      tags: [Salons]
+      summary: Soft delete (isActive = false)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: "Salon devre dışı bırakıldı" } }
+
+  /salons/{id}/verify:
+    patch:
+      tags: [Salons]
+      summary: Salon onayla (ADMIN)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: "{ id, isVerified: true }" } }
+
+  /salons/{id}/request-email-change:
+    post:
+      tags: [Salons]
+      summary: E-posta değişikliği OTP iste
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newEmail]
+              properties:
+                newEmail: { type: string }
+                verifyVia: { type: string, enum: [email, sms], default: email }
+      responses: { "200": { description: ok }, "403": { description: sahiplik } }
+
+  /salons/{id}/confirm-email-change:
+    post:
+      tags: [Salons]
+      summary: E-posta değişikliğini onayla
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        content: { application/json: { schema: { type: object, required: [token], properties: { token: { type: string } } } } }
+      responses: { "200": { description: ok }, "400": { description: kod hatalı/süresi dolmuş } }
+
+  /salons/{id}/request-phone-change:
+    post:
+      tags: [Salons]
+      summary: Telefon değişikliği OTP iste
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newPhone]
+              properties:
+                newPhone: { type: string }
+                verifyVia: { type: string, enum: [sms, email], default: sms }
+      responses: { "200": { description: ok } }
+
+  /salons/{id}/confirm-phone-change:
+    post:
+      tags: [Salons]
+      summary: Telefon değişikliğini onayla
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        content: { application/json: { schema: { type: object, required: [token], properties: { token: { type: string } } } } }
+      responses: { "200": { description: ok } }
+
+  /salons/{salonId}/staff:
+    get:
+      tags: [Staff]
+      security: []
+      summary: Aktif çalışanlar (+hizmetleri)
+      parameters: [ { name: salonId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: list } }
+    post:
+      tags: [Staff]
+      summary: Çalışan ekle (SALON_OWNER)
+      parameters: [ { name: salonId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullName, title]
+              properties:
+                fullName: { type: string }
+                title: { type: string }
+                bio: { type: string }
+                avatarUrl: { type: string }
+                serviceIds: { type: array, items: { type: string, format: uuid } }
+      responses: { "201": { description: staff } }
+
+  /staff/{id}:
+    patch:
+      tags: [Staff]
+      summary: Güncelle (serviceIds verilirse join önce silinir)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: updated } }
+    delete:
+      tags: [Staff]
+      summary: Soft delete
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: "Çalışan devre dışı bırakıldı" } }
+
+  /salons/{salonId}/services:
+    get:
+      tags: [Services]
+      security: []
+      summary: Aktif hizmetler (kategori sortOrder sırası)
+      parameters: [ { name: salonId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: list } }
+    post:
+      tags: [Services]
+      summary: Hizmet ekle (SALON_OWNER)
+      parameters: [ { name: salonId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, categoryId, price, durationMinutes]
+              properties:
+                name: { type: string }
+                categoryId: { type: string, format: uuid }
+                price: { type: number }
+                durationMinutes: { type: integer }
+                description: { type: string }
+                imageUrl: { type: string }
+      responses: { "201": { description: service } }
+
+  /services/{id}:
+    get:
+      tags: [Services]
+      security: []
+      summary: Hizmet detayı (+kategori)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: service }, "404": { $ref: "#/components/responses/NotFound" } }
+    patch:
+      tags: [Services]
+      summary: Güncelle (salon sahibi)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: updated } }
+    delete:
+      tags: [Services]
+      summary: Soft delete
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: "Hizmet devre dışı bırakıldı" } }
+
+  /categories:
+    get:
+      tags: [Categories]
+      security: []
+      summary: Kategoriler (sortOrder ASC + serviceCount)
+      responses: { "200": { description: list } }
+    post:
+      tags: [Categories]
+      summary: Kategori oluştur (ADMIN)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, iconName]
+              properties:
+                name: { type: string }
+                iconName: { type: string }
+                sortOrder: { type: integer, default: 0 }
+                description: { type: string }
+                isActive: { type: boolean }
+      responses: { "201": { description: category }, "409": { description: "ad zaten mevcut" } }
+
+  /categories/{id}:
+    patch:
+      tags: [Categories]
+      summary: Kategori güncelle (ADMIN)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: updated }, "409": { description: "ad zaten mevcut" } }
+    delete:
+      tags: [Categories]
+      summary: Hard delete (ADMIN)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: "Kategori başarıyla silindi" } }
+
+  # ── APPOINTMENTS ────────────────────────────────────────────────────────
+  /appointments:
+    post:
+      tags: [Appointments]
+      summary: Randevu oluştur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [salonId, serviceId, date, startTime]
+              properties:
+                salonId: { type: string, format: uuid }
+                staffId: { type: string, format: uuid, description: "opsiyonel — boş bir çalışan otomatik atanır" }
+                serviceId: { type: string, format: uuid }
+                date: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+                startTime: { type: string, pattern: "^\\d{2}:\\d{2}$" }
+                note: { type: string, maxLength: 500 }
+      responses:
+        "201": { description: appointment }
+        "400": { description: "geçmiş tarih / çalışma saati dışı / çalışan hizmeti sunmuyor" }
+        "404": { description: "hizmet veya salon bulunamadı" }
+        "409": { description: "saat çakışması" }
+
+  /appointments/available-slots:
+    get:
+      tags: [Appointments]
+      security: []
+      summary: 30 dk aralıklı slot listesi (route'ta authenticate YOK — public)
+      parameters:
+        - { name: salonId, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: staffId, in: query, schema: { type: string, format: uuid } }
+        - { name: serviceId, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: date, in: query, required: true, schema: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" } }
+      responses: { "200": { description: "[{ time, available }]" } }
+
+  /appointments/my:
+    get:
+      tags: [Appointments]
+      summary: Kendi randevuları
+      parameters: [ { name: status, in: query, schema: { type: string, enum: [PENDING, CONFIRMED, CANCELLED, COMPLETED, NO_SHOW] } } ]
+      responses: { "200": { description: list } }
+
+  /appointments/salon/{salonId}:
+    get:
+      tags: [Appointments]
+      summary: Salon randevuları (SALON_OWNER / ADMIN) — sahiplik kontrolü YOK
+      parameters:
+        - { name: salonId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: date, in: query, schema: { type: string } }
+        - { name: from, in: query, schema: { type: string } }
+        - { name: to, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+      responses: { "200": { description: list } }
+
+  /appointments/{id}/status:
+    patch:
+      tags: [Appointments]
+      summary: Durum geçişi (PENDING→CONFIRMED|CANCELLED, CONFIRMED→COMPLETED|CANCELLED|NO_SHOW)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        content: { application/json: { schema: { type: object, required: [status], properties: { status: { type: string, enum: [PENDING, CONFIRMED, CANCELLED, COMPLETED, NO_SHOW] } } } } }
+      responses: { "200": { description: updated }, "400": { description: "geçersiz geçiş / saat geçmedi" }, "403": { description: yetki } }
+
+  /appointments/{id}/cancel:
+    patch:
+      tags: [Appointments]
+      summary: Müşteri iptali (PENDING/CONFIRMED)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        content: { application/json: { schema: { type: object, properties: { reason: { type: string } } } } }
+      responses: { "200": { description: cancelled }, "400": { description: "iptal edilemez" } }
+
+  # ── REVIEWS ─────────────────────────────────────────────────────────────
+  /reviews:
+    post:
+      tags: [Reviews]
+      summary: Yorum (yalnız COMPLETED randevu, randevu başına bir kez)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [appointmentId, rating]
+              properties:
+                appointmentId: { type: string, format: uuid }
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                comment: { type: string, maxLength: 1000 }
+                images: { type: array, maxItems: 4, items: { type: string } }
+      responses: { "201": { description: review + salon puanı güncellenir }, "400": { description: "randevu COMPLETED değil / zaten yorum var" }, "403": { description: "randevu size ait değil" } }
+
+  /reviews/salon/{salonId}:
+    get:
+      tags: [Reviews]
+      security: []
+      summary: Salon yorumları (yalnız isVisible, sayfalı)
+      parameters:
+        - { name: salonId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses: { "200": { description: paginated } }
+
+  /reviews/my:
+    get:
+      tags: [Reviews]
+      summary: Kendi yorumları
+      responses: { "200": { description: list } }
+
+  /reviews/{id}/reply:
+    patch:
+      tags: [Reviews]
+      summary: Salon sahibi yanıtı (1–500)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        content: { application/json: { schema: { type: object, required: [reply], properties: { reply: { type: string, minLength: 1, maxLength: 500 } } } } }
+      responses: { "200": { description: updated } }
+
+  /reviews/{id}/toggle-visibility:
+    patch:
+      tags: [Reviews]
+      summary: Görünürlüğü tersine çevir (ADMIN)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: "{ id, isVisible }" } }
+
+  # ── FAVORITES ───────────────────────────────────────────────────────────
+  /favorites:
+    get:
+      tags: [Favorites]
+      summary: Favori salonlar
+      responses: { "200": { description: list } }
+
+  /favorites/{salonId}:
+    post:
+      tags: [Favorites]
+      summary: Toggle favori
+      parameters: [ { name: salonId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: "{ isFavorite: true|false }" } }
+
+  /favorites/{salonId}/check:
+    get:
+      tags: [Favorites]
+      summary: Favori mi
+      parameters: [ { name: salonId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: "{ isFavorite }" } }
+
+  # ── NOTIFICATIONS ───────────────────────────────────────────────────────
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Kullanıcının bildirimleri (sayfalı)
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+        - { name: isRead, in: query, schema: { type: string, enum: ["true", "false"] } }
+        - { name: type, in: query, schema: { type: string, enum: [APPOINTMENT, REVIEW, ORDER, SYSTEM] } }
+      responses: { "200": { description: paginated } }
+
+  /notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: Okunmamış sayı
+      responses: { "200": { description: "{ count }" } }
+
+  /notifications/read-all:
+    patch:
+      tags: [Notifications]
+      summary: Tümünü okundu
+      responses: { "200": { description: ok } }
+
+  /notifications/{id}/read:
+    patch:
+      tags: [Notifications]
+      summary: Tekil okundu
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: updated }, "404": { $ref: "#/components/responses/NotFound" } }
+
+  /notifications/{id}:
+    delete:
+      tags: [Notifications]
+      summary: Sil
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: ok }, "404": { $ref: "#/components/responses/NotFound" } }
+
+  # ── PRODUCTS ────────────────────────────────────────────────────────────
+  /salons/{salonId}/products:
+    get:
+      tags: [Products]
+      security: []
+      summary: Aktif ürünler
+      parameters:
+        - { name: salonId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: search, in: query, schema: { type: string } }
+        - { name: category, in: query, schema: { type: string } }
+        - { name: sortBy, in: query, schema: { type: string, enum: [price, createdAt, name] } }
+      responses: { "200": { description: list } }
+    post:
+      tags: [Products]
+      summary: Ürün ekle (SALON_OWNER) — body doğrulanmaz
+      parameters: [ { name: salonId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, price]
+              properties:
+                name: { type: string }
+                price: { type: number }
+                description: { type: string }
+                stockQuantity: { type: integer }
+                category: { type: string }
+                images: { type: array, items: { type: string } }
+      responses: { "201": { description: product } }
+
+  /products/{id}:
+    get:
+      tags: [Products]
+      security: []
+      summary: Ürün detayı
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: product }, "404": { $ref: "#/components/responses/NotFound" } }
+    patch:
+      tags: [Products]
+      summary: Güncelle (updateProductValidator kullanılır)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: updated } }
+    delete:
+      tags: [Products]
+      summary: Soft delete
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses: { "200": { description: "Ürün devre dışı bırakıldı" } }
+
+  # ── UPLOAD ──────────────────────────────────────────────────────────────
+  /upload/single:
+    post:
+      tags: [Upload]
+      summary: "Tek dosya (field: file)"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+      responses: { "200": { description: "{ url, originalName, size }" }, "400": { description: "dosya yok / tip reddi / boyut" } }
+
+  /upload/multiple:
+    post:
+      tags: [Upload]
+      summary: "Çoklu dosya (field: files, max 10)"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files: { type: array, items: { type: string, format: binary }, maxItems: 10 }
+      responses: { "200": { description: "[{ url, originalName, size }]" } }
+
+  # ── ADMIN ───────────────────────────────────────────────────────────────
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Dashboard
+      responses: { "200": { description: "stats, appointmentsByStatus, monthlyAppointments, recentReviews" } }
+
+  /admin/salons:
+    get:
+      tags: [Admin]
+      summary: Tüm salonlar
+      parameters:
+        - { name: verified, in: query, schema: { type: string, enum: ["true", "false"] } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses: { "200": { description: paginated } }
+
+  /admin/appointments:
+    get:
+      tags: [Admin]
+      summary: Tüm randevular
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses: { "200": { description: paginated } }
+
+  /admin/reviews:
+    get:
+      tags: [Admin]
+      summary: Tüm yorumlar
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses: { "200": { description: paginated } }
+
+  # ── SETTINGS ────────────────────────────────────────────────────────────
+  /settings:
+    get:
+      tags: [Settings]
+      summary: Ayarlar (DB + DEFAULTS)
+      responses: { "200": { description: object } }
+    put:
+      tags: [Settings]
+      summary: Ayarları güncelle (key/value upsert)
+      requestBody:
+        content: { application/json: { schema: { type: "object", additionalProperties: true } } }
+      responses: { "200": { description: updated settings } }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: Giriş gerekli / token geçersiz veya süresi dolmuş
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean, example: false }
+              message: { type: string, example: "Erişim için giriş yapmanız gerekiyor" }
+    Forbidden:
+      description: Rol veya sahiplik yetkisi yok
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean, example: false }
+              message: { type: string, example: "Bu işlem için yetkiniz bulunmuyor" }
+    NotFound:
+      description: Kayıt veya route bulunamadı
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean, example: false }
+              message: { type: string, example: "Salon bulunamadı" }
+    ValidationError:
+      description: express-validator veya Sequelize validation
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean, example: false }
+              message: { type: string, example: "Doğrulama hatası" }
+              errors: { type: array, items: { type: string } }
+    Conflict:
+      description: Unique çakışması
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean, example: false }
+              message: { type: string, example: "Bu email adresi zaten kayıtlı" }
+    TooManyRequests:
+      description: Rate limit
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean, example: false }
+              message: { type: string, example: "Çok fazla giriş denemesi, lütfen 1 dakika bekleyiniz" }
+
+  schemas:
+    Meta:
+      type: object
+      properties:
+        total: { type: integer }
+        page: { type: integer }
+        limit: { type: integer }
+        totalPages: { type: integer }
+    SuccessResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data: {}
+        timestamp: { type: string, format: date-time }
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        phone: { type: string, nullable: true }
+        fullName: { type: string }
+        avatarUrl: { type: string, nullable: true }
+        role: { type: string, enum: [CUSTOMER, SALON_OWNER, ADMIN] }
+        isVerified: { type: boolean }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    Salon:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        ownerId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        phone: { type: string }
+        email: { type: string, nullable: true }
+        logoUrl: { type: string, nullable: true }
+        coverImageUrl: { type: string, nullable: true }
+        galleryImages: { type: array, items: { type: string } }
+        address: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        city: { type: string }
+        district: { type: string }
+        ratingAvg: { type: number }
+        reviewCount: { type: integer }
+        isActive: { type: boolean }
+        isVerified: { type: boolean }
+        priceRange: { type: integer, enum: [1, 2, 3] }
+        workingHours: { type: "object", additionalProperties: { type: "object", properties: { open: { type: string }, close: { type: string } } } }
+        distance: { type: number, description: "yalnız /salons/nearby" }
+    Appointment:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        customerId: { type: string, format: uuid }
+        salonId: { type: string, format: uuid }
+        staffId: { type: string, format: uuid }
+        serviceId: { type: string, format: uuid }
+        date: { type: string, format: date }
+        startTime: { type: string }
+        endTime: { type: string }
+        status: { type: string, enum: [PENDING, CONFIRMED, CANCELLED, COMPLETED, NO_SHOW] }
+        note: { type: string, nullable: true }
+        cancellationReason: { type: string, nullable: true }
+    Slot:
+      type: object
+      properties:
+        time: { type: string, example: "09:00" }
+        available: { type: boolean }
+    Review:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        customerId: { type: string, format: uuid }
+        salonId: { type: string, format: uuid }
+        appointmentId: { type: string, format: uuid }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, nullable: true }
+        images: { type: array, items: { type: string } }
+        salonReply: { type: string, nullable: true }
+        salonReplyAt: { type: string, format: date-time, nullable: true }
+        isVisible: { type: boolean }

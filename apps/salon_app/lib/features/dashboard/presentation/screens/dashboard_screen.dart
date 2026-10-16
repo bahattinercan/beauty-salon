@@ -44,7 +44,7 @@ class DashboardScreen extends ConsumerWidget {
                           const SizedBox(width: 12),
                           Expanded(child: _StatCard(title: s.thisWeek, value: '${data.weekCount}', subtitle: s.appointment, icon: Icons.date_range_rounded, gradient: const LinearGradient(colors: [Color(0xFF5B8DEF), Color(0xFF3D6FD4)], begin: Alignment.topLeft, end: Alignment.bottomRight))),
                         const SizedBox(width: 12),
-                        Expanded(child: _StatCard(title: s.isEn ? 'Today Revenue' : 'Günlük Gelir', value: '${data.monthRevenue.toStringAsFixed(0)} ₺', subtitle: s.appointment, icon: Icons.attach_money_rounded, gradient: const LinearGradient(colors: [Color(0xFF4CAF7D), Color(0xFF2E8A5A)], begin: Alignment.topLeft, end: Alignment.bottomRight))),
+                        Expanded(child: _StatCard(title: s.monthlyRevenue, value: '${data.monthRevenue.toStringAsFixed(0)}₺', subtitle: s.appointment, icon: Icons.attach_money_rounded, gradient: const LinearGradient(colors: [Color(0xFF4CAF7D), Color(0xFF2E8A5A)], begin: Alignment.topLeft, end: Alignment.bottomRight))),
                         ]),
                         const SizedBox(height: 12),
                         Row(children: [
@@ -70,6 +70,8 @@ class DashboardScreen extends ConsumerWidget {
                         boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, 4))],
                       ),
                       child: BarChart(BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: _chartMaxY(data.weeklyChart),
                         barGroups: List.generate(7, (i) => _makeBarGroup(i, data.weeklyChart[i].toDouble())),
                         borderData: FlBorderData(show: false),
                         gridData: FlGridData(
@@ -78,7 +80,18 @@ class DashboardScreen extends ConsumerWidget {
                           getDrawingHorizontalLine: (_) => FlLine(color: c.surfaceVariant, strokeWidth: 1),
                         ),
                         titlesData: FlTitlesData(
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 24,
+                              getTitlesWidget: (value, meta) {
+                                final i = value.toInt();
+                                if (i < 0 || i > 6) return const SizedBox.shrink();
+                                final v = data.weeklyChart[i];
+                                return Text('$v', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: v > 0 ? AppColors.primary : c.textHint));
+                              },
+                            ),
+                          ),
                           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                           leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                           bottomTitles: AxisTitles(
@@ -135,11 +148,18 @@ class DashboardScreen extends ConsumerWidget {
       BarChartRodData(
         toY: y,
         gradient: const LinearGradient(colors: [Color(0xFF9B7FE0), Color(0xFF6644B8)], begin: Alignment.bottomCenter, end: Alignment.topCenter),
-        width: 22,
+        width: 26,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
       ),
     ],
   );
+
+  /// Çubuklar en yüksek güne göre ölçeklenir; aksi halde tek günlük veri grafikte
+  /// ince bir çizgi gibi kalıyor.
+  double _chartMaxY(List<int> chart) {
+    final maxVal = chart.isEmpty ? 0 : chart.reduce((a, b) => a > b ? a : b);
+    return maxVal < 1 ? 1 : maxVal.toDouble();
+  }
 }
 
 class _GradientHeader extends StatelessWidget {

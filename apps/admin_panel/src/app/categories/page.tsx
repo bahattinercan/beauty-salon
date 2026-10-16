@@ -230,7 +230,7 @@ export default function CategoriesPage() {
         <h1 className="text-4xl font-bold text-primary">Kategori Yönetimi</h1>
         <button
           onClick={handleAddClick}
-          className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-semibold"
+          className="flex items-center gap-2 px-6 py-3 bg-primary text-on-primary rounded-lg hover:bg-primary-dark transition-colors font-semibold"
         >
           <Plus className="w-5 h-5" />
           Kategori Ekle
@@ -256,7 +256,7 @@ export default function CategoriesPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-300">
           {error}
           <button
             onClick={loadCategories}
@@ -443,7 +443,7 @@ export default function CategoriesPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-semibold"
+                  className="flex-1 px-4 py-2 bg-primary text-on-primary rounded-lg hover:bg-primary-dark transition-colors font-semibold"
                 >
                   {editingId ? "Güncelle" : "Ekle"}
                 </button>
