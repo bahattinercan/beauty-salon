@@ -318,6 +318,7 @@ Kabul: `rd06`'da yatay kaydırma yok; `rd03`'te okunmayan metin yok.
 | WP5 | Pill bottom nav | 4-5 sa | ✅ Bitti (`rd12`, `rd13_nav_active_*`) |
 | WP6 | Dark mode + kontrast | 2-3 sa | ✅ Bitti (`rd04`, `rd05` + token testleri) |
 | WP7 | Görsel doğrulama | 3-4 sa | ✅ Bitti (`rd01..rd13`, 360 sweep, `__diag` boş) |
+| WP8 | Cihaz (Android) polisajı | 2-3 sa | ✅ Bitti (`screenshots/emulator/m*`, `n01..n03`) |
 | | **Toplam** | **35-45 sa** | |
 
 **Sıra gerekçesi:** WP0 ve WP1 bağımsız ve her şeyin ön koşulu. WP2 (onboarding) referansın en görünür parçası ve **mevcut ekranlara dokunmadığı için riski en düşük** → önce o. WP3-WP5 aynı dosyalara dokunuyor (home_screen, salon_card) → sırayla. WP7 en sonda ama WP2 sonrası bir ara doğrulama yapılabilir.
@@ -381,3 +382,48 @@ flutter test      # 197 mevcut + ~18 yeni test, hepsi yeşil
 - [ ] CDP sweep: konsol hatası 0, başarısız istek 0, yatay taşma 0
 - [ ] Dark modda okunmayan metin yok
 - [ ] `flutter build web --release` başarılı
+
+---
+
+## WP8 — Cihaz (Android) polisajı
+
+Web karesi dört kusuru göstermiyordu. 1080×2400 AVD (`Medium_Phone_API_36.1`),
+debug APK, API `10.0.2.2:3200` üzerinden ölçülenler ve yapılanlar:
+
+1. **Sistem çubukları tema dışıydı.** Tema yalnızca `appBarTheme.systemOverlayStyle`
+   içinde `statusBarColor: transparent` veriyordu; o stil sadece AppBar'ı olan
+   ekranlarda uygulanıyor. Login/home `CustomScrollView` kullandığı için hiçbir
+   stil uygulanmıyordu → mor hero üstünde **koyu** durum ikonları (~3:1) ve
+   altta **siyah** gezinme çubuğu (`m08_login`).
+   → `AppTheme.overlayFor(brightness)` tam stil veriyor (barlar şeffaf + ikon
+   parlaklığı tema bazında), `main.dart` içindeki `_SystemUiChrome` tema
+   değiştikçe uyguluyor; marka yüzeyleri (login, kayıt, `AuthHeader`, home
+   `BannerHeader`) `BrandSurface` ile sarıldı → o bölgede ikonlar beyaz
+   (`n01_home_after`). Test: `test/app/theme/app_theme_overlay_test.dart`.
+2. **Konum akışı Google Play ayar dialogunu tetikliyordu**
+   (`LocationSettingsCheckerActivity` uygulamayı arka plana atıp dokunuşları
+   yutuyor; emülatörde tekrar tekrar ölçüldü). → `AndroidSettings(
+   forceLocationManager: true, timeLimit: 8sn)`: Android'in kendi
+   LocationManager'ı kullanılır, konum kapalıysa kendi `LocationNotice`
+   yolumuza düşeriz. Soğuk açılışta artık o dialog yok (logcat izi: tek satır
+   `freezing … permissioncontroller`, dialog yok).
+3. **Bildirim + tam alarm izinleri uygulama açılır açılmaz soruluyordu**
+   (`NotificationService.init()` içinde, daha ürün görünmeden iki sistem
+   dialogu). → `init()` yalnızca eklentiyi hazırlar; `ensurePermissions()`
+   hatırlatma gerçekten planlanırken çağrılır (`scheduleAppointmentReminder`).
+4. **Launcher ikonu Flutter varsayılanıydı.** → `scripts/make_app_icon.py`
+   (bağımlılıksız PNG üretici: marka gradyanı + beyaz disk + üç yaprak) ve
+   `flutter_launcher_icons`; Android legacy + adaptive + monochrome ve iOS
+   ikonları üretildi (`n03_icon_crop`).
+   Not: `image 4.11` + `archive 4.x` uyumsuzluğu (`ZLibDecoder.decodeLazy`
+   kaldırılmış) `dependency_overrides` ile aşıldı (image 4.1.7, archive 3.6.1) —
+   yalnızca dev zinciri, çalışma zamanını etkilemez.
+
+Ayrıca emülatörde gözlenen ama uygulama hatası olmayan: debug APK bir kez
+`lowmemorykiller` ile öldürüldü (~430 MB RSS; Gradle daemon + qemu yükü) —
+`./gradlew --stop` + emülatör yeniden başlatma çözdü.
+
+**Doğrulama:** `flutter analyze` temiz; `flutter test` 272 yeşil (yeni overlay
+testleri dahil); debug APK kurulup soğuk açılış yapıldı: RenderFlex satırı 0,
+izin/GMS dialogu yok, durum ikonları beyaz, gezinme çubuğu şeffaf, launcher
+ikonu yeni marka işareti.
