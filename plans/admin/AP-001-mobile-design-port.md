@@ -1,7 +1,13 @@
 # AP-001 — Admin Panel: Mobil Tasarım Dilinin Uyarlanması (CA-019 portu)
 
-> **DURUM:** PLAN — henüz uygulanmadı. Ölçüm/kanıt altyapısı bu planla birlikte repoya
-> eklendi ve çalıştırıldı (aşağıdaki tüm sayılar üretilmiş çıktıdır, tahmin değildir):
+> **DURUM:** UYGULANDI (2026-10-21, commit `cc5162d`; ölçüm tablosu §11).
+> **KAPSAM DÜZELTMESİ (kullanıcı, uygulama sonrası):** admin panelinin mobil uyumlu
+> **olmasına gerek yoktu**. Token sözleşmesi, WCAG AA düzeltmeleri ve masaüstü düzen
+> (SideRail, PageHeader, kart primitifleri, `next/font`) korunacak şeyler; mobil kabuk
+> (`BottomPillNav`, `MobileDrawer`, tablonun kart modu, breakpoint'ler) ise istenmeden
+> yapılmış fazlalık — ileride admin işlerinde mobil varsayılan olarak ele alınmayacak,
+> gerekirse bu parçalar geri alınabilir (mobil kapılar §6 WP2/§7 bu yüzden ölçüm olarak kaldı). Ölçüm/kanıt altyapısı bu planla birlikte repoya
+> Ölçüm/kanıt altyapısı bu planla birlikte repoya eklendi ve çalıştırıldı (aşağıdaki tüm sayılar üretilmiş çıktıdır, tahmin değildir):
 > `scripts/wcag_tokens.js`, `screenshots/_harness/plan-admin-mobile-audit.js`,
 > `screenshots/_harness/plan-admin-mobile-bisect.js`, `screenshots/_harness/plan-admin-before-contrast.js`,
 > `plans/admin/proposed-tokens.json`.
