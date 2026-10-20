@@ -1,128 +1,142 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Search,
-  ChevronDown,
-  Eye,
-  CheckCircle,
-  XCircle,
-  ToggleRight,
-  Star,
-  MapPin,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  RefreshCw,
-} from "lucide-react";
+import { CheckCircle, Loader2, Power, Search, SearchX, XCircle } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import PageHeader from "@/components/shell/PageHeader";
+import Button from "@/components/ui/Button";
+import DataTable, { type Column } from "@/components/ui/DataTable";
+import Pagination from "@/components/ui/Pagination";
+import SalonCard from "@/components/ui/SalonCard";
+import { StatusBadge, SALON_STATUS } from "@/components/ui/Badge";
+import Tabs from "@/components/ui/Tabs";
+import { Input } from "@/components/ui/Field";
+import { ErrorState } from "@/components/ui/States";
+import { Card, CardBody } from "@/components/ui/Card";
 
 type SalonStatus = "onaylı" | "bekliyor" | "pasif";
 
 interface ApiSalon {
   id: string;
   name: string;
-  address: string;
-  city?: string;
-  district?: string;
+  address?: string;
+  city?: string | null;
+  district?: string | null;
   isVerified: boolean;
   isActive: boolean;
-  averageRating?: number;
-  reviewCount?: number;
+  /** API `ratingAvg` döndürüyor; `averageRating` eski ad — ikisi de okunur. */
+  ratingAvg?: number | null;
+  averageRating?: number | null;
+  reviewCount?: number | null;
+  coverImageUrl?: string | null;
+  logoUrl?: string | null;
+  createdAt?: string;
   owner?: { fullName: string; email: string };
-  staff?: unknown[];
 }
 
 interface Salon {
   id: string;
   name: string;
   address: string;
+  city?: string | null;
+  district?: string | null;
   owner: string;
-  rating: number;
+  rating: number | null;
   reviewCount: number;
-  staffCount: number;
   status: SalonStatus;
+  coverImageUrl?: string | null;
+  logoUrl?: string | null;
+  isNew: boolean;
 }
 
 interface ApiResponse {
   success: boolean;
   data: {
     data: ApiSalon[];
-    meta: {
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    };
+    meta: { total: number; page: number; limit: number; totalPages: number };
   };
 }
 
 const ITEMS_PER_PAGE = 10;
 
-function mapSalon(s: ApiSalon): Salon {
+function mapSalon(s: ApiSalon, now: number): Salon {
   let status: SalonStatus = "pasif";
   if (s.isActive && s.isVerified) status = "onaylı";
   else if (s.isActive && !s.isVerified) status = "bekliyor";
 
-  const address = s.address || [s.city, s.district].filter(Boolean).join(", ") || "—";
+  const rating = s.ratingAvg ?? s.averageRating ?? null;
 
   return {
     id: s.id,
     name: s.name,
-    address,
+    address: s.address || [s.city, s.district].filter(Boolean).join(", ") || "—",
+    city: s.city,
+    district: s.district,
     owner: s.owner?.fullName || "—",
-    rating: s.averageRating ?? 0,
+    // API `ratingAvg` veriyor, kod `averageRating` okuyordu → Puan daima 0'dı.
+    rating: typeof rating === "number" ? rating : null,
     reviewCount: s.reviewCount ?? 0,
-    staffCount: Array.isArray(s.staff) ? s.staff.length : 0,
     status,
+    coverImageUrl: s.coverImageUrl,
+    logoUrl: s.logoUrl,
+    // "Yeni" rozeti fetch anında hesaplanır (render içinde Date.now() saf değil).
+    isNew: !!s.createdAt && now - new Date(s.createdAt).getTime() < 30 * 864e5,
   };
 }
 
-const ITEMS_PER_PAGE_SERVER = ITEMS_PER_PAGE;
+type Filter = "tümü" | SalonStatus;
 
 export default function SalonsPage() {
   const router = useRouter();
+
   const [salons, setSalons] = useState<Salon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"tümü" | SalonStatus>("tümü");
+  const [filter, setFilter] = useState<Filter>("tümü");
+  const [view, setView] = useState<"tablo" | "kartlar">("tablo");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
-  const fetchSalons = useCallback(async (page = 1) => {
-    try {
-      setError(null);
-      setLoading(true);
+  // Panel hero'sundan gelen derin bağlantı: /salons?filter=bekliyor
+  // (useSearchParams yerine location: statik prerender'da Suspense sınırı zorunlu olurdu.)
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("filter");
+    if (q === "onaylı" || q === "bekliyor" || q === "pasif") setFilter(q);
+  }, []);
 
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(ITEMS_PER_PAGE_SERVER),
-      });
-
-      const result = await apiFetch<ApiResponse>(`/admin/salons?${params}`);
-
-      if (result.success && result.data) {
-        setSalons(result.data.data.map(mapSalon));
-        setTotalPages(result.data.meta.totalPages);
-        setTotalCount(result.data.meta.total);
+  const fetchSalons = useCallback(
+    async (page = 1) => {
+      try {
+        setError(null);
+        setLoading(true);
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(ITEMS_PER_PAGE),
+        });
+        const result = await apiFetch<ApiResponse>(`/admin/salons?${params}`);
+        if (result.success && result.data) {
+          setSalons(result.data.data.map((item) => mapSalon(item, Date.now())));
+          setTotalPages(result.data.meta.totalPages);
+          setTotalCount(result.data.meta.total);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Veri yüklenemedi";
+        if (msg.includes("401") || msg.includes("403")) {
+          router.push("/login");
+          return;
+        }
+        setError(msg);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Veri yüklenemedi";
-      if (msg.includes("401") || msg.includes("403")) {
-        router.push("/login");
-        return;
-      }
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
+    },
+    [router]
+  );
 
   useEffect(() => {
     if (!localStorage.getItem("access_token")) {
@@ -136,9 +150,7 @@ export default function SalonsPage() {
     try {
       setActionLoading(id + "-verify");
       await apiFetch(`/salons/${id}/verify`, { method: "PATCH" });
-      setSalons((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, status: "onaylı" } : s))
-      );
+      setSalons((prev) => prev.map((s) => (s.id === id ? { ...s, status: "onaylı" } : s)));
     } catch (err) {
       alert(err instanceof Error ? err.message : "İşlem başarısız");
     } finally {
@@ -150,20 +162,14 @@ export default function SalonsPage() {
     try {
       setActionLoading(id + "-toggle");
       if (currentStatus === "onaylı" || currentStatus === "bekliyor") {
-        // Soft delete = deactivate
-        await apiFetch(`/salons/${id}`, { method: "DELETE" });
-        setSalons((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, status: "pasif" } : s))
-        );
+        await apiFetch(`/salons/${id}`, { method: "DELETE" }); // soft delete
+        setSalons((prev) => prev.map((s) => (s.id === id ? { ...s, status: "pasif" } : s)));
       } else {
-        // Reactivate via PATCH
         await apiFetch(`/salons/${id}`, {
           method: "PATCH",
           body: JSON.stringify({ isActive: true }),
         });
-        setSalons((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, status: "bekliyor" } : s))
-        );
+        setSalons((prev) => prev.map((s) => (s.id === id ? { ...s, status: "bekliyor" } : s)));
       }
     } catch (err) {
       alert(err instanceof Error ? err.message : "İşlem başarısız");
@@ -172,345 +178,202 @@ export default function SalonsPage() {
     }
   };
 
-  // Client-side filtering
-  const filteredSalons = salons.filter((salon) => {
-    const matchesSearch =
-      salon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      salon.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      salon.address.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter =
-      filterStatus === "tümü" || salon.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  const filtered = useMemo(
+    () =>
+      salons.filter((salon) => {
+        const q = searchQuery.toLowerCase();
+        const matchesSearch =
+          !q ||
+          salon.name.toLowerCase().includes(q) ||
+          salon.owner.toLowerCase().includes(q) ||
+          salon.address.toLowerCase().includes(q);
+        return matchesSearch && (filter === "tümü" || salon.status === filter);
+      }),
+    [salons, searchQuery, filter]
+  );
 
-  const stats = {
-    total: totalCount,
-    approved: salons.filter((s) => s.status === "onaylı").length,
-    pending: salons.filter((s) => s.status === "bekliyor").length,
-  };
+  const counts = useMemo(
+    () => ({
+      tümü: salons.length,
+      onaylı: salons.filter((s) => s.status === "onaylı").length,
+      bekliyor: salons.filter((s) => s.status === "bekliyor").length,
+      pasif: salons.filter((s) => s.status === "pasif").length,
+    }),
+    [salons]
+  );
 
-  const getStatusStyles = (status: SalonStatus) => {
-    switch (status) {
-      case "onaylı":
-        return "bg-success/10 text-success border border-success/30";
-      case "bekliyor":
-        return "bg-warning/10 text-warning border border-warning/30";
-      case "pasif":
-        return "bg-error/10 text-error border border-error/30";
-    }
-  };
+  const rowActions = (salon: Salon) => (
+    <>
+      {salon.status === "bekliyor" ? (
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => handleVerify(salon.id)}
+          disabled={actionLoading === salon.id + "-verify"}
+        >
+          {actionLoading === salon.id + "-verify" ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <CheckCircle className="h-4 w-4" aria-hidden />
+          )}
+          Onayla
+        </Button>
+      ) : null}
+      {salon.status === "pasif" ? (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleToggleActive(salon.id, salon.status)}
+          disabled={actionLoading === salon.id + "-toggle"}
+        >
+          <Power className="h-4 w-4" aria-hidden />
+          Etkinleştir
+        </Button>
+      ) : (
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={() => handleToggleActive(salon.id, salon.status)}
+          disabled={actionLoading === salon.id + "-toggle"}
+        >
+          {actionLoading === salon.id + "-toggle" ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <XCircle className="h-4 w-4" aria-hidden />
+          )}
+          Pasife al
+        </Button>
+      )}
+    </>
+  );
 
-  const getStatusLabel = (status: SalonStatus) => {
-    switch (status) {
-      case "onaylı": return "Onaylı";
-      case "bekliyor": return "Bekliyor";
-      case "pasif": return "Pasif";
-    }
-  };
-
-  const filterOptions = [
-    { label: "Tümü", value: "tümü" as const },
-    { label: "Onaylı", value: "onaylı" as const },
-    { label: "Bekliyor", value: "bekliyor" as const },
-    { label: "Pasif", value: "pasif" as const },
+  // API `staff` döndürmüyor → "Ekip" kolonu daima 0'dı; kaldırıldı (6→5 kolon).
+  const columns: Column<Salon>[] = [
+    {
+      key: "name",
+      header: "Salon",
+      mobile: "primary",
+      cell: (s) => <span className="font-semibold text-fg">{s.name}</span>,
+    },
+    { key: "owner", header: "Sahibi", cell: (s) => s.owner },
+    {
+      key: "address",
+      header: "Konum",
+      mobile: false,
+      cell: (s) => <span className="text-fg-muted">{s.address}</span>,
+    },
+    {
+      key: "rating",
+      header: "Puan",
+      align: "right",
+      cell: (s) =>
+        s.rating === null ? (
+          <span className="text-fg-muted">—</span>
+        ) : (
+          <span className="tnum font-semibold text-fg">
+            {s.rating.toFixed(1)}
+            {s.reviewCount ? <span className="text-fg-muted"> ({s.reviewCount})</span> : null}
+          </span>
+        ),
+    },
+    {
+      key: "status",
+      header: "Durum",
+      cell: (s) => <StatusBadge map={SALON_STATUS} value={s.status} />,
+    },
+    {
+      key: "actions",
+      header: "İşlem",
+      align: "right",
+      mobile: false,
+      cell: (s) => <div className="flex justify-end gap-2">{rowActions(s)}</div>,
+    },
   ];
 
-  if (loading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="text-sm text-gray-500">Salonlar yükleniyor...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6 dark:border-red-500/30 dark:bg-red-500/10">
-        <div className="flex items-start gap-3">
-          <XCircle className="mt-1 h-5 w-5 text-red-500 dark:text-red-400" />
-          <div className="flex-1">
-            <h3 className="font-medium text-red-800 dark:text-red-300">Veri Yükleme Hatası</h3>
-            <p className="mt-1 text-sm text-red-600 dark:text-red-300">{error}</p>
-            <button
-              onClick={() => fetchSalons(currentPage)}
-              className="mt-3 flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Tekrar Dene
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 className="text-4xl font-bold text-primary">Salon Yönetimi</h1>
-        <button
-          onClick={() => fetchSalons(currentPage)}
-          className="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Yenile
-        </button>
+    <>
+      <PageHeader
+        title="Salon Yönetimi"
+        subtitle={`${totalCount} salon · ${counts.bekliyor} onay bekliyor`}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => fetchSalons(currentPage)}>
+            Yenile
+          </Button>
+        }
+      />
+
+      <div className="mb-4 flex flex-col gap-3">
+        <Input
+          icon={Search}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Salon adı, sahibi veya adres ara…"
+          aria-label="Salon ara"
+        />
+        <Tabs<Filter>
+          ariaLabel="Durum filtresi"
+          value={filter}
+          onChange={(v) => setFilter(v)}
+          items={[
+            { value: "tümü", label: "Tümü", count: counts.tümü },
+            { value: "onaylı", label: "Onaylı", count: counts.onaylı },
+            { value: "bekliyor", label: "Bekliyor", count: counts.bekliyor },
+            { value: "pasif", label: "Pasif", count: counts.pasif },
+          ]}
+        />
+        <Tabs<"tablo" | "kartlar">
+          ariaLabel="Görünüm"
+          value={view}
+          onChange={(v) => setView(v)}
+          items={[
+            { value: "tablo", label: "Tablo" },
+            { value: "kartlar", label: "Kartlar" },
+          ]}
+        />
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Salon adı, sahip veya adres ile ara..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white transition-all"
-          />
+      {error ? <ErrorState message={error} onRetry={() => fetchSalons(currentPage)} /> : null}
+
+      {view === "tablo" ? (
+        <DataTable<Salon>
+          rows={filtered}
+          columns={columns}
+          rowKey={(s) => s.id}
+          loading={loading}
+          actions={rowActions}
+          minWidthClass="min-w-[40rem]"
+          emptyTitle={searchQuery || filter !== "tümü" ? "Eşleşme yok" : "Salon yok"}
+          emptyDescription={
+            searchQuery || filter !== "tümü"
+              ? "Filtreleri temizleyip tekrar deneyin."
+              : "Henüz salon bulunmuyor."
+          }
+        />
+      ) : loading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <Card key={i}>
+              <CardBody className="h-64" />
+            </Card>
+          ))}
         </div>
-
-        {/* Filter Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-            className="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-lg hover:border-primary/50 transition-colors bg-white"
-          >
-            <span className="text-text-secondary text-sm font-medium">
-              Durum:{" "}
-              <span className="text-text-primary font-semibold">
-                {filterOptions.find((o) => o.value === filterStatus)?.label}
-              </span>
-            </span>
-            <ChevronDown className="w-4 h-4 text-text-secondary" />
-          </button>
-
-          {showFilterDropdown && (
-            <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-              {filterOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => {
-                    setFilterStatus(option.value);
-                    setShowFilterDropdown(false);
-                  }}
-                  className={`w-full text-left px-4 py-3 hover:bg-secondary transition-colors first:rounded-t-lg last:rounded-b-lg ${
-                    filterStatus === option.value
-                      ? "bg-secondary text-primary font-semibold"
-                      : "text-text-primary"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Stats Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <p className="text-text-secondary text-sm font-medium mb-2">Toplam</p>
-          <p className="text-4xl font-bold text-primary">{stats.total}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <p className="text-text-secondary text-sm font-medium mb-2">Onaylı (bu sayfa)</p>
-          <p className="text-4xl font-bold text-success">{stats.approved}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <p className="text-text-secondary text-sm font-medium mb-2">Bekliyor (bu sayfa)</p>
-          <p className="text-4xl font-bold text-warning">{stats.pending}</p>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-surface-variant border-b border-gray-200">
-                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Salon Adı</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Sahibi</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Puan</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Yorum</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Durum</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">İşlem</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredSalons.length > 0 ? (
-                filteredSalons.map((salon) => (
-                  <tr key={salon.id} className="hover:bg-surface-variant transition-colors">
-                    {/* Salon Name & Address */}
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1">
-                        <p className="font-semibold text-text-primary">{salon.name}</p>
-                        <div className="flex items-center gap-1 text-text-secondary text-sm">
-                          <MapPin className="w-3 h-3" />
-                          {salon.address}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Owner */}
-                    <td className="px-6 py-4">
-                      <p className="text-text-primary">{salon.owner}</p>
-                    </td>
-
-                    {/* Rating */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1">
-                        {salon.rating > 0 ? (
-                          <>
-                            <Star className="w-4 h-4 fill-warning text-warning" />
-                            <span className="font-semibold text-text-primary">
-                              {salon.rating.toFixed(1)}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-text-secondary text-sm">Yok</span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Review Count */}
-                    <td className="px-6 py-4">
-                      <p className="text-text-primary">{salon.reviewCount}</p>
-                    </td>
-
-                    {/* Status Badge */}
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyles(
-                          salon.status
-                        )}`}
-                      >
-                        {getStatusLabel(salon.status)}
-                      </span>
-                    </td>
-
-                    {/* Action Buttons */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <button
-                          className="p-2 hover:bg-info/10 text-info rounded-lg transition-colors"
-                          title="Görüntüle"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        {salon.status === "bekliyor" ? (
-                          <>
-                            <button
-                              onClick={() => handleVerify(salon.id)}
-                              disabled={actionLoading === salon.id + "-verify"}
-                              className="p-2 hover:bg-success/10 text-success rounded-lg transition-colors disabled:opacity-50"
-                              title="Onayla"
-                            >
-                              {actionLoading === salon.id + "-verify" ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <CheckCircle className="w-4 h-4" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleToggleActive(salon.id, salon.status)}
-                              disabled={actionLoading === salon.id + "-toggle"}
-                              className="p-2 hover:bg-error/10 text-error rounded-lg transition-colors disabled:opacity-50"
-                              title="Reddet / Pasif Yap"
-                            >
-                              {actionLoading === salon.id + "-toggle" ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <XCircle className="w-4 h-4" />
-                              )}
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => handleToggleActive(salon.id, salon.status)}
-                            disabled={actionLoading === salon.id + "-toggle"}
-                            className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
-                              salon.status === "onaylı"
-                                ? "hover:bg-warning/10 text-warning"
-                                : "hover:bg-success/10 text-success"
-                            }`}
-                            title={salon.status === "onaylı" ? "Pasif Yap" : "Aktif Yap"}
-                          >
-                            {actionLoading === salon.id + "-toggle" ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <ToggleRight className="w-4 h-4" />
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <p className="text-text-secondary">
-                      Aranılan kriterlere uygun salon bulunamadı
-                    </p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-text-secondary">
-            Sayfa {currentPage} / {totalPages} (Toplam: {totalCount} salon)
-          </p>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="p-2 rounded-lg border border-gray-200 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4 text-text-primary" />
-            </button>
-
-            <div className="flex gap-1">
-              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                const page = i + 1;
-                return (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-2 rounded-lg border transition-colors text-sm font-medium ${
-                      page === currentPage
-                        ? "bg-primary text-on-primary border-primary"
-                        : "border-gray-200 text-text-primary hover:bg-secondary"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-              className="p-2 rounded-lg border border-gray-200 hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight className="w-4 h-4 text-text-primary" />
-            </button>
+      ) : filtered.length === 0 ? (
+        <Card>
+          <div className="flex min-h-40 flex-col items-center justify-center gap-2 p-6 text-center text-fg-muted">
+            <SearchX className="h-8 w-8" aria-hidden />
+            <p className="font-display font-bold text-fg">Eşleşme yok</p>
+            <p className="text-sm">Arama veya filtre kriterlerinizi değiştirin.</p>
           </div>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((salon) => (
+            <SalonCard key={salon.id} salon={salon} actions={rowActions(salon)} />
+          ))}
         </div>
       )}
-    </div>
+
+      <Pagination page={currentPage} totalPages={totalPages} onPage={setCurrentPage} />
+    </>
   );
 }

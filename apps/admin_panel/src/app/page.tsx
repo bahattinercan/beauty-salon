@@ -1,331 +1,265 @@
 'use client';
 
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Building2, Users, Calendar, Star, TrendingUp, TrendingDown, CheckCircle, Clock, XCircle, Loader2, RefreshCw } from 'lucide-react';
+import Link from 'next/link';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
+  Store,
+  Users,
+  CalendarDays,
+  Wallet,
+  CheckCircle2,
+  Clock,
+  UserPlus,
+  ArrowRight,
+  Star,
+} from 'lucide-react';
 import { useDashboard } from '@/providers/DashboardProvider';
-import { useChartTheme } from '@/lib/chartTheme';
+import useChartTheme from '@/lib/chartTheme';
+import PageHeader from '@/components/shell/PageHeader';
+import Button from '@/components/ui/Button';
+import { Card, CardHeader, CardBody } from '@/components/ui/Card';
+import StatCard from '@/components/ui/StatCard';
+import { Skeleton, ErrorState, EmptyState } from '@/components/ui/States';
 
-// Stat Card Component
-function StatCard({
-  icon: Icon,
-  value,
-  label,
-  percentage,
-  isPositive,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  value: string | number;
-  label: string;
-  percentage?: number;
-  isPositive?: boolean;
-}) {
-  return (
-    <div className="flex-1 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
-          {percentage !== undefined && isPositive !== undefined && (
-            <div className="mt-3 flex items-center gap-1">
-              {isPositive ? (
-                <>
-                  <TrendingUp className="h-4 w-4 text-success" />
-                  <span className="text-xs font-medium text-success">
-                    +{percentage}%
-                  </span>
-                </>
-              ) : (
-                <>
-                  <TrendingDown className="h-4 w-4 text-red-500" />
-                  <span className="text-xs font-medium text-red-500">-{percentage}%</span>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="rounded-full p-3 bg-secondary">
-          <Icon className="h-6 w-6 text-primary" />
-        </div>
-      </div>
-    </div>
+function money(value: string) {
+  const n = Number.parseFloat(value || '0');
+  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(
+    Number.isFinite(n) ? n : 0
   );
 }
 
-// Star Rating Component
-function StarRating({ rating }: { rating: number }) {
-  return (
-    <div className="flex gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          className={`h-4 w-4 ${
-            star <= Math.floor(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
-          }`}
-        />
-      ))}
-    </div>
-  );
+function today() {
+  return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'long' }).format(new Date());
 }
 
-// Status Badge Component
-// Loading State
-function DashboardLoading() {
-  return (
-    <div className="flex min-h-[400px] items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-sm text-gray-500">Veriler yükleniyor...</p>
-      </div>
-    </div>
-  );
-}
-
-// Error State
-function DashboardError({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="rounded-lg border border-red-200 bg-red-50 p-6">
-      <div className="flex items-start gap-3">
-        <XCircle className="mt-1 h-5 w-5 text-red-500" />
-        <div className="flex-1">
-          <h3 className="font-medium text-red-800">Veri Yükleme Hatası</h3>
-          <p className="mt-1 text-sm text-red-600">{message}</p>
-          <button
-            onClick={onRetry}
-            className="mt-3 flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Tekrar Dene
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function Dashboard() {
+export default function DashboardPage() {
   const { data, loading, error, refetch } = useDashboard();
   const chart = useChartTheme();
-  const today = new Date();
-  const formattedDate = today.toLocaleDateString('tr-TR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
 
-  // Loading state
-  if (loading) {
+  if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="mx-auto max-w-7xl">
-          <DashboardLoading />
-        </div>
-      </div>
+      <>
+        <PageHeader title="Panel" subtitle={today()} />
+        <ErrorState message={error} onRetry={refetch} />
+      </>
     );
   }
 
-  // Error state
-  if (error && !data) {
+  if (loading || !data) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="mx-auto max-w-7xl">
-          <DashboardError message={error} onRetry={refetch} />
+      <>
+        <PageHeader title="Panel" subtitle={today()} />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-28" />
+          ))}
         </div>
-      </div>
-    );
-  }
-
-  // No data state
-  if (!data) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="mx-auto max-w-7xl">
-          <DashboardError message="Veri bulunamadı" onRetry={refetch} />
-        </div>
-      </div>
+        <Skeleton className="mt-4 h-80" />
+      </>
     );
   }
 
   const { stats, appointmentsByStatus, monthlyAppointments, recentReviews } = data;
+  const pending = stats.pendingSalons ?? 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Kontrol Paneli</h1>
-            <p className="mt-1 text-sm text-gray-600">{formattedDate}</p>
-          </div>
-          <button
-            onClick={refetch}
-            className="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-          >
-            <RefreshCw className="h-4 w-4" />
+    <>
+      <PageHeader
+        title="Panel"
+        subtitle={today()}
+        actions={
+          <Button variant="outline" size="sm" onClick={refetch}>
             Yenile
-          </button>
-        </div>
+          </Button>
+        }
+      />
 
-        {/* Stat Cards */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            icon={Building2}
-            value={stats.totalSalons.toLocaleString('tr-TR')}
-            label="Toplam Salon"
-            percentage={12}
-            isPositive={true}
-          />
-          <StatCard
-            icon={Users}
-            value={stats.totalUsers.toLocaleString('tr-TR')}
-            label="Toplam Kullanıcı"
-            percentage={8}
-            isPositive={true}
-          />
-          <StatCard
-            icon={Calendar}
-            value={stats.totalAppointments.toLocaleString('tr-TR')}
-            label="Toplam Randevu"
-            percentage={5}
-            isPositive={true}
-          />
-          <StatCard
-            icon={Star}
-            value={`₺${parseFloat(stats.totalRevenue).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`}
-            label="Toplam Gelir"
-            percentage={15}
-            isPositive={true}
-          />
+      {/* Hero: mobil heroSurface kartının karşılığı. Lime yalnızca CTA dolgusu. */}
+      <section className="mb-5 rounded-card bg-hero-surface p-5 sm:p-6">
+        <p className="text-xs font-bold uppercase tracking-wider text-primary">
+          {pending > 0 ? 'Onay bekliyor' : 'Gündem yok'}
+        </p>
+        <h2 className="mt-1 max-w-2xl font-display text-xl font-extrabold text-fg sm:text-2xl">
+          {pending > 0
+            ? `${pending} salon başvurusu onay bekliyor`
+            : 'Bekleyen salon başvurusu yok'}
+        </h2>
+        <p className="mt-1 max-w-xl text-sm text-fg-muted">
+          {pending > 0
+            ? 'Onaylanan salonlar müşteri uygulamada hemen görünür; sırayı bozmamak için bugünkü başvuruları gözden geçirin.'
+            : 'Yeni başvuru geldikçe burada görünecek. Randevu akışını izlemek için randevulara bakabilirsiniz.'}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href={pending > 0 ? '/salons?filter=bekliyor' : '/appointments'}>
+            <Button variant="lime" size="sm">
+              {pending > 0 ? 'Başvuruları incele' : 'Randevuları gör'}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Button>
+          </Link>
+          <Link href="/users">
+            <Button variant="outline" size="sm">
+              Kullanıcılar
+            </Button>
+          </Link>
         </div>
+      </section>
 
-        {/* Charts Section */}
-        <div className="mb-8 grid gap-6 lg:grid-cols-2">
-          {/* Monthly Appointments Chart */}
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Aylık Randevu</h2>
-            {monthlyAppointments.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyAppointments}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
-                  <XAxis dataKey="name" stroke={chart.axis} tick={{ fill: chart.axis, fontSize: 12 }} />
-                  <YAxis stroke={chart.axis} tick={{ fill: chart.axis, fontSize: 12 }} />
-                  <Tooltip {...chart.tooltip} />
-                  <Bar dataKey="appointments" fill={chart.bar} radius={[8, 8, 0, 0]} />
+      {/* Ana sayılar — API'de büyüme verisi yok, bu yüzden sahte %12/%8 etiketleri kaldırıldı. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Toplam Salon" value={stats.totalSalons ?? 0} icon={Store} tone="primary" />
+        <StatCard label="Toplam Kullanıcı" value={stats.totalUsers ?? 0} icon={Users} tone="info" />
+        <StatCard
+          label="Toplam Randevu"
+          value={stats.totalAppointments ?? 0}
+          icon={CalendarDays}
+          tone="success"
+          hint={`${stats.recentAppointments ?? 0} son 30 gün`}
+        />
+        <StatCard label="Toplam Gelir" value={money(stats.totalRevenue)} icon={Wallet} tone="warning" />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Bekleyen Salon" value={pending} icon={Clock} tone="warning" />
+        <StatCard
+          label="Tamamlanan Randevu"
+          value={stats.completedAppointments ?? 0}
+          icon={CheckCircle2}
+          tone="success"
+        />
+        <StatCard label="Bu Hafta Yeni Kullanıcı" value={stats.newUsersThisWeek ?? 0} icon={UserPlus} tone="info" />
+      </div>
+
+      <div className="mt-4 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader title="Aylık Randevu" description="Son 6 ay" />
+          <CardBody>
+            <div className="h-64 min-w-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyAppointments} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    stroke={chart.axis}
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={{ stroke: chart.grid }}
+                  />
+                  <YAxis stroke={chart.axis} fontSize={12} tickLine={false} axisLine={false} width={40} allowDecimals={false} />
+                  <Tooltip
+                    cursor={{ fill: 'color-mix(in srgb, var(--primary) 8%, transparent)' }}
+                    contentStyle={chart.tooltip.contentStyle}
+                    labelStyle={chart.tooltip.labelStyle}
+                    itemStyle={chart.tooltip.itemStyle}
+                  />
+                  <Bar dataKey="appointments" fill={chart.bar} radius={[6, 6, 0, 0]} maxBarSize={44} />
                 </BarChart>
               </ResponsiveContainer>
-            ) : (
-              <div className="flex h-[300px] items-center justify-center text-gray-500">
-                Veri yok
-              </div>
-            )}
-          </div>
+            </div>
+          </CardBody>
+        </Card>
 
-          {/* Appointment Status Chart */}
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Randevu Durumları</h2>
-            {appointmentsByStatus.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+        <Card className="min-w-0">
+          <CardHeader title="Randevu Durumları" />
+          <CardBody>
+            <div className="h-52 min-w-0">
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={appointmentsByStatus}
+                    dataKey="value"
+                    nameKey="name"
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name} (${value})`}
-                    outerRadius={80}
+                    innerRadius={48}
+                    outerRadius={82}
+                    paddingAngle={2}
                     stroke={chart.pieStroke}
                     strokeWidth={2}
-                    dataKey="value"
                   >
-                    {appointmentsByStatus.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke={chart.pieStroke} strokeWidth={2} />
+                    {appointmentsByStatus.map((_, i) => (
+                      <Cell key={i} fill={chart.series[i % chart.series.length]} />
                     ))}
                   </Pie>
-                  <Tooltip {...chart.tooltip} />
+                  <Tooltip
+                    contentStyle={chart.tooltip.contentStyle}
+                    itemStyle={chart.tooltip.itemStyle}
+                    labelStyle={chart.tooltip.labelStyle}
+                  />
                 </PieChart>
               </ResponsiveContainer>
-            ) : (
-              <div className="flex h-[300px] items-center justify-center text-gray-500">
-                Veri yok
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Stats Summary Row */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full p-2 bg-yellow-100">
-                <Clock className="h-5 w-5 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Bekleyen Salon</p>
-                <p className="text-xl font-bold text-gray-900">{stats.pendingSalons}</p>
-              </div>
             </div>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full p-2 bg-blue-100">
-                <CheckCircle className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Tamamlanan Randevu</p>
-                <p className="text-xl font-bold text-gray-900">{stats.completedAppointments.toLocaleString('tr-TR')}</p>
-              </div>
-            </div>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full p-2 bg-green-100">
-                <Users className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Bu Hafta Yeni Kullanıcı</p>
-                <p className="text-xl font-bold text-gray-900">{stats.newUsersThisWeek}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Reviews */}
-        <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-          <div className="border-b border-gray-200 px-6 py-4">
-            <h2 className="text-lg font-semibold text-gray-900">Son Yorumlar</h2>
-          </div>
-          {recentReviews && recentReviews.length > 0 ? (
-            <div className="space-y-4 p-6">
-              {recentReviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="flex gap-4 border-b border-gray-100 pb-4 last:border-0"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {review.customer?.fullName || 'Bilinmeyen Kullanıcı'}
-                        </p>
-                        <p className="mt-1 text-sm text-gray-600">{review.salon?.name || 'Bilinmeyen Salon'}</p>
-                      </div>
-                      <StarRating rating={review.rating} />
-                    </div>
-                    <p className="mt-2 text-sm text-gray-700">{review.comment}</p>
-                    <p className="mt-1 text-xs text-gray-400">
-                      {new Date(review.createdAt).toLocaleDateString('tr-TR')}
-                    </p>
-                  </div>
-                </div>
+            {/* Dış etiketler dar ekranda taşmaya yol açıyordu; liste hâlinde legenda çevrildi. */}
+            <ul className="mt-3 space-y-1.5">
+              {appointmentsByStatus.map((entry, i) => (
+                <li key={entry.name} className="flex items-center gap-2 text-sm">
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-pill"
+                    style={{ background: chart.series[i % chart.series.length] }}
+                    aria-hidden
+                  />
+                  <span className="min-w-0 flex-1 truncate text-fg-muted">{entry.name}</span>
+                  <span className="tnum font-semibold text-fg">{entry.value}</span>
+                </li>
               ))}
-            </div>
-          ) : (
-            <div className="flex h-[200px] items-center justify-center text-gray-500">
-              Yorum bulunamadı
-            </div>
-          )}
-        </div>
+            </ul>
+          </CardBody>
+        </Card>
       </div>
-    </div>
+
+      <Card className="mt-4">
+        <CardHeader
+          title="Son Yorumlar"
+          action={
+            <Link
+              href="/reviews"
+              className="inline-flex min-h-11 items-center rounded-field px-2 font-semibold text-primary hover:bg-surface-variant hover:underline"
+            >
+              Tümünü gör
+            </Link>
+          }
+        />
+        <CardBody>
+          {recentReviews.length === 0 ? (
+            <EmptyState title="Henüz yorum yok" description="Onaylanan randevulardan sonra yorumlar burada birikir." />
+          ) : (
+            <ul className="divide-y divide-border">
+              {recentReviews.map((review) => (
+                <li key={review.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-pill bg-primary/12 text-sm font-bold text-primary">
+                    {(review.customer?.fullName ?? '?').charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate font-semibold text-fg">{review.customer?.fullName}</span>
+                      <span className="flex items-center gap-1 text-sm font-semibold text-warning tnum">
+                        <Star className="h-3.5 w-3.5" aria-hidden />
+                        {review.rating}
+                      </span>
+                    </div>
+                    {review.salon?.name ? (
+                      <p className="truncate text-sm text-fg-muted">{review.salon.name}</p>
+                    ) : null}
+                    {review.comment ? (
+                      <p className="mt-1 line-clamp-2 text-sm text-fg">{review.comment}</p>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardBody>
+      </Card>
+    </>
   );
 }

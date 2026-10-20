@@ -8,12 +8,20 @@ import {
   Palette,
   Zap,
   Flower,
-  X,
   Edit2,
   Trash2,
   Plus,
+  Loader2,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import PageHeader from "@/components/shell/PageHeader";
+import Button from "@/components/ui/Button";
+import Dialog from "@/components/ui/Dialog";
+import Badge from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { Field, Input, Select, Textarea, Toggle } from "@/components/ui/Field";
+import { EmptyState, ErrorState, Skeleton } from "@/components/ui/States";
+import { cx } from "@/lib/cx";
 
 interface ApiCategory {
   id: string;
@@ -33,15 +41,14 @@ interface Category {
   isActive: boolean;
 }
 
-interface FormData {
+interface CategoryFormData {
   name: string;
   description: string;
   icon: string;
   isActive: boolean;
 }
 
-// DB'deki iconName değerleri (content_cut, face, spa, self_improvement...)
-// seed'daki isimlerle birebir eşleşiyor; UI ikonlarına map'leniyor.
+// DB'deki iconName değerleri seed ile birebir eşleşiyor; UI ikonlarına map'lenir.
 const ICON_MAP: Record<string, typeof Scissors> = {
   scissors: Scissors,
   content_cut: Scissors,
@@ -66,10 +73,21 @@ const iconOptions: { value: string; label: string }[] = [
   { value: "self_improvement", label: "SPA & Masaj" },
 ];
 
+const EMPTY_FORM: CategoryFormData = {
+  name: "",
+  description: "",
+  icon: "content_cut",
+  isActive: true,
+};
+
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<CategoryFormData>(EMPTY_FORM);
 
   const loadCategories = async () => {
     setLoading(true);
@@ -96,28 +114,13 @@ export default function CategoriesPage() {
   useEffect(() => {
     loadCategories();
   }, []);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    description: "",
-    icon: "content_cut",
-    isActive: true,
-  });
 
-  // Open modal for creating new category
   const handleAddClick = () => {
     setEditingId(null);
-    setFormData({
-      name: "",
-      description: "",
-      icon: "content_cut",
-      isActive: true,
-    });
+    setFormData(EMPTY_FORM);
     setIsModalOpen(true);
   };
 
-  // Open modal for editing category
   const handleEditClick = (category: Category) => {
     setEditingId(category.id);
     setFormData({
@@ -129,35 +132,27 @@ export default function CategoriesPage() {
     setIsModalOpen(true);
   };
 
-  // Close modal
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingId(null);
-    setFormData({
-      name: "",
-      description: "",
-      icon: "content_cut",
-      isActive: true,
-    });
+    setFormData(EMPTY_FORM);
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setSaving(true);
     const payload = {
       name: formData.name,
       iconName: formData.icon,
       description: formData.description,
       isActive: formData.isActive,
     };
-
     try {
       if (editingId) {
-        const res = await apiFetch<{ data: ApiCategory }>(
-          `/categories/${editingId}`,
-          { method: "PATCH", body: JSON.stringify(payload) }
-        );
+        const res = await apiFetch<{ data: ApiCategory }>(`/categories/${editingId}`, {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        });
         setCategories(
           categories.map((cat) =>
             cat.id === editingId
@@ -191,10 +186,11 @@ export default function CategoriesPage() {
       handleCloseModal();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Kategori kaydedilemedi");
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Delete category
   const handleDelete = async (id: string) => {
     if (!confirm("Bu kategoriyi silmek istediğinize emin misiniz?")) return;
     try {
@@ -205,253 +201,155 @@ export default function CategoriesPage() {
     }
   };
 
-  // Toggle active status
-  const handleToggleActive = async (id: string) => {
-    const current = categories.find((cat) => cat.id === id);
-    try {
-      const res = await apiFetch<{ data: ApiCategory }>(`/categories/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ isActive: !current?.isActive }),
-      });
-      setCategories(
-        categories.map((cat) =>
-          cat.id === id ? { ...cat, isActive: res.data.isActive ?? !cat.isActive } : cat
-        )
-      );
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Durum güncellenemedi");
-    }
-  };
-
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 className="text-4xl font-bold text-primary">Kategori Yönetimi</h1>
-        <button
-          onClick={handleAddClick}
-          className="flex items-center gap-2 px-6 py-3 bg-primary text-on-primary rounded-lg hover:bg-primary-dark transition-colors font-semibold"
-        >
-          <Plus className="w-5 h-5" />
-          Kategori Ekle
-        </button>
-      </div>
+    <>
+      <PageHeader
+        title="Kategori Yönetimi"
+        subtitle={`${categories.length} kategori · ${categories.filter((c) => c.isActive).length} aktif`}
+        actions={
+          <Button size="sm" onClick={handleAddClick}>
+            <Plus className="h-4 w-4" aria-hidden />
+            Yeni kategori
+          </Button>
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <p className="text-text-secondary text-sm font-medium mb-2">
-            Toplam Kategori
-          </p>
-          <p className="text-4xl font-bold text-primary">{categories.length}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <p className="text-text-secondary text-sm font-medium mb-2">
-            Aktif Kategoriler
-          </p>
-          <p className="text-4xl font-bold text-success">
-            {categories.filter((c) => c.isActive).length}
-          </p>
-        </div>
-      </div>
+      {error ? <ErrorState message={error} onRetry={loadCategories} /> : null}
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-300">
-          {error}
-          <button
-            onClick={loadCategories}
-            className="ml-3 underline font-medium"
-          >
-            Tekrar dene
-          </button>
-        </div>
-      )}
-
-      {/* Categories Grid */}
       {loading ? (
-        <p className="text-text-secondary">Kategoriler yükleniyor…</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-36" />
+          ))}
+        </div>
+      ) : categories.length === 0 ? (
+        <Card>
+          <EmptyState
+            title="Kategori yok"
+            description="Hizmetlerin bağlanacağı kategorileri oluşturun."
+            action={
+              <Button size="sm" onClick={handleAddClick}>
+                <Plus className="h-4 w-4" aria-hidden />
+                İlk kategoriyi oluştur
+              </Button>
+            }
+          />
+        </Card>
       ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {categories.map((category) => {
-          const IconComponent = getIcon(category.icon);
-          return (
-            <div
-              key={category.id}
-              className={`bg-white border-2 rounded-lg p-6 transition-all ${
-                category.isActive
-                  ? "border-secondary shadow-sm hover:shadow-md"
-                  : "border-gray-200 opacity-60"
-              }`}
-            >
-              {/* Icon & Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <IconComponent className="w-6 h-6 text-primary" />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEditClick(category)}
-                    className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                    title="Düzenle"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(category.id)}
-                    className="p-2 text-error hover:bg-error/10 rounded-lg transition-colors"
-                    title="Sil"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Category Name */}
-              <h3 className="text-xl font-bold text-text-primary mb-2">
-                {category.name}
-              </h3>
-
-              {/* Description */}
-              <p className="text-text-secondary text-sm mb-4">
-                {category.description}
-              </p>
-
-              {/* Service Count Badge */}
-              <div className="mb-4 flex items-center gap-2">
-                <span className="inline-block px-3 py-1 bg-info/10 text-info text-xs font-semibold rounded-full">
-                  {category.serviceCount} Hizmet
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {categories.map((category) => {
+            const Icon = getIcon(category.icon);
+            return (
+              <Card key={category.id} className="flex items-start gap-4 p-4 sm:p-5">
+                {/* Mobil desen: dairesel ikon çipi. Pasif kategoride token'lı soluk yüzey. */}
+                <span
+                  className={cx(
+                    "grid h-14 w-14 shrink-0 place-items-center rounded-pill",
+                    category.isActive
+                      ? "bg-primary/12 text-primary ring-2 ring-accent-lime"
+                      : "bg-surface-variant text-fg-subtle"
+                  )}
+                  aria-hidden
+                >
+                  <Icon className="h-6 w-6" />
                 </span>
-              </div>
-
-              {/* Active/Inactive Toggle */}
-              <button
-                onClick={() => handleToggleActive(category.id)}
-                className={`w-full px-4 py-2 rounded-lg font-semibold transition-colors ${
-                  category.isActive
-                    ? "bg-success/10 text-success border border-success/30"
-                    : "bg-error/10 text-error border border-error/30"
-                }`}
-              >
-                {category.isActive ? "Aktif" : "Pasif"}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-      )}
-
-      {/* Add/Edit Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-text-primary">
-                {editingId ? "Kategori Düzenle" : "Kategori Ekle"}
-              </h2>
-              <button
-                onClick={handleCloseModal}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-text-secondary" />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {/* Name Input */}
-              <div>
-                <label className="block text-sm font-semibold text-text-primary mb-2">
-                  Kategori Adı
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="Kategori adını girin"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  required
-                />
-              </div>
-
-              {/* Description Input */}
-              <div>
-                <label className="block text-sm font-semibold text-text-primary mb-2">
-                  Açıklama
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  placeholder="Kategori açıklamasını girin"
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
-                  required
-                />
-              </div>
-
-              {/* Icon Select */}
-              <div>
-                <label className="block text-sm font-semibold text-text-primary mb-2">
-                  İkon
-                </label>
-                <select
-                  value={formData.icon}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      icon: e.target.value,
-                    })
-                  }
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                >
-                  {iconOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Active Toggle */}
-              <div className="flex items-center gap-3 p-3 bg-surface-variant rounded-lg">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={formData.isActive}
-                  onChange={(e) =>
-                    setFormData({ ...formData, isActive: e.target.checked })
-                  }
-                  className="w-4 h-4 rounded cursor-pointer accent-primary"
-                />
-                <label htmlFor="isActive" className="text-sm font-semibold text-text-primary cursor-pointer flex-1">
-                  Aktif Kategorisi
-                </label>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="flex-1 px-4 py-2 border border-gray-200 text-text-primary rounded-lg hover:bg-gray-50 transition-colors font-semibold"
-                >
-                  İptal
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-primary text-on-primary rounded-lg hover:bg-primary-dark transition-colors font-semibold"
-                >
-                  {editingId ? "Güncelle" : "Ekle"}
-                </button>
-              </div>
-            </form>
-          </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="truncate font-display text-base font-bold text-fg">
+                      {category.name}
+                    </h3>
+                    {category.isActive ? (
+                      <Badge tone="success">Aktif</Badge>
+                    ) : (
+                      <Badge tone="neutral">Pasif</Badge>
+                    )}
+                  </div>
+                  {category.description ? (
+                    <p className="mt-1 line-clamp-2 text-sm text-fg-muted">{category.description}</p>
+                  ) : null}
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-fg-muted tnum">
+                      {category.serviceCount} hizmet
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleEditClick(category)}>
+                        <Edit2 className="h-4 w-4" aria-hidden />
+                        Düzenle
+                      </Button>
+                      <Button variant="danger" size="icon-sm" onClick={() => handleDelete(category.id)} aria-label="Kategoriyi sil">
+                        <Trash2 className="h-4 w-4" aria-hidden />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
-    </div>
+
+      <Dialog
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        title={editingId ? "Kategoriyi düzenle" : "Yeni kategori"}
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Field label="Kategori adı" htmlFor="cat-name" required>
+            <Input
+              id="cat-name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Örn. Saç"
+              required
+            />
+          </Field>
+
+          <Field label="Açıklama" htmlFor="cat-desc" hint="Müşteri uygulamasında kısa metin olarak görünür.">
+            <Textarea
+              id="cat-desc"
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            />
+          </Field>
+
+          <Field label="İkon" htmlFor="cat-icon">
+            <Select
+              id="cat-icon"
+              value={formData.icon}
+              onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+            >
+              {iconOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <div className="flex items-center justify-between gap-3 rounded-field border border-border bg-surface-variant p-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-fg">Aktif</p>
+              <p className="text-xs text-fg-muted">Pasif kategori müşteri uygulamasında görünmez.</p>
+            </div>
+            <Toggle
+              checked={formData.isActive}
+              onChange={(next) => setFormData({ ...formData, isActive: next })}
+              label="Kategori aktif"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
+            <Button variant="ghost" size="sm" onClick={handleCloseModal}>
+              Vazgeç
+            </Button>
+            <Button variant="primary" size="sm" type="submit" disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+              {editingId ? "Kaydet" : "Oluştur"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+    </>
   );
 }

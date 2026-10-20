@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import {
-  Search,
-  ToggleRight,
-  ToggleLeft,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  RefreshCw,
-} from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Loader2, Power, PowerOff, Search } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import PageHeader from '@/components/shell/PageHeader';
+import Button from '@/components/ui/Button';
+import DataTable, { type Column } from '@/components/ui/DataTable';
+import Pagination from '@/components/ui/Pagination';
+import Badge, { StatusBadge, USER_ROLE } from '@/components/ui/Badge';
+import Tabs from '@/components/ui/Tabs';
+import { Input } from '@/components/ui/Field';
+import { ErrorState } from '@/components/ui/States';
 
 type UserRole = 'CUSTOMER' | 'SALON_OWNER' | 'ADMIN';
 
@@ -29,22 +29,34 @@ interface ApiResponse {
   success: boolean;
   data: {
     data: ApiUser[];
-    meta: {
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    };
+    meta: { total: number; page: number; limit: number; totalPages: number };
   };
 }
 
 const ITEMS_PER_PAGE = 10;
 
+function initials(fullName: string): string {
+  const parts = fullName.trim().split(' ');
+  return (parts.length >= 2 ? parts[0][0] + parts[1][0] : fullName[0] || '?').toUpperCase();
+}
+
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('tr-TR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+type Filter = 'ALL' | 'CUSTOMER' | 'SALON_OWNER';
+
 export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'ALL' | 'CUSTOMER' | 'SALON_OWNER'>('ALL');
+  const [filter, setFilter] = useState<Filter>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [users, setUsers] = useState<ApiUser[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -53,13 +65,11 @@ export default function UsersPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await apiFetch<ApiResponse>(
-        `/users?page=${currentPage}&limit=${ITEMS_PER_PAGE}`
-      );
+      const res = await apiFetch<ApiResponse>(`/users?page=${currentPage}&limit=${ITEMS_PER_PAGE}`);
+      setUsers(res.success && res.data ? res.data.data || [] : []);
       if (res.success && res.data) {
-        setUsers(res.data.data || []);
-      } else {
-        setUsers([]);
+        setTotalPages(res.data.meta.totalPages);
+        setTotalCount(res.data.meta.total);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Kullanıcılar yüklenirken bir hata oluştu');
@@ -75,12 +85,8 @@ export default function UsersPage() {
   const handleToggleStatus = async (userId: string) => {
     try {
       setTogglingId(userId);
-      await apiFetch(`/users/${userId}/toggle-active`, {
-        method: 'PATCH',
-      });
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, isActive: !u.isActive } : u))
-      );
+      await apiFetch(`/users/${userId}/toggle-active`, { method: 'PATCH' });
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isActive: !u.isActive } : u)));
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Durum güncellenemedi');
     } finally {
@@ -88,260 +94,127 @@ export default function UsersPage() {
     }
   };
 
-  const filteredUsers = users.filter((user) => {
+  const filtered = users.filter((user) => {
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.phone && user.phone.includes(searchQuery));
-
-    const matchesFilter = filter === 'ALL' || user.role === filter;
-
-    return matchesSearch && matchesFilter;
+      !q ||
+      user.fullName.toLowerCase().includes(q) ||
+      user.email.toLowerCase().includes(q) ||
+      !!user.phone?.includes(searchQuery);
+    return matchesSearch && (filter === 'ALL' || user.role === filter);
   });
 
-  const getInitials = (fullName: string): string => {
-    const parts = fullName.trim().split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return (fullName[0] || '?').toUpperCase();
-  };
+  const rowActions = (user: ApiUser) => (
+    <Button
+      variant={user.isActive ? 'danger' : 'outline'}
+      size="sm"
+      onClick={() => handleToggleStatus(user.id)}
+      disabled={togglingId === user.id}
+    >
+      {togglingId === user.id ? (
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+      ) : user.isActive ? (
+        <PowerOff className="h-4 w-4" aria-hidden />
+      ) : (
+        <Power className="h-4 w-4" aria-hidden />
+      )}
+      {user.isActive ? 'Pasife al' : 'Aktifleştir'}
+    </Button>
+  );
 
-  const getRoleColor = (role: UserRole): string => {
-    switch (role) {
-      case 'CUSTOMER':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300';
-      case 'SALON_OWNER':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300';
-      case 'ADMIN':
-        return 'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('tr-TR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
+  const columns: Column<ApiUser>[] = [
+    {
+      key: 'user',
+      header: 'Kullanıcı',
+      mobile: 'primary',
+      cell: (u) => (
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-pill bg-primary-solid text-xs font-bold text-on-primary">
+            {initials(u.fullName)}
+          </span>
+          <div className="min-w-0">
+            <div className="truncate font-semibold text-fg">{u.fullName}</div>
+            <div className="truncate text-xs text-fg-muted">{u.email}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'phone',
+      header: 'Telefon',
+      mobile: 'meta',
+      cell: (u) => <span className="tnum text-fg-muted">{u.phone ?? '—'}</span>,
+    },
+    {
+      key: 'role',
+      header: 'Rol',
+      cell: (u) => <StatusBadge map={USER_ROLE} value={u.role} />,
+    },
+    {
+      key: 'createdAt',
+      header: 'Kayıt Tarihi',
+      cell: (u) => <span className="text-fg-muted">{formatDate(u.createdAt)}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Durum',
+      cell: (u) => <Badge tone={u.isActive ? 'success' : 'error'}>{u.isActive ? 'Aktif' : 'Pasif'}</Badge>,
+    },
+    {
+      key: 'actions',
+      header: 'İşlem',
+      align: 'right',
+      mobile: false,
+      cell: (u) => <div className="flex justify-end">{rowActions(u)}</div>,
+    },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Kullanıcı Yönetimi</h1>
-          <p className="text-gray-600 mt-1">Salon müşteri ve sahibi hesaplarını yönetin</p>
-        </div>
-        <button
-          onClick={fetchUsers}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Yenile
-        </button>
+    <>
+      <PageHeader
+        title="Kullanıcı Yönetimi"
+        subtitle={`${totalCount} kullanıcı`}
+        actions={
+          <Button variant="outline" size="sm" onClick={fetchUsers}>
+            Yenile
+          </Button>
+        }
+      />
+
+      <div className="mb-4 flex flex-col gap-3">
+        <Input
+          icon={Search}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="İsim, e-posta veya telefon ara…"
+          aria-label="Kullanıcı ara"
+        />
+        <Tabs<Filter>
+          ariaLabel="Rol filtresi"
+          value={filter}
+          onChange={setFilter}
+          items={[
+            { value: 'ALL', label: 'Tümü' },
+            { value: 'CUSTOMER', label: 'Müşteriler' },
+            { value: 'SALON_OWNER', label: 'Salon Sahipleri' },
+          ]}
+        />
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="İsim, e-posta veya telefon ile ara..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-              }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-        </div>
+      {error ? <ErrorState message={error} onRetry={fetchUsers} /> : null}
 
-        <div className="flex gap-2 mb-6 border-b border-gray-200">
-          <button
-            onClick={() => setFilter('ALL')}
-            className={`px-4 py-3 font-medium transition-colors ${
-              filter === 'ALL'
-                ? 'border-b-2 border-primary text-primary'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Tümü
-          </button>
-          <button
-            onClick={() => setFilter('CUSTOMER')}
-            className={`px-4 py-3 font-medium transition-colors ${
-              filter === 'CUSTOMER'
-                ? 'border-b-2 border-primary text-primary'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Müşteriler
-          </button>
-          <button
-            onClick={() => setFilter('SALON_OWNER')}
-            className={`px-4 py-3 font-medium transition-colors ${
-              filter === 'SALON_OWNER'
-                ? 'border-b-2 border-primary text-primary'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Salon Sahipleri
-          </button>
-        </div>
+      <DataTable<ApiUser>
+        rows={filtered}
+        columns={columns}
+        rowKey={(u) => u.id}
+        loading={loading}
+        actions={rowActions}
+        minWidthClass="min-w-[42rem]"
+        emptyTitle="Kullanıcı bulunamadı"
+        emptyDescription="Arama veya rol filtresini değiştirin."
+      />
 
-        {error && (
-          <div className="p-4 mb-4 bg-red-50 text-red-700 rounded-lg text-sm dark:bg-red-500/10 dark:text-red-300">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Kullanıcı
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Telefon
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Rol
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Kayıt Tarihi
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Durum
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    İşlem
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.map((user) => (
-                    <tr
-                      key={user.id}
-                      className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-semibold text-sm">
-                            {getInitials(user.fullName)}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {user.fullName}
-                            </p>
-                            <p className="text-sm text-gray-500">{user.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-gray-700">{user.phone || '-'}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getRoleColor(
-                            user.role
-                          )}`}
-                        >
-                          {user.role === 'CUSTOMER'
-                            ? 'Müşteri'
-                            : user.role === 'SALON_OWNER'
-                            ? 'Salon Sahibi'
-                            : 'Admin'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-gray-700">{formatDate(user.createdAt)}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`w-2 h-2 rounded-full ${
-                              user.isActive ? 'bg-green-500 dark:bg-green-400' : 'bg-red-500 dark:bg-red-400'
-                            }`}
-                          />
-                          <span
-                            className={`text-sm font-medium ${
-                              user.isActive ? 'text-green-600 dark:text-green-300' : 'text-red-600 dark:text-red-400'
-                            }`}
-                          >
-                            {user.isActive ? 'Aktif' : 'Pasif'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleToggleStatus(user.id)}
-                            disabled={togglingId === user.id}
-                            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-                            title={user.isActive ? 'Pasif Yap' : 'Aktif Yap'}
-                          >
-                            {togglingId === user.id ? (
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : user.isActive ? (
-                              <ToggleRight className="w-5 h-5 text-green-600 dark:text-green-300" />
-                            ) : (
-                              <ToggleLeft className="w-5 h-5 text-gray-400" />
-                            )}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                      Hiçbir kullanıcı bulunamadı
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
-          <p className="text-sm text-gray-600">
-            Sayfa: <span className="font-semibold">{currentPage}</span>
-          </p>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1 || loading}
-              className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Önceki sayfa"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={() => setCurrentPage((prev) => prev + 1)}
-              disabled={users.length < ITEMS_PER_PAGE || loading}
-              className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Sonraki sayfa"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <Pagination page={currentPage} totalPages={totalPages} onPage={setCurrentPage} />
+    </>
   );
 }

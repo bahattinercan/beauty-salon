@@ -1,24 +1,18 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  Calendar,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  RefreshCw,
-} from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { useCallback, useEffect, useState } from 'react';
+import { CheckCircle2, CheckCheck, XCircle, UserX } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
+import PageHeader from '@/components/shell/PageHeader';
+import Button from '@/components/ui/Button';
+import DataTable, { type Column } from '@/components/ui/DataTable';
+import Pagination from '@/components/ui/Pagination';
+import { StatusBadge, APPOINTMENT_STATUS } from '@/components/ui/Badge';
+import Tabs from '@/components/ui/Tabs';
+import { ErrorState } from '@/components/ui/States';
 
-type AppointmentStatus =
-  | "PENDING"
-  | "CONFIRMED"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "NO_SHOW";
-
-type FilterTab = "ALL" | AppointmentStatus;
+type AppointmentStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+type FilterTab = 'ALL' | AppointmentStatus;
 
 interface ApiAppointment {
   id: string;
@@ -36,40 +30,53 @@ interface ApiResponse {
   success: boolean;
   data: {
     data: ApiAppointment[];
-    meta: {
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    };
+    meta: { total: number; page: number; limit: number; totalPages: number };
   };
 }
 
 const ITEMS_PER_PAGE = 10;
 
+function formatDate(dateString: string): string {
+  const d = new Date(dateString);
+  return Number.isNaN(d.getTime())
+    ? dateString
+    : d.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function money(value: number): string {
+  return new Intl.NumberFormat('tr-TR', {
+    style: 'currency',
+    currency: 'TRY',
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+}
+
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<ApiAppointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterTab>("ALL");
+  const [filter, setFilter] = useState<FilterTab>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const fetchAppointments = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       let url = `/admin/appointments?page=${currentPage}&limit=${ITEMS_PER_PAGE}`;
-      if (filter !== "ALL") {
-        url += `&status=${filter}`;
-      }
+      if (filter !== 'ALL') url += `&status=${filter}`;
       const res = await apiFetch<ApiResponse>(url);
       if (res.success && res.data) {
         setAppointments(res.data.data || []);
+        setTotalPages(res.data.meta.totalPages);
+        setTotalCount(res.data.meta.total);
       } else {
         setAppointments([]);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Randevular yüklenirken hata oluştu");
+      setError(err instanceof Error ? err.message : 'Randevular yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -81,242 +88,153 @@ export default function AppointmentsPage() {
 
   const updateStatus = async (id: string, status: AppointmentStatus) => {
     try {
+      setUpdatingId(id);
       await apiFetch(`/appointments/${id}/status`, {
-        method: "PATCH",
+        method: 'PATCH',
         body: JSON.stringify({ status }),
       });
-      setAppointments((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, status } : a))
-      );
+      setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Durum güncellenemedi");
+      alert(err instanceof Error ? err.message : 'Durum güncellenemedi');
+    } finally {
+      setUpdatingId(null);
     }
   };
 
-  const getStatusColor = (status: AppointmentStatus): string => {
-    switch (status) {
-      case "PENDING":
-        return "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300";
-      case "CONFIRMED":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300";
-      case "COMPLETED":
-        return "bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300";
-      case "CANCELLED":
-        return "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300";
-      case "NO_SHOW":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+  const rowActions = (a: ApiAppointment) => {
+    const busy = updatingId === a.id;
+    return (
+      <>
+        {a.status === 'PENDING' ? (
+          <Button variant="primary" size="sm" disabled={busy} onClick={() => updateStatus(a.id, 'CONFIRMED')}>
+            <CheckCircle2 className="h-4 w-4" aria-hidden />
+            Onayla
+          </Button>
+        ) : null}
+        {a.status === 'CONFIRMED' ? (
+          <>
+            <Button variant="primary" size="sm" disabled={busy} onClick={() => updateStatus(a.id, 'COMPLETED')}>
+              <CheckCheck className="h-4 w-4" aria-hidden />
+              Tamamla
+            </Button>
+            <Button variant="outline" size="sm" disabled={busy} onClick={() => updateStatus(a.id, 'NO_SHOW')}>
+              <UserX className="h-4 w-4" aria-hidden />
+              Gelmedi
+            </Button>
+          </>
+        ) : null}
+        {a.status === 'PENDING' || a.status === 'CONFIRMED' ? (
+          <Button variant="danger" size="sm" disabled={busy} onClick={() => updateStatus(a.id, 'CANCELLED')}>
+            <XCircle className="h-4 w-4" aria-hidden />
+            İptal
+          </Button>
+        ) : null}
+      </>
+    );
   };
 
-  const getStatusLabel = (status: AppointmentStatus): string => {
-    switch (status) {
-      case "PENDING":
-        return "Bekliyor";
-      case "CONFIRMED":
-        return "Onaylandı";
-      case "COMPLETED":
-        return "Tamamlandı";
-      case "CANCELLED":
-        return "İptal Edildi";
-      case "NO_SHOW":
-        return "Gelmedi";
-      default:
-        return status;
-    }
-  };
-
-  const tabs: { label: string; value: FilterTab }[] = [
-    { label: "Tümü", value: "ALL" },
-    { label: "Bekliyor", value: "PENDING" },
-    { label: "Onaylandı", value: "CONFIRMED" },
-    { label: "Tamamlandı", value: "COMPLETED" },
-    { label: "İptal", value: "CANCELLED" },
-    { label: "Gelmedi", value: "NO_SHOW" },
+  const columns: Column<ApiAppointment>[] = [
+    {
+      key: 'salon',
+      header: 'Salon / Hizmet',
+      mobile: 'primary',
+      cell: (a) => (
+        <div className="min-w-0">
+          <div className="truncate font-semibold text-fg">{a.salon?.name ?? '—'}</div>
+          <div className="truncate text-xs text-fg-muted">{a.service?.name ?? '—'}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'customer',
+      header: 'Müşteri',
+      cell: (a) => <span className="truncate">{a.customer?.fullName ?? '—'}</span>,
+    },
+    {
+      key: 'staff',
+      header: 'Personel',
+      mobile: 'meta',
+      cell: (a) => <span className="text-fg-muted">{a.staff?.fullName ?? '—'}</span>,
+    },
+    {
+      key: 'when',
+      header: 'Tarih / Saat',
+      mobile: 'meta',
+      cell: (a) => (
+        <span className="tnum whitespace-nowrap">
+          {formatDate(a.date)}
+          <span className="text-fg-muted">
+            {' '}
+            {a.startTime?.slice(0, 5)}–{a.endTime?.slice(0, 5)}
+          </span>
+        </span>
+      ),
+    },
+    {
+      key: 'price',
+      header: 'Tutar',
+      align: 'right',
+      cell: (a) => <span className="tnum font-semibold">{money(a.service?.price ?? 0)}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Durum',
+      cell: (a) => <StatusBadge map={APPOINTMENT_STATUS} value={a.status} />,
+    },
+    {
+      key: 'actions',
+      header: 'İşlem',
+      align: 'right',
+      mobile: false,
+      cell: (a) => <div className="flex flex-wrap justify-end gap-2">{rowActions(a)}</div>,
+    },
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Randevu Yönetimi</h1>
-          <p className="text-gray-600 mt-1">Platformdaki tüm randevuları takip edin</p>
-        </div>
-        <button
-          onClick={fetchAppointments}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Yenile
-        </button>
+    <>
+      <PageHeader
+        title="Randevu Yönetimi"
+        subtitle={`${totalCount} randevu`}
+        actions={
+          <Button variant="outline" size="sm" onClick={fetchAppointments}>
+            Yenile
+          </Button>
+        }
+      />
+
+      <div className="mb-4">
+        <Tabs<FilterTab>
+          ariaLabel="Randevu durumu filtresi"
+          value={filter}
+          onChange={(v) => {
+            setFilter(v);
+            setCurrentPage(1);
+          }}
+          items={[
+            { value: 'ALL', label: 'Tümü' },
+            { value: 'PENDING', label: 'Bekliyor' },
+            { value: 'CONFIRMED', label: 'Onaylandı' },
+            { value: 'COMPLETED', label: 'Tamamlandı' },
+            { value: 'CANCELLED', label: 'İptal' },
+            { value: 'NO_SHOW', label: 'Gelmedi' },
+          ]}
+        />
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => {
-                setFilter(tab.value);
-                setCurrentPage(1);
-              }}
-              className={`px-4 py-3 font-medium transition-colors whitespace-nowrap ${
-                filter === tab.value
-                  ? "border-b-2 border-primary text-primary"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      {error ? <ErrorState message={error} onRetry={fetchAppointments} /> : null}
 
-        {error && (
-          <div className="p-4 mb-4 bg-red-50 text-red-700 rounded-lg text-sm dark:bg-red-500/10 dark:text-red-300">
-            {error}
-          </div>
-        )}
+      <DataTable<ApiAppointment>
+        rows={appointments}
+        columns={columns}
+        rowKey={(a) => a.id}
+        loading={loading}
+        actions={rowActions}
+        minWidthClass="min-w-[46rem]"
+        emptyTitle="Randevu yok"
+        emptyDescription="Seçili filtrede randevu bulunmuyor."
+      />
 
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Müşteri
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Salon
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Hizmet / Tutar
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Uzman
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Tarih & Saat
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Durum
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    İşlem
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {appointments.length > 0 ? (
-                  appointments.map((apt) => (
-                    <tr
-                      key={apt.id}
-                      className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <p className="font-medium text-gray-900">
-                          {apt.customer?.fullName || "Misafir"}
-                        </p>
-                        <p className="text-xs text-gray-500">{apt.customer?.email || ""}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-gray-800 text-sm font-medium">{apt.salon?.name || "-"}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-gray-800 text-sm">{apt.service?.name || "-"}</p>
-                        {apt.service?.price !== undefined && (
-                          <p className="text-xs text-primary font-semibold">{apt.service.price} ₺</p>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-gray-700 text-sm">{apt.staff?.fullName || "-"}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col text-sm text-gray-700">
-                          <span className="flex items-center gap-1 text-xs">
-                            <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                            {apt.date}
-                          </span>
-                          <span className="flex items-center gap-1 text-xs text-gray-500 mt-1">
-                            <Clock className="w-3.5 h-3.5 text-gray-400" />
-                            {apt.startTime} - {apt.endTime}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                            apt.status
-                          )}`}
-                        >
-                          {getStatusLabel(apt.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {apt.status === "COMPLETED" || apt.status === "CANCELLED" ? (
-                          <span className="text-xs text-gray-400">—</span>
-                        ) : (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => updateStatus(apt.id, "COMPLETED")}
-                              className="px-3 py-1 rounded-lg bg-success/10 text-success border border-success/30 text-xs font-semibold hover:bg-success/20"
-                            >
-                              Tamamla
-                            </button>
-                            <button
-                              onClick={() => updateStatus(apt.id, "CANCELLED")}
-                              className="px-3 py-1 rounded-lg bg-error/10 text-error border border-error/30 text-xs font-semibold hover:bg-error/20"
-                            >
-                              İptal
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                      Randevu bulunamadı
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
-          <p className="text-sm text-gray-600">
-            Sayfa: <span className="font-semibold">{currentPage}</span>
-          </p>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1 || loading}
-              className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Önceki sayfa"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={() => setCurrentPage((prev) => prev + 1)}
-              disabled={appointments.length < ITEMS_PER_PAGE || loading}
-              className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Sonraki sayfa"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <Pagination page={currentPage} totalPages={totalPages} onPage={setCurrentPage} />
+    </>
   );
 }

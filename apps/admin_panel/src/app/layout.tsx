@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
+import { Inter, Nunito } from "next/font/google";
 import "./globals.css";
-import AdminLayoutShell from "@/components/AdminLayoutShell";
+import AppShell from "@/components/shell/AppShell";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+
+// AP-001: daha önce `font-family: 'Inter'` bildiriliyordu ama font hiç yüklenmiyordu
+// (next/font / @font-face / public'de dosya yok) → panel Segoe UI ile çiziliyordu.
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+// Başlık imzası mobil ile aynı (Nunito w700-800); gövde yoğun tablo için Inter'da kalır.
+const nunito = Nunito({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--font-nunito", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Beauty Salon - Admin Panel",
@@ -30,9 +37,9 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="antialiased">
+      <body className={`antialiased ${inter.variable} ${nunito.variable}`}>
         <ThemeProvider>
-          <AdminLayoutShell>{children}</AdminLayoutShell>
+          <AppShell>{children}</AppShell>
         </ThemeProvider>
       </body>
     </html>

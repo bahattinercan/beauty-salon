@@ -16,7 +16,7 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
     <div
       role="radiogroup"
       aria-label="Tema"
-      className={`flex items-center gap-1 rounded-xl border border-border bg-surface-variant p-1 ${className}`}
+      className={`flex items-center gap-1 rounded-pill border border-border bg-surface-variant p-1 ${className}`}
     >
       {OPTIONS.map(({ value, label, Icon }) => {
         const active = mounted && theme === value;
@@ -29,9 +29,9 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
             aria-label={label}
             title={label}
             onClick={() => setTheme(value)}
-            className={`flex flex-1 items-center justify-center rounded-lg p-2 transition-colors ${
+            className={`flex min-h-11 min-w-11 flex-1 items-center justify-center rounded-pill px-3 transition-colors md:min-h-8 ${
               active
-                ? 'bg-surface text-primary shadow-sm dark:shadow-none'
+                ? 'bg-surface text-primary shadow-card'
                 : 'text-fg-subtle hover:text-fg-muted'
             }`}
           >

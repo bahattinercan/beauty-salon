@@ -1,17 +1,17 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import {
-  Star,
-  Eye,
-  EyeOff,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  RefreshCw,
-} from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Eye, EyeOff, Loader2, Star } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import PageHeader from '@/components/shell/PageHeader';
+import Button from '@/components/ui/Button';
+import Pagination from '@/components/ui/Pagination';
+import Badge from '@/components/ui/Badge';
+import Tabs from '@/components/ui/Tabs';
+import { Input, Select, Field } from '@/components/ui/Field';
+import { Card } from '@/components/ui/Card';
+import { EmptyState, ErrorState, Skeleton } from '@/components/ui/States';
+import { cx } from '@/lib/cx';
 
 interface ApiReview {
   id: string;
@@ -29,16 +29,40 @@ interface ApiResponse {
   success: boolean;
   data: {
     data: ApiReview[];
-    meta: {
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    };
+    meta: { total: number; page: number; limit: number; totalPages: number };
   };
 }
 
 const ITEMS_PER_PAGE = 10;
+
+function initials(name: string): string {
+  const parts = name.trim().split(' ');
+  return (parts.length >= 2 ? parts[0][0] + parts[1][0] : name[0] || '?').toUpperCase();
+}
+
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('tr-TR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+function Stars({ rating }: { rating: number }) {
+  return (
+    <span className="flex items-center gap-0.5" aria-label={`${rating} yıldız`}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star
+          key={i}
+          className={cx('h-4 w-4', i <= rating ? 'fill-warning text-warning' : 'text-border-strong')}
+          aria-hidden
+        />
+      ))}
+    </span>
+  );
+}
+
+type Visibility = 'all' | 'visible' | 'hidden';
 
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState<ApiReview[]>([]);
@@ -46,19 +70,21 @@ export default function ReviewsPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [ratingFilter, setRatingFilter] = useState<'all' | number>('all');
-  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'visible' | 'hidden'>('all');
+  const [visibility, setVisibility] = useState<Visibility>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const fetchReviews = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await apiFetch<ApiResponse>(
-        `/admin/reviews?page=${currentPage}&limit=${ITEMS_PER_PAGE}`
-      );
+      const res = await apiFetch<ApiResponse>(`/admin/reviews?page=${currentPage}&limit=${ITEMS_PER_PAGE}`);
       if (res.success && res.data) {
         setReviews(res.data.data || []);
+        setTotalPages(res.data.meta.totalPages);
+        setTotalCount(res.data.meta.total);
       } else {
         setReviews([]);
       }
@@ -76,12 +102,8 @@ export default function ReviewsPage() {
   const handleToggleVisibility = async (reviewId: string) => {
     try {
       setTogglingId(reviewId);
-      await apiFetch(`/reviews/${reviewId}/toggle-visibility`, {
-        method: 'PATCH',
-      });
-      setReviews((prev) =>
-        prev.map((r) => (r.id === reviewId ? { ...r, isVisible: !r.isVisible } : r))
-      );
+      await apiFetch(`/reviews/${reviewId}/toggle-visibility`, { method: 'PATCH' });
+      setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, isVisible: !r.isVisible } : r)));
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Görünürlük güncellenemedi');
     } finally {
@@ -89,220 +111,146 @@ export default function ReviewsPage() {
     }
   };
 
-  const filteredReviews = reviews.filter((review) => {
+  const filtered = reviews.filter((review) => {
+    const q = searchQuery.toLowerCase();
     const customerName = review.customer?.fullName || 'Misafir';
-    const salonName = review.salon?.name || '';
     const comment = review.comment || '';
-
     const matchesSearch =
-      customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      salonName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      comment.toLowerCase().includes(searchQuery.toLowerCase());
-
+      !q ||
+      customerName.toLowerCase().includes(q) ||
+      (review.salon?.name || '').toLowerCase().includes(q) ||
+      comment.toLowerCase().includes(q);
     const matchesRating = ratingFilter === 'all' || review.rating === ratingFilter;
-
     const matchesVisibility =
-      visibilityFilter === 'all' ||
-      (visibilityFilter === 'visible' && review.isVisible) ||
-      (visibilityFilter === 'hidden' && !review.isVisible);
-
+      visibility === 'all' || (visibility === 'visible' && review.isVisible) || (visibility === 'hidden' && !review.isVisible);
     return matchesSearch && matchesRating && matchesVisibility;
   });
 
-  const getInitials = (name: string): string => {
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return (name[0] || '?').toUpperCase();
-  };
-
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('tr-TR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Yorum Yönetimi</h1>
-          <p className="text-gray-600 mt-1">Platformdaki tüm müşteri yorumlarını yönetin</p>
+    <>
+      <PageHeader
+        title="Yorum Yönetimi"
+        subtitle={`${totalCount} yorum`}
+        actions={
+          <Button variant="outline" size="sm" onClick={fetchReviews}>
+            Yenile
+          </Button>
+        }
+      />
+
+      <div className="mb-4 flex flex-col gap-3">
+        <Input
+          icon={Star}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Müşteri, salon veya yorum metni ara…"
+          aria-label="Yorum ara"
+        />
+        <div className="flex flex-wrap items-end gap-3">
+          <Tabs<Visibility>
+            ariaLabel="Görünürlük filtresi"
+            value={visibility}
+            onChange={setVisibility}
+            items={[
+              { value: 'all', label: 'Tümü' },
+              { value: 'visible', label: 'Görünür' },
+              { value: 'hidden', label: 'Gizli' },
+            ]}
+          />
+          <Field label="Puan" htmlFor="rating-filter" className="w-32">
+            <Select
+              id="rating-filter"
+              value={String(ratingFilter)}
+              onChange={(e) =>
+                setRatingFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))
+              }
+            >
+              <option value="all">Tümü</option>
+              {[5, 4, 3, 2, 1].map((n) => (
+                <option key={n} value={n}>
+                  {n} yıldız
+                </option>
+              ))}
+            </Select>
+          </Field>
         </div>
-        <button
-          onClick={fetchReviews}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Yenile
-        </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Müşteri, salon veya yorum ara..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
+      {error ? <ErrorState message={error} onRetry={fetchReviews} /> : null}
 
-          <div className="flex gap-2">
-            <select
-              value={ratingFilter}
-              onChange={(e) =>
-                setRatingFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))
-              }
-              aria-label="Puan Filtresi"
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-gray-700"
-            >
-              <option value="all">Tüm Puanlar</option>
-              <option value="5">5 Yıldız</option>
-              <option value="4">4 Yıldız</option>
-              <option value="3">3 Yıldız</option>
-              <option value="2">2 Yıldız</option>
-              <option value="1">1 Yıldız</option>
-            </select>
-
-            <select
-              value={visibilityFilter}
-              onChange={(e) =>
-                setVisibilityFilter(e.target.value as 'all' | 'visible' | 'hidden')
-              }
-              aria-label="Görünürlük Filtresi"
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-gray-700"
-            >
-              <option value="all">Tüm Durumlar</option>
-              <option value="visible">Görünür</option>
-              <option value="hidden">Gizli</option>
-            </select>
-          </div>
+      {loading ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-40" />
+          ))}
         </div>
-
-        {error && (
-          <div className="p-4 mb-4 bg-red-50 text-red-700 rounded-lg text-sm dark:bg-red-500/10 dark:text-red-300">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredReviews.length > 0 ? (
-              filteredReviews.map((review) => {
-                const customerName = review.customer?.fullName || 'Misafir';
-                const salonName = review.salon?.name || 'Salon';
-                return (
-                  <div
-                    key={review.id}
-                    className={`border rounded-lg p-5 transition-all ${
-                      review.isVisible ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-300 opacity-75'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-semibold text-sm">
-                          {getInitials(customerName)}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{customerName}</p>
-                          <p className="text-xs text-gray-500">{salonName}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={`w-4 h-4 ${
-                                star <= review.rating
-                                  ? 'fill-amber-400 text-amber-400 dark:fill-amber-300 dark:text-amber-300'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-xs text-gray-500">{formatDate(review.createdAt)}</span>
-                        <button
-                          onClick={() => handleToggleVisibility(review.id)}
-                          disabled={togglingId === review.id}
-                          className={`p-2 rounded-lg transition-colors ${
-                            review.isVisible
-                              ? 'text-gray-600 hover:bg-gray-100'
-                              : 'text-amber-600 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-500/10'
-                          }`}
-                          title={review.isVisible ? 'Yorumu Gizle' : 'Yorumu Göster'}
-                        >
-                          {togglingId === review.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : review.isVisible ? (
-                            <Eye className="w-4 h-4 text-green-600 dark:text-green-300" />
-                          ) : (
-                            <EyeOff className="w-4 h-4 text-gray-400" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    <p className="text-gray-700 text-sm mt-3 leading-relaxed">
-                      {review.comment || <span className="italic text-gray-400">Yorum metni yok</span>}
-                    </p>
-
-                    {review.salonReply && (
-                      <div className="mt-3 ml-6 p-3 bg-secondary/50 border-l-2 border-primary rounded text-sm">
-                        <p className="font-semibold text-xs text-primary mb-1">Salon Yanıtı</p>
-                        <p className="text-gray-700 text-xs">{review.salonReply}</p>
-                      </div>
+      ) : filtered.length === 0 ? (
+        <Card>
+          <EmptyState title="Yorum bulunamadı" description="Arama veya filtre kriterlerinizi değiştirin." />
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {filtered.map((review) => (
+            <Card key={review.id} className="flex flex-col p-4 sm:p-5">
+              <div className="flex items-start gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-pill bg-primary-solid text-xs font-bold text-on-primary">
+                  {initials(review.customer?.fullName || 'M')}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="truncate font-semibold text-fg">
+                      {review.customer?.fullName || 'Misafir'}
+                    </span>
+                    {review.isVisible ? (
+                      <Badge tone="success">Görünür</Badge>
+                    ) : (
+                      <Badge tone="neutral">Gizli</Badge>
                     )}
                   </div>
-                );
-              })
-            ) : (
-              <div className="text-center py-12 text-gray-500">
-                Kriterlere uygun yorum bulunamadı
+                  <p className="truncate text-sm text-fg-muted">{review.salon?.name ?? '—'}</p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <Stars rating={review.rating} />
+                  <span className="text-xs text-fg-muted">{formatDate(review.createdAt)}</span>
+                </div>
               </div>
-            )}
-          </div>
-        )}
 
-        <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
-          <p className="text-sm text-gray-600">
-            Sayfa: <span className="font-semibold">{currentPage}</span>
-          </p>
+              {review.comment ? (
+                <p className="mt-3 text-sm leading-relaxed text-fg">{review.comment}</p>
+              ) : (
+                <p className="mt-3 text-sm italic text-fg-muted">Yorum yazılmamış.</p>
+              )}
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1 || loading}
-              className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Önceki sayfa"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+              {review.salonReply ? (
+                <div className="mt-3 rounded-field border-l-2 border-primary bg-surface-variant p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-primary">Salon yanıtı</p>
+                  <p className="mt-1 text-sm text-fg">{review.salonReply}</p>
+                </div>
+              ) : null}
 
-            <button
-              onClick={() => setCurrentPage((prev) => prev + 1)}
-              disabled={reviews.length < ITEMS_PER_PAGE || loading}
-              className="p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Sonraki sayfa"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
+              <div className="mt-4 flex justify-end border-t border-border pt-3">
+                <Button
+                  variant={review.isVisible ? 'danger' : 'outline'}
+                  size="sm"
+                  onClick={() => handleToggleVisibility(review.id)}
+                  disabled={togglingId === review.id}
+                >
+                  {togglingId === review.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  ) : review.isVisible ? (
+                    <EyeOff className="h-4 w-4" aria-hidden />
+                  ) : (
+                    <Eye className="h-4 w-4" aria-hidden />
+                  )}
+                  {review.isVisible ? 'Gizle' : 'Görünür yap'}
+                </Button>
+              </div>
+            </Card>
+          ))}
         </div>
-      </div>
-    </div>
+      )}
+
+      <Pagination page={currentPage} totalPages={totalPages} onPage={setCurrentPage} />
+    </>
   );
 }

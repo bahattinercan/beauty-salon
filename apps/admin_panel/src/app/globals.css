@@ -3,59 +3,96 @@
 /* Class tabanlı dark mode (Tailwind v4 default'u media-query'dir!) */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ---------- Light (bugünkü değerler korunur) ---------- */
+/* ==========================================================================
+   AP-001 — Tek tasarım sözleşmesi: customer_app'in (CA-019) marka dili.
+   Kural: kaynakta HAM renk utility'si yazılmaz (gray-*, white, red-100 ...).
+   Tema değişirken yalnızca aşağıdaki hexler değişir; bileşenler `dark:` yazmaz.
+   Kontrast kapısı: node scripts/wcag_tokens.js --scope admin --strict
+   ========================================================================== */
+
+/* ---------- Light ---------- */
 :root {
-  --background: #FAFAFA;
+  --background: #F1F0F7;      /* surface ile 1.13:1 — kartlar sayfadan ayrılıyor */
   --surface: #FFFFFF;
-  --surface-variant: #F5F5F5;
-  --border: #E5E7EB;
-  --border-strong: #D1D5DB;
-  --fg: #2D2D2D;
-  --fg-muted: #6B7280;
-  --fg-subtle: #9CA3AF;
+  --surface-variant: #EFEDF7;
+  --border: #DDD8EA;          /* hairline 1.39:1 */
+  --border-strong: #C3BCD9;   /* 1.82:1 */
+  --fg: #1E1B2E;
+  --fg-muted: #5A5370;        /* 7.23:1 */
+  --fg-subtle: #6E6785;       /* 5.33:1 — eski #9CA3AF 2.54'te kalıyordu */
 
-  --primary: #B76E79;
-  --primary-dark: #8B4D57;
-  --primary-light: #D4979F;
-  /* Solid dolgu (buton/aktif menü) — beyaz metin 4.5:1 AA'yı geçsin diye
-     marka accent'ından bir ton koyu tutulur. */
-  --primary-solid: #A6616C;
-  --primary-solid-hover: #8B4D57;
+  --primary: #7C5CBF;
+  --primary-dark: #5A42A0;
+  --primary-light: #9D82D4;
+  /* Dolgu (buton / aktif öğe): üstündeki metin her zaman --on-primary'dir. */
+  --primary-solid: #6A4CB4;   /* on-primary 6.35:1 (AA) */
+  --primary-solid-hover: #5A42A0;
   --on-primary: #FFFFFF;
-  --secondary: #F5E6E8;
-  --accent: #D4A373;
+  --secondary: #F0EBF8;
+  --accent: #B39DDB;
 
-  --success: #7CB69D;
-  --error: #E57373;
-  --warning: #FFB74D;
-  --info: #64B5F6;
+  /* Lime YALNIZCA dolgudur (CTA, "Yeni" rozeti, aktif gezinme işareti).
+     Metin/ikon olarak kullanılamaz: #C9F04F beyaz üstü 1.31:1. */
+  --accent-lime: #C9F04F;
+  --on-accent-lime: #12131F;  /* 14.10:1 */
+
+  /* Koyu gezinme rayı (mobil pill nav'ın web karşılığı). */
+  --nav-pill: #17131F;
+  --on-nav-pill: #FFFFFF;     /* 18.27:1 */
+  --on-nav-pill-muted: #A9A3B8;
+
+  /* Promo / özet yüzeyi (mobil heroSurface). */
+  --hero-surface: #E8E5FA;
+  --banner-from: #9B7FE0;     /* mobil primaryGradient */
+  --banner-to: #6644B8;
+
+  /* Durum renkleri METİN olarak da okunabilir (eski #7CB69D 2.32'deydi). */
+  --success: #2F7D57;         /* 5.01:1 */
+  --error: #B32B38;           /* 6.33:1 */
+  --warning: #8A5A00;         /* 6.55:1 */
+  --info: #1F5FA8;            /* 6.42:1 */
+
+  --ring: color-mix(in srgb, var(--primary) 35%, transparent);
 }
 
-/* ---------- Dark (marka uyumlu rose-nötr; .dark :root'tan SONRA gelmeli) ---------- */
+/* ---------- Dark (.dark :root'tan SONRA gelmeli) ---------- */
 .dark {
-  --background: #131013;
-  --surface: #1C181B;
-  --surface-variant: #262023;
-  --border: #332B2F;
-  --border-strong: #453A3F;
-  --fg: #F0ECEE;
-  --fg-muted: #B0A6AB;
-  --fg-subtle: #7C7276;
+  --background: #0F0D17;
+  --surface: #1C1828;
+  --surface-variant: #2A2440;
+  --border: #332E4C;
+  --border-strong: #4A4368;
+  --fg: #F0ECFF;
+  --fg-muted: #A79FC0;
+  --fg-subtle: #8B84A8;
 
-  --primary: #D9959F;
-  --primary-dark: #A85F6B;
-  --primary-light: #E8B4BB;
-  /* Dark'ta solid açılır, hover daha da açılır; metin koyu (on-primary). */
-  --primary-solid: #D9959F;
-  --primary-solid-hover: #E8B4BB;
-  --on-primary: #1C181B; /* açık rose üzerinde beyaz okunmaz → koyu metin */
-  --secondary: #2B2226;
-  --accent: #E0B183;
+  --primary: #A88BDD;
+  --primary-dark: #7C5CBF;
+  --primary-light: #C4B0EA;
+  /* Dark'ta marka açılır; üstündeki metin koyu kalmazsa okunmaz. */
+  --primary-solid: #9D82D4;   /* on-primary 5.43:1 */
+  --primary-solid-hover: #B49BE4;
+  --on-primary: #1C1828;
+  --secondary: #2A2440;
+  --accent: #B39DDB;
+
+  --accent-lime: #C9F04F;
+  --on-accent-lime: #12131F;
+
+  --nav-pill: #0A0912;
+  --on-nav-pill: #F0ECFF;     /* 17.11:1 */
+  --on-nav-pill-muted: #8B84A8;
+
+  --hero-surface: #2A2440;
+  --banner-from: #6A5298;
+  --banner-to: #4A3779;
 
   --success: #7CCBA2;
   --error: #F28B82;
   --warning: #FDD663;
   --info: #8AB4F8;
+
+  --ring: color-mix(in srgb, var(--primary) 45%, transparent);
 }
 
 /* ---------- Tailwind'e tanıt (inline => var() referansı korunur) ---------- */
@@ -77,11 +114,29 @@
   --color-on-primary: var(--on-primary);
   --color-secondary: var(--secondary);
   --color-accent: var(--accent);
+  --color-accent-lime: var(--accent-lime);
+  --color-on-accent-lime: var(--on-accent-lime);
+
+  --color-nav-pill: var(--nav-pill);
+  --color-on-nav-pill: var(--on-nav-pill);
+  --color-on-nav-pill-muted: var(--on-nav-pill-muted);
+
+  --color-hero-surface: var(--hero-surface);
 
   --color-success: var(--success);
   --color-error: var(--error);
   --color-warning: var(--warning);
   --color-info: var(--info);
+}
+
+/* Ölçek: mobil kart dili (radius) + yoğun veri paneli için sıkı boşluk. */
+@theme {
+  --radius-card: 16px;
+  --radius-field: 12px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgb(16 12 32 / 0.06), 0 6px 18px -8px rgb(16 12 32 / 0.14);
+  --shadow-raised: 0 2px 4px rgb(16 12 32 / 0.08), 0 16px 40px -12px rgb(16 12 32 / 0.28);
 }
 
 html {
@@ -92,37 +147,145 @@ html.dark {
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-fg);
-  font-family: 'Inter', 'Poppins', sans-serif;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  background: var(--background);
+  color: var(--fg);
+  font-family: var(--font-inter, 'Inter'), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ---------- Tekrar eden kombinasyonlar ---------- */
-@utility badge-base {
-  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold;
+/* Ekran başlıkları mobilde Nunito (w700–800); panelde de aynı imza. */
+.font-display {
+  font-family: var(--font-nunito, 'Nunito'), var(--font-inter, 'Inter'), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Sayısal veriler zıplamasın (tablo + stat). */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Rozetler: tema token'larından türetilir, `dark:` gerekmez ---------- */
+@utility badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1.15rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
 }
 
 @utility badge-success {
-  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1.15rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--success) 14%, var(--surface));
+  color: var(--success);
+  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
 }
 
 @utility badge-error {
-  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1.15rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--error) 14%, var(--surface));
+  color: var(--error);
+  border: 1px solid color-mix(in srgb, var(--error) 30%, transparent);
 }
 
 @utility badge-warning {
-  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1.15rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--warning) 16%, var(--surface));
+  color: var(--warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 32%, transparent);
 }
 
 @utility badge-info {
-  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300;
-}
-
-@utility badge-purple {
-  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1.15rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--info) 14%, var(--surface));
+  color: var(--info);
+  border: 1px solid color-mix(in srgb, var(--info) 30%, transparent);
 }
 
 @utility badge-neutral {
-  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold bg-surface-variant text-fg dark:text-fg-muted;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1.15rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--surface-variant);
+  color: var(--fg-muted);
+  border: 1px solid var(--border);
+}
+
+@utility badge-lime {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1.15rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--accent-lime);
+  color: var(--on-accent-lime);
+  border: 1px solid transparent;
+}
+
+/* Koyu çip: mobil kartlarda medyanın üstündeki puan/konum çipi. */
+@utility chip-dark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.1875rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--nav-pill);
+  color: var(--on-nav-pill);
 }

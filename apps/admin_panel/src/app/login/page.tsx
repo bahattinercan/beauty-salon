@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
+import Button from '@/components/ui/Button';
+import { Field, Input } from '@/components/ui/Field';
+import { cx } from '@/lib/cx';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
@@ -55,74 +59,84 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-4 font-bold text-2xl">
-            BS
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Admin Girişi</h1>
-          <p className="text-gray-500 text-sm mt-1">Beauty Salon Yönetim Paneli</p>
-        </div>
-
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700 text-sm dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-300">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              E-posta Adresi
-            </label>
-            <div className="relative">
-              <Mail className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@beautysalon.com"
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Şifre
-            </label>
-            <div className="relative">
-              <Lock className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-on-primary py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm shadow-md shadow-primary/20"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Giriş yapılıyor...
-              </>
-            ) : (
-              'Giriş Yap'
-            )}
-          </button>
-        </form>
+    <div className="flex min-h-dvh flex-col bg-background">
+      <div className="flex items-center justify-end gap-3 px-4 py-4">
+        <span className="text-sm font-semibold text-fg-muted">Tema</span>
+        <ThemeToggle />
       </div>
+
+      <main className="flex flex-1 items-start justify-center px-4 pb-10 sm:items-center">
+        <div className="w-full max-w-md overflow-hidden rounded-card border border-border bg-surface shadow-raised">
+          {/* Mobil marka bandı (primaryGradient) — panelin tek gradient yüzeyi. */}
+          <div
+            className="px-6 py-7"
+            style={{
+              background: 'linear-gradient(135deg, var(--banner-from), var(--banner-to))',
+            }}
+          >
+            <span className="grid h-11 w-11 place-items-center rounded-pill bg-on-primary/15">
+              <span className="font-display text-sm font-extrabold text-on-primary">BS</span>
+            </span>
+            <h1 className="mt-3 font-display text-2xl font-extrabold text-on-primary">
+              Admin Girişi
+            </h1>
+            <p className="mt-1 text-sm text-on-primary/80">Beauty Salon Yönetim Paneli</p>
+          </div>
+
+          <div className="p-5 sm:p-6">
+            {error ? (
+              <div
+                role="alert"
+                className={cx(
+                  'mb-4 flex items-start gap-3 rounded-field border border-error/30 bg-error/10 p-3 text-sm text-error'
+                )}
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                <span>{error}</span>
+              </div>
+            ) : null}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Field label="E-posta adresi" htmlFor="email" required>
+                <Input
+                  id="email"
+                  icon={Mail}
+                  type="email"
+                  required
+                  autoComplete="username"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@beautysalon.com"
+                />
+              </Field>
+
+              <Field label="Şifre" htmlFor="password" required>
+                <Input
+                  id="password"
+                  icon={Lock}
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </Field>
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    Giriş yapılıyor…
+                  </>
+                ) : (
+                  'Giriş yap'
+                )}
+              </Button>
+            </form>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
