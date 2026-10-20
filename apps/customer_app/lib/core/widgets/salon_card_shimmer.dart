@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../app/theme/app_colors.dart';
+import 'salon_card.dart';
 
+/// Yatay şerit için yükleme iskeleti.
+///
+/// Yükseklik `SalonCard.preferredHeight` — iskelet gerçek kartla aynı olmazsa
+/// veri gelince satır zıplıyor (eskiden 140 + bar'lar ≈ 210, kart 260'tı).
 class SalonCardShimmer extends StatelessWidget {
   const SalonCardShimmer({super.key});
 
@@ -23,16 +28,16 @@ class SalonCardShimmer extends StatelessWidget {
       highlightColor: colors.surface,
       child: Container(
         width: 260,
+        height: SalonCard.preferredHeight,
         decoration: BoxDecoration(
           color: colors.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              height: 140,
+              height: SalonCard.mediaHeight,
               decoration: BoxDecoration(
                 color: colors.secondary,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),

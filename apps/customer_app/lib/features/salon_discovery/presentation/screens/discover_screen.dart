@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/widgets/pill_bottom_nav.dart';
 import '../../../../core/extensions/error_extensions.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../domain/entities/salon.dart';
@@ -101,7 +102,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       child: Icon(
                         Icons.tune,
                         size: 20,
-                        color: state.filter.hasActiveFilters ? Colors.white : colors.primary,
+                        color: state.filter.hasActiveFilters ? colors.onPrimary : colors.primary,
                       ),
                     ),
                   ),
@@ -155,12 +156,19 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         },
                       )
                     : GridView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        // Alt boşluk: pill nav yüzen katman (extendBody).
+                      padding: EdgeInsets.fromLTRB(
+                          20, 8, 20, PillBottomNav.insetOf(context)),
                         // Geniş ekranda 2 kolon kartları devasa yapıyordu
                         // (1280px'te ~620x830 kutu, boş gövde).
+                        // Oran yerine mainAxisExtent: kart 4/5 görsel + gövde
+                        // yüksekliğini kendisi bildiriyor, böylece hücre ile
+                        // kart birebir aynı (liste zıplaması / taşma yok).
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: _gridColumns(context),
-                          childAspectRatio: 0.75,
+                          mainAxisExtent: DiscoverSalonCard.extentFor(
+                            _gridCardWidth(context),
+                          ),
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
@@ -181,5 +189,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     if (width >= 1100) return 4;
     if (width >= 800) return 3;
     return 2;
+  }
+
+  /// Tek kartın genişliği: ekran - GridView kenar dolgusu (2x20) - aralıklar.
+  /// Grid hücresi ile kart yüksekliğinin eşitlenmesi için gerekiyor.
+  double _gridCardWidth(BuildContext context) {
+    final columns = _gridColumns(context);
+    return (MediaQuery.sizeOf(context).width - 40 - 12 * (columns - 1)) /
+        columns;
   }
 }

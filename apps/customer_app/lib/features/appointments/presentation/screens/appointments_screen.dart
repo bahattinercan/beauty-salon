@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/widgets/pill_bottom_nav.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/widgets/state_view.dart';
 import '../../domain/entities/appointment.dart';
@@ -104,7 +105,8 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen>
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.fromLTRB(
+              20, 20, 20, 20 + PillBottomNav.insetOf(context)),
           itemCount: items.length,
           itemBuilder: (context, index) {
             final a = items[index];

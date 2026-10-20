@@ -6,6 +6,13 @@ import 'salon_card_content.dart';
 import 'salon_card_image.dart';
 
 class SalonCard extends StatelessWidget {
+  /// Yatay şeritte kart yüksekliği: medya + gövde toplamı.
+  /// Eskiden şeritte sabit `260` tahmini kullanılıyordu; gövde ~90px tutunca
+  /// kartın içinde (özellikle rating satırının altında) boşluk kalıyordu.
+  static const double mediaHeight = 140;
+  static const double contentHeight = 96; // ölçülen gövde: 93
+  static double get preferredHeight => mediaHeight + contentHeight;
+
   final String id;
   final String name;
   final String imageUrl;
@@ -65,6 +72,8 @@ class SalonCard extends StatelessWidget {
               priceRange: priceRange,
               isFavorite: isFavorite,
               onFavoriteTap: onFavoriteTap,
+              seed: id,
+              salonName: name,
             ),
             Padding(
               padding: const EdgeInsets.all(12),

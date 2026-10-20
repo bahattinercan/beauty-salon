@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/l10n/app_strings.dart';
 import '../route_names.dart';
+import 'pill_bottom_nav.dart';
 
 class MainScaffold extends StatelessWidget {
   final Widget child;
@@ -34,32 +35,15 @@ class MainScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentIndex = _getCurrentIndex(context);
 
+    // `extendBody: true`: pill yüzen bir katmandır, içerik onun arkasına kadar
+    // akar. Ekranlar alt boşluğu `PillBottomNav.insetOf(context)` ile verir.
     return Scaffold(
+      extendBody: true,
       body: child,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 20, offset: const Offset(0, -4)),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: currentIndex,
-          onTap: (index) => _onTap(context, index),
-          items: [
-            BottomNavigationBarItem(icon: const Icon(Icons.home_outlined), activeIcon: const Icon(Icons.home), label: S.of(context).navHome),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.explore_outlined),
-              activeIcon: const Icon(Icons.explore),
-              label: S.of(context).navDiscover,
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.calendar_today_outlined),
-              activeIcon: const Icon(Icons.calendar_today),
-              label: S.of(context).navAppointments,
-            ),
-            BottomNavigationBarItem(icon: const Icon(Icons.person_outline), activeIcon: const Icon(Icons.person), label: S.of(context).navProfile),
-          ],
-        ),
+      bottomNavigationBar: PillBottomNav(
+        items: navItemsOf(S.of(context)),
+        currentIndex: currentIndex,
+        onTap: (index) => _onTap(context, index),
       ),
     );
   }

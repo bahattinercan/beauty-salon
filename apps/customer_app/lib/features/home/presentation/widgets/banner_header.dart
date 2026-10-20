@@ -3,9 +3,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
-import '../../../../core/widgets/salon_card.dart';
-import '../../../salon_discovery/domain/entities/salon.dart';
 
+/// Gradyanlı karşılama başlığı + arama girişi.
+///
+/// Not: `SalonCarousel` eskiden bu dosyanın içindeydi; WP3'te
+/// `salon_carousel.dart`'a taşındı (banner ile ilgisi yoktu).
 class BannerHeader extends StatelessWidget {
   const BannerHeader({super.key});
 
@@ -19,7 +21,10 @@ class BannerHeader extends StatelessWidget {
         gradient: colors.bannerGradient,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 52, 20, 28),
+      // Eskiden sabit `top: 52` idi; `home_screen` içeriği zaten `SafeArea`
+      // ile sarmaladığı için çentikli cihazda üstte ~24px fazladan boşluk
+      // açıyordu (çentik yüksekliği kadar değil, sabit 52).
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -31,17 +36,22 @@ class BannerHeader extends StatelessWidget {
                   children: [
                     Text(
                       s.homeWelcome,
+                      // `onBanner`: gradyanın en açık durağında 5.05:1 (AA).
+                      // Alpha'lı beyaz (0.75) 3.35:1'e düşüyordu → kaldırıldı.
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.75),
-                            letterSpacing: 0.3),
+                            color: colors.onBanner,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.3,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       s.homeDiscover,
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: -0.3),
+                            fontWeight: FontWeight.w800,
+                            color: colors.onBanner,
+                            letterSpacing: -0.5,
+                          ),
                     ),
                   ],
                 ),
@@ -50,89 +60,57 @@ class BannerHeader extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: colors.onBanner.withValues(alpha: 0.18),
                   shape: BoxShape.circle,
+                  border: Border.all(color: colors.onBanner.withValues(alpha: 0.25)),
                 ),
-                child: const Icon(Icons.person, color: Colors.white, size: 22),
+                child: Icon(Icons.person, color: colors.onBanner, size: 22),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          GestureDetector(
-            onTap: () => context.goNamed(RouteNames.discover),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.primaryDark.withValues(alpha: 0.15),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.search, color: colors.textHint, size: 20),
-                  const SizedBox(width: 12),
-                  Text(
-                    s.homeSearchHintFull,
-                    style: TextStyle(color: colors.textHint, fontSize: 14),
-                  ),
-                ],
+          const SizedBox(height: 18),
+          Semantics(
+            button: true,
+            label: s.homeSearchHintFull,
+            child: GestureDetector(
+              onTap: () => context.goNamed(RouteNames.discover),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.primaryDark.withValues(alpha: 0.18),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.search, color: colors.textHint, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        s.homeSearchHintFull,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: colors.textHint, fontSize: 14),
+                      ),
+                    ),
+                    Icon(
+                      Icons.tune_rounded,
+                      color: colors.primary,
+                      size: 20,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class SalonCarousel extends StatelessWidget {
-  final List<Salon> items;
-  final Set<String> favoriteIds;
-  final ValueChanged<Salon> onFavorite;
-  final String Function(Salon) distanceOf;
-
-  const SalonCarousel({
-    super.key,
-    required this.items,
-    required this.favoriteIds,
-    required this.onFavorite,
-    this.distanceOf = _defaultDistance,
-  });
-
-  static String _defaultDistance(Salon s) => s.distanceLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 260,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          final salon = items[index];
-          return Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: SalonCard(
-              id: salon.id,
-              name: salon.name,
-              address: salon.address,
-              rating: salon.ratingAvg,
-              reviewCount: salon.reviewCount,
-              distance: distanceOf(salon),
-              priceRange: salon.priceRangeLabel,
-              imageUrl: salon.coverImageUrl ?? salon.logoUrl ?? '',
-              isFavorite: favoriteIds.contains(salon.id),
-              onFavoriteTap: () => onFavorite(salon),
-            ),
-          );
-        },
       ),
     );
   }

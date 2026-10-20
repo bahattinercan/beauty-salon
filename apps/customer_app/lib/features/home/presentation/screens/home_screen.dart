@@ -9,6 +9,7 @@ import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/l10n/category_labels.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/widgets/category_icon.dart';
+import '../../../../core/widgets/salon_card.dart';
 import '../../../../core/widgets/salon_card_shimmer.dart';
 import '../../../favorites/presentation/providers/favorites_provider.dart';
 import '../../../salon_discovery/domain/entities/salon.dart';
@@ -17,8 +18,12 @@ import '../../../salon_discovery/presentation/providers/categories_provider.dart
 import '../../../salon_discovery/presentation/providers/location_provider.dart';
 import '../../../salon_discovery/presentation/providers/salons_provider.dart';
 import '../widgets/banner_header.dart';
-import '../widgets/category_chip.dart';
+import '../widgets/category_circle_chip.dart';
+import '../widgets/hero_promo_card.dart';
+import '../widgets/location_notice.dart';
+import '../widgets/salon_carousel.dart';
 import '../widgets/section_header.dart';
+import '../../../../app/widgets/pill_bottom_nav.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -49,38 +54,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final hasNearby = nearbyAsync.asData?.value.isNotEmpty ?? false;
     final showNearbySection = nearbyAsync.isLoading || hasNearby;
 
-    // Konum reddedildiyse kullanıcıyı satır içi bilgilendir: konum tek kaynaklı
-    // (`locationProvider`), Home artık kendi başına izin istemiyor.
-
     void toggleFavorite(Salon salon) =>
         ref.read(favoritesProvider.notifier).toggle(salon.id);
 
     return Scaffold(
       backgroundColor: colors.background,
       body: SafeArea(
+        bottom: false, // alt boşluk pill yüksekliğiyle elle veriliyor
         child: CustomScrollView(
           slivers: [
             const SliverToBoxAdapter(child: BannerHeader()),
+            // Sıra (Booksy referansı): hero promo → kategoriler → yakındakiler.
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.only(top: 24, bottom: 8),
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+                child: HeroPromoCard(
+                  onTap: () => context.goNamed(RouteNames.discover),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 20, bottom: 4),
                 child: SizedBox(
-                  height: 100,
+                  height: 92,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     itemCount: categories.length + 1,
                     itemBuilder: (context, index) {
                       if (index == 0) {
-                        return CategoryChip(
+                        return CategoryCircleChip(
                           icon: Icons.apps,
                           label: s.catAll,
                           isSelected: selectedCategoryId == null,
-                          onTap: () => setState(() => selectedCategoryId = null),
+                          onTap: () =>
+                              setState(() => selectedCategoryId = null),
                         );
                       }
                       final category = categories[index - 1];
-                      return CategoryChip(
+                      return CategoryCircleChip(
                         icon: categoryIcon(category.iconName),
                         label: categoryLabel(s, category.name),
                         isSelected: selectedCategoryId == category.id,
@@ -113,16 +126,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SliverToBoxAdapter(
                 child: nearbyAsync.when(
                   loading: () => SizedBox(
-                    height: 260,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: 3,
-                      itemBuilder: (_, _) => const Padding(
-                        padding: EdgeInsets.only(right: 16),
-                        child: SalonCardShimmer(),
-                      ),
-                    ),
+                    height: SalonCard.preferredHeight,
+                    child: _SalonListShimmer(),
                   ),
                   error: (_, _) => const SizedBox.shrink(),
                   data: (nearby) => nearby.isEmpty
@@ -152,7 +157,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ],
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            // Pill nav yüzen katman olduğu için (extendBody) son satır onun
+            // altında kalmasın: güvenli alan + pill yüksekliği.
+            SliverToBoxAdapter(
+              child: SizedBox(height: PillBottomNav.insetOf(context)),
+            ),
           ],
         ),
       ),
@@ -160,43 +169,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-/// Konum izni reddedildiğinde gösterilen satır içi bilgi kartı.
-class LocationNotice extends StatelessWidget {
-  final VoidCallback onOpenSettings;
-
-  const LocationNotice({super.key, required this.onOpenSettings});
+/// Yükleme iskeleti: şerit biçiminde üç kart.
+class _SalonListShimmer extends StatelessWidget {
+  const _SalonListShimmer();
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final s = S.of(context);
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-      decoration: BoxDecoration(
-        color: colors.warning.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.warning.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.location_off_outlined, color: colors.warning, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              s.locationDeniedBody,
-              style: TextStyle(fontSize: 13, color: colors.textPrimary),
-            ),
-          ),
-          TextButton(
-            onPressed: onOpenSettings,
-            style: TextButton.styleFrom(foregroundColor: colors.primary),
-            child: Text(
-              s.profileSettings,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: 3,
+      itemBuilder: (_, _) => const Padding(
+        padding: EdgeInsets.only(right: 16),
+        child: SalonCardShimmer(),
       ),
     );
   }
