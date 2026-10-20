@@ -99,6 +99,16 @@ class S {
   String get homeNearbySalons => isEn ? 'Nearby Salons'      : 'Yakınındaki Salonlar';
   String get homeTopReviewed  => isEn ? 'Top Reviewed'       : 'En Çok Değerlendirilen';
   String get homeSeeAll       => isEn ? 'See All'            : 'Tümünü Gör';
+
+  // ── Home — hero promo kartı (kampanya API'si yok, metin statik) ───────────
+  String get homePromoKicker  => isEn ? 'NEW SALONS'          : 'YENİ SALONLAR';
+  String get homePromoTitle   => isEn
+      ? 'Up to 60% off your first visit'
+      : 'İlk randımanda %60\'a varan indirim';
+  String get homePromoBody    => isEn
+      ? 'Newly opened salons are building their first reviews — book while slots are cheap.'
+      : 'Yeni açılan salonlar ilk yorumlarını topluyor; yerler varken yararlan.';
+  String get homePromoCta     => isEn ? 'See offers'          : 'Fırsatları gör';
   String get homeSalonsNotLoaded => isEn ? 'Could not load salons' : 'Salonlar yüklenemedi';
   String get homeNoSalons     => isEn ? 'No salons found'    : 'Salon bulunamadı';
 
@@ -107,6 +117,31 @@ class S {
   String get locationDeniedBody => isEn
       ? 'Enable location to see nearby salons'
       : 'Yakındaki salonları görmek için konum izni verin';
+
+  // ── Onboarding (CA-019) ──────────────────────────────────────────────────
+  String get brandName        => 'Beauty Salon';
+  String get onboardingSkip   => isEn ? 'Skip' : 'Atla';
+  String get onboardingNext   => isEn ? 'Next' : 'İleri';
+  String get onboardingStart  => isEn ? 'Get started' : 'Başla';
+  String get onboardingReplay => isEn ? 'Replay intro' : 'Tanıtımı tekrar göster';
+  String get onboarding1Title => isEn
+      ? 'Discover salons near you'
+      : 'Yakınındaki salonları keşfet';
+  String get onboarding1Body  => isEn
+      ? 'Search by service or location; compare ratings, prices and reviews.'
+      : 'Hizmete veya konuma göre ara; puanları, fiyatları ve yorumları karşılaştır.';
+  String get onboarding2Title => isEn
+      ? 'Book in seconds'
+      : 'Saniyeler içinde randevu al';
+  String get onboarding2Body  => isEn
+      ? 'Pick a stylist and a free slot; your booking is confirmed instantly.'
+      : 'Uzmanını ve müsait saatini seç, randevun anında onaylansın.';
+  String get onboarding3Title => isEn
+      ? 'Keep your favorites'
+      : 'Favorilerini sakla';
+  String get onboarding3Body  => isEn
+      ? 'Save the salons you love and rebook them with one tap.'
+      : 'Beğendiğin salonları kaydet, tek dokunuşla tekrar randevu oluştur.';
 
   // ── Login/Register ─────────────────────────────────────────────────────────
   String get loginSubtitleBrand => isEn ? 'Enhance Your Beauty' : 'Güzelliğinize değer katın';
