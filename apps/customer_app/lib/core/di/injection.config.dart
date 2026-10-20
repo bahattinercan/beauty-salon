@@ -76,6 +76,18 @@ import 'package:customer_app/features/notifications/domain/usecases/mark_all_not
     as _i464;
 import 'package:customer_app/features/notifications/domain/usecases/mark_notification_read_usecase.dart'
     as _i527;
+import 'package:customer_app/features/onboarding/data/datasources/onboarding_local_datasource.dart'
+    as _i370;
+import 'package:customer_app/features/onboarding/data/repositories/onboarding_repository_impl.dart'
+    as _i95;
+import 'package:customer_app/features/onboarding/domain/repositories/onboarding_repository.dart'
+    as _i2;
+import 'package:customer_app/features/onboarding/domain/usecases/get_onboarding_seen_usecase.dart'
+    as _i260;
+import 'package:customer_app/features/onboarding/domain/usecases/mark_onboarding_seen_usecase.dart'
+    as _i925;
+import 'package:customer_app/features/onboarding/domain/usecases/reset_onboarding_seen_usecase.dart'
+    as _i337;
 import 'package:customer_app/features/profile/data/datasources/user_remote_datasource.dart'
     as _i273;
 import 'package:customer_app/features/profile/data/repositories/user_repository_impl.dart'
@@ -165,6 +177,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i273.UserRemoteDataSource>(
       () => _i273.UserRemoteDataSourceImpl(gh<_i440.ApiClient>()),
     );
+    gh.factory<_i370.OnboardingLocalDataSource>(
+      () => _i370.OnboardingSecureStorageDataSource(
+        gh<_i558.FlutterSecureStorage>(),
+      ),
+    );
     gh.factory<_i468.UserRepository>(
       () => _i320.UserRepositoryImpl(gh<_i273.UserRemoteDataSource>()),
     );
@@ -225,6 +242,10 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i1024.SalonsRepository>(
       () => _i840.SalonsRepositoryImpl(gh<_i437.SalonsRemoteDataSource>()),
+    );
+    gh.factory<_i2.OnboardingRepository>(
+      () =>
+          _i95.OnboardingRepositoryImpl(gh<_i370.OnboardingLocalDataSource>()),
     );
     gh.factory<_i855.ImagePickerService>(
       () => _i855.ImagePickerService(gh<_i183.ImagePicker>()),
@@ -317,6 +338,15 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i627.ToggleFavoriteUseCase>(
       () => _i627.ToggleFavoriteUseCase(gh<_i1055.FavoritesRepository>()),
+    );
+    gh.factory<_i260.GetOnboardingSeenUseCase>(
+      () => _i260.GetOnboardingSeenUseCase(gh<_i2.OnboardingRepository>()),
+    );
+    gh.factory<_i925.MarkOnboardingSeenUseCase>(
+      () => _i925.MarkOnboardingSeenUseCase(gh<_i2.OnboardingRepository>()),
+    );
+    gh.factory<_i337.ResetOnboardingSeenUseCase>(
+      () => _i337.ResetOnboardingSeenUseCase(gh<_i2.OnboardingRepository>()),
     );
     gh.factory<_i8.GetCategoriesUseCase>(
       () => _i8.GetCategoriesUseCase(gh<_i159.CategoriesRepository>()),

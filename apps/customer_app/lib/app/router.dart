@@ -6,6 +6,8 @@ import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/reset_password_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
+import '../features/onboarding/domain/usecases/get_onboarding_seen_usecase.dart';
+import '../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/salon_discovery/presentation/screens/discover_screen.dart';
 import '../features/salon_detail/presentation/screens/salon_detail_screen.dart';
@@ -25,19 +27,36 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final router = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/login',
+  initialLocation: '/onboarding',
   redirect: (context, state) async {
     final isLoggedIn = await getIt<AuthRepository>().isLoggedIn();
     final isAuthRoute = state.matchedLocation == '/login' ||
         state.matchedLocation == '/register' ||
         state.matchedLocation == '/forgot-password' ||
         state.matchedLocation == '/reset-password';
+    final isOnboardingRoute = state.matchedLocation == '/onboarding';
 
+    // Storage okuması başarısız olursa onboarding gösterilmez: yönlendirme
+    // döngüsüne girmek yerine kullanıcı giriş ekranına düşsün.
+    final hasSeen = (await getIt<GetOnboardingSeenUseCase>()())
+        .fold((_) => true, (v) => v);
+
+    if (!hasSeen && !isOnboardingRoute) return '/onboarding';
+    if (hasSeen && isOnboardingRoute) return isLoggedIn ? '/home' : '/login';
     if (isLoggedIn && isAuthRoute) return '/home';
-    if (!isLoggedIn && !isAuthRoute) return '/login';
+    // `/onboarding` auth rota listesinde değil; bu koşula eklenmezse
+    // seen=false + giriş yapılmamış durum /login <-> /onboarding döngüsü üretir.
+    if (!isLoggedIn && !isAuthRoute && !isOnboardingRoute) return '/login';
     return null;
   },
   routes: [
+    // Onboarding — ilk açılışta bir kez gösterilir (CA-019 WP2)
+    GoRoute(
+      path: '/onboarding',
+      name: RouteNames.onboarding,
+      builder: (context, state) => const OnboardingScreen(),
+    ),
+
     // Auth routes
     GoRoute(
       path: '/login',

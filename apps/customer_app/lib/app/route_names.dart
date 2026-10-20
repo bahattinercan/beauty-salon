@@ -4,6 +4,7 @@ class RouteNames {
   RouteNames._();
 
   static const login = 'login';
+  static const onboarding = 'onboarding';
   static const register = 'register';
   static const forgotPassword = 'forgotPassword';
   static const resetPassword = 'resetPassword';

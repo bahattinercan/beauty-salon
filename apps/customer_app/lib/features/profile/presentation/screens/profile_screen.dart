@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/route_names.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/widgets/pill_bottom_nav.dart';
 import '../../../../app/theme/theme_provider.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../appointments/presentation/providers/appointments_provider.dart';
 import '../../../favorites/presentation/providers/favorites_provider.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
+import '../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../../reviews/presentation/providers/my_reviews_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/menu_section.dart';
@@ -44,7 +46,10 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+            // Pill nav yüzen katman (extendBody): son menü satırı altında
+            // kalmasın diye sliver dolgunun altı pill yüksekliği kadar artırıldı.
+            padding: EdgeInsets.fromLTRB(
+                20, 20, 20, 20 + PillBottomNav.insetOf(context)),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 StatsRow(
@@ -101,6 +106,16 @@ class ProfileScreen extends ConsumerWidget {
                       value: isDark,
                       onChanged: (_) => ref.read(themeProvider.notifier).toggle(),
                     ),
+                  ),
+                  // Tanıtım bir kez gösterilir; buradan tekrar izlenebilir.
+                  ProfileMenuItem(
+                    icon: Icons.replay_rounded,
+                    title: s.onboardingReplay,
+                    onTap: () async {
+                      await ref.read(onboardingProvider.notifier).replay();
+                      if (!context.mounted) return;
+                      context.pushNamed(RouteNames.onboarding);
+                    },
                   ),
                 ]),
                 const SizedBox(height: 16),
