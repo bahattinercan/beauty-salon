@@ -54,7 +54,7 @@ class ChipSelector extends StatelessWidget {
               style: TextStyle(
                 fontSize: pill ? 13 : 15,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected ? (pill ? colors.primaryDark : Colors.white) : colors.textPrimary,
+                color: isSelected ? (pill ? colors.primaryDark : colors.onPrimary) : colors.textPrimary,
               ),
             ),
           ),

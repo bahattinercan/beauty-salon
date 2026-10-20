@@ -52,11 +52,11 @@ class StaffOption extends StatelessWidget {
                 radius: 24,
                 backgroundColor: isSelected ? colors.primary : colors.secondary,
                 child: icon != null
-                    ? Icon(icon, color: isSelected ? Colors.white : colors.primary)
+                    ? Icon(icon, color: isSelected ? colors.onPrimary : colors.primary)
                     : Text(
                         initials ?? '?',
                         style: TextStyle(
-                          color: isSelected ? Colors.white : colors.primary,
+                          color: isSelected ? colors.onPrimary : colors.primary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

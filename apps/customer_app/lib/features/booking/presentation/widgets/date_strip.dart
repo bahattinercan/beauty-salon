@@ -41,7 +41,12 @@ class DateStrip extends StatelessWidget {
                   children: [
                     Text(
                       dayAbbrs[date.weekday - 1],
-                      style: TextStyle(fontSize: 11, color: colors.textSecondary),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isSelected
+                            ? colors.onPrimary.withValues(alpha: 0.85)
+                            : colors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -49,7 +54,7 @@ class DateStrip extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: isSelected ? Colors.white : colors.textPrimary,
+                        color: isSelected ? colors.onPrimary : colors.textPrimary,
                       ),
                     ),
                   ],

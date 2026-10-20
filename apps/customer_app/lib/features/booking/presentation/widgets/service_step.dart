@@ -94,7 +94,7 @@ class ServiceStep extends StatelessWidget {
                     ),
                     child: Icon(
                       categoryIcon(service.categoryName ?? ''),
-                      color: isSelected ? Colors.white : colors.primary,
+                      color: isSelected ? colors.onPrimary : colors.primary,
                       size: 24,
                     ),
                   ),

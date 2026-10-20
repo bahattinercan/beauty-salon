@@ -20,11 +20,39 @@ class AppColors {
   final Color info;
   final Color starFilled;
   final Color starEmpty;
+  final Color divider;
+
+  // ── Aksan / yüzey tokenları (CA-019) ────────────────────────────────────
+  // `onPrimary`: primary dolgusu ÜZERİNDEKI metin rengi. Dark temada primary
+  // açıldığı için (#9D82D4) beyaz metin 3.19:1'e düşüyor, WCAG AA altına
+  // iniyordu; dark'ta koyu metin 5.44:1 verir. Bu yüzden primary üzerine
+  // metin/ikon her zaman bu token'dan gelir, `Colors.white` yazılmaz.
+  final Color onPrimary;
+  // `accentLime`: yalnızca CTA dolgusu, "Yeni" rozeti ve aktif nav ikonu.
+  // Beyaz zeminde metin olarak KULLANILAMAZ (1.31:1) — bu yüzden her zaman
+  // `onAccentLime` ile çift halinde kullanılır (app_colors_test.dart denetler).
+  final Color accentLime;
+  final Color onAccentLime;
+  final Color navPill;
+  final Color onNavPill;
+  final Color heroSurface;
+  // `onBanner`: `bannerGradient` ÜZERİNDEKI metin rengi. Her iki temada da
+  // beyaz: banner gradyanının EN AÇIK durağı bilinçli olarak #7C5CBF'de
+  // sabitlendi (beyaz ile 5.05:1 → AA). Light temada eskiden açık durak
+  // #8B6DD1'di → 4.05:1, alpha'lı karşılama metni 3.35:1 (AA ihlaliydi).
+  // app_colors_test.dart hem başlangıç hem bitiş durağını denetler.
+  final Color onBanner;
+
   final LinearGradient primaryGradient;
   final LinearGradient bannerGradient;
   final LinearGradient softGradient;
   final LinearGradient goldGradient;
   final LinearGradient darkBannerGradient;
+
+  // `ctaGradient`: birincil CTA dolgusu. primaryGradient'ten farklı olarak her iki
+  // ucunda da `onPrimary` metni WCAG AA'yi geçirir (primaryGradient'in açık ucu
+  // light'ta beyaz metinle 3.22:1, dark'ta ~2.1:1 kalıyordu).
+  final LinearGradient ctaGradient;
 
   const AppColors._({
     required this.primary,
@@ -46,11 +74,20 @@ class AppColors {
     required this.info,
     required this.starFilled,
     required this.starEmpty,
+    required this.divider,
+    required this.onPrimary,
+    required this.accentLime,
+    required this.onAccentLime,
+    required this.navPill,
+    required this.onNavPill,
+    required this.heroSurface,
+    required this.onBanner,
     required this.primaryGradient,
     required this.bannerGradient,
     required this.softGradient,
     required this.goldGradient,
     required this.darkBannerGradient,
+    required this.ctaGradient,
   });
 
   static const AppColors light = AppColors._(
@@ -73,13 +110,21 @@ class AppColors {
     info: Color(0xFF5B8DEF),
     starFilled: Color(0xFFFFB547),
     starEmpty: Color(0xFFE0E0E0),
+    divider: Color(0xFFEEEBF8),
+    onPrimary: Color(0xFFFFFFFF),
+    accentLime: Color(0xFFC9F04F),
+    onAccentLime: Color(0xFF12131F),
+    navPill: Color(0xFF12131F),
+    onNavPill: Color(0xFFFFFFFF),
+    heroSurface: Color(0xFFE8E5FA),
+    onBanner: Color(0xFFFFFFFF),
     primaryGradient: LinearGradient(
       colors: [Color(0xFF9B7FE0), Color(0xFF6644B8)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     bannerGradient: LinearGradient(
-      colors: [Color(0xFF8B6DD1), Color(0xFF5A3FA8)],
+      colors: [Color(0xFF7C5CBF), Color(0xFF4A3298)],
       begin: Alignment.topLeft,
       end: Alignment.bottomCenter,
     ),
@@ -97,6 +142,11 @@ class AppColors {
       colors: [Color(0xFF8B6DD1), Color(0xFF5A3FA8)],
       begin: Alignment.topLeft,
       end: Alignment.bottomCenter,
+    ),
+    ctaGradient: LinearGradient(
+      colors: [Color(0xFF7C5CBF), Color(0xFF5A42A0)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
     ),
   );
 
@@ -120,6 +170,15 @@ class AppColors {
     info: Color(0xFF7AAEF5),
     starFilled: Color(0xFFFFBF5A),
     starEmpty: Color(0xFF3D3360),
+    divider: Color(0xFF2D2B47),
+    // Dark temada primary açılır → üstündeki metin koyu olmalı (5.44:1).
+    onPrimary: Color(0xFF1C1828),
+    accentLime: Color(0xFFC9F04F),
+    onAccentLime: Color(0xFF12131F),
+    navPill: Color(0xFF1C1828),
+    onNavPill: Color(0xFFF0ECFF),
+    heroSurface: Color(0xFF2A2440),
+    onBanner: Color(0xFFFFFFFF),
     primaryGradient: LinearGradient(
       colors: [Color(0xFFBBA8E5), Color(0xFF7C5CBF)],
       begin: Alignment.topLeft,
@@ -144,6 +203,11 @@ class AppColors {
       colors: [Color(0xFF5A3FA8), Color(0xFF7C5CBF)],
       begin: Alignment.topLeft,
       end: Alignment.bottomCenter,
+    ),
+    ctaGradient: LinearGradient(
+      colors: [Color(0xFFBBA8E5), Color(0xFF9D82D4)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
     ),
   );
 

@@ -15,7 +15,7 @@ class AppTheme {
 
       colorScheme: ColorScheme.light(
         primary: c.primary,
-        onPrimary: Colors.white,
+        onPrimary: c.onPrimary,
         secondary: c.secondary,
         onSecondary: c.textPrimary,
         surface: c.surface,
@@ -64,11 +64,23 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: c.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: c.onPrimary,
           elevation: 0,
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      ),
+
+      // CA-019: lime CTA tek noktadan — lime dolgusu ÜZERİNDE daima koyu metin.
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: c.accentLime,
+          foregroundColor: c.onAccentLime,
+          elevation: 0,
+          minimumSize: const Size(double.infinity, 52),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
         ),
       ),
 
@@ -133,7 +145,7 @@ class AppTheme {
         ),
       ),
 
-      dividerTheme: const DividerThemeData(color: Color(0xFFEEEBF8), thickness: 1),
+      dividerTheme: DividerThemeData(color: c.divider, thickness: 1),
 
       dialogTheme: DialogThemeData(
         backgroundColor: c.surface,
@@ -151,7 +163,7 @@ class AppTheme {
 
       colorScheme: ColorScheme.dark(
         primary: c.primary,
-        onPrimary: Colors.white,
+        onPrimary: c.onPrimary,
         secondary: c.secondary,
         onSecondary: c.textPrimary,
         surface: c.surface,
@@ -200,11 +212,22 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: c.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: c.onPrimary,
           elevation: 0,
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      ),
+
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: c.accentLime,
+          foregroundColor: c.onAccentLime,
+          elevation: 0,
+          minimumSize: const Size(double.infinity, 52),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
         ),
       ),
 
@@ -268,7 +291,7 @@ class AppTheme {
         ),
       ),
 
-      dividerTheme: const DividerThemeData(color: Color(0xFF2D2B47), thickness: 1),
+      dividerTheme: DividerThemeData(color: c.divider, thickness: 1),
 
       dialogTheme: DialogThemeData(
         backgroundColor: c.surface,

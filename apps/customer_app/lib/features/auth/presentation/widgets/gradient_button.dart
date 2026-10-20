@@ -22,7 +22,7 @@ class GradientButton extends StatelessWidget {
       height: 54,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: isLoading ? null : colors.primaryGradient,
+          gradient: isLoading ? null : colors.ctaGradient,
           color: isLoading ? colors.primaryLight : null,
           borderRadius: BorderRadius.circular(12),
           boxShadow: isLoading
@@ -44,17 +44,18 @@ class GradientButton extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                  child: CircularProgressIndicator(
+                      color: colors.onPrimary, strokeWidth: 2.5),
                 )
               : Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: colors.onPrimary,
                     letterSpacing: 0.5,
                   ),
                 ),
