@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_theme_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/widgets/state_view.dart';
 import '../../data/staff_provider.dart';
@@ -12,6 +11,7 @@ class StaffManagementScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
     final s = S.of(context);
     final staffAsync = ref.watch(staffProvider);
 
@@ -49,14 +49,15 @@ class StaffManagementScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showStaffForm(context, ref),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.person_add, color: Colors.white),
-        label: Text(s.addStaff, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        backgroundColor: c.primary,
+        icon: Icon(Icons.person_add, color: c.onPrimary),
+        label: Text(s.addStaff, style: TextStyle(color: c.onPrimary, fontWeight: FontWeight.w600)),
       ),
     );
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, StaffMember person, S s) {
+    final c = AppColors.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -71,11 +72,11 @@ class StaffManagementScreen extends ConsumerWidget {
               try {
                 await ref.read(staffProvider.notifier).delete(person.id);
               } catch (e) {
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: Colors.red));
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.of(context).error));
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: Text(s.delete, style: const TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(backgroundColor: c.error),
+            child: Text(s.delete, style: TextStyle(color: c.onPrimary)),
           ),
         ],
       ),
@@ -102,15 +103,15 @@ class _StaffCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final s = S.of(context);
-    final c = context.colors;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: staff.isActive ? c.surfaceVariant : AppColors.error.withValues(alpha: 0.2)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 2))],
+        border: Border.all(color: staff.isActive ? c.surfaceVariant : c.error.withValues(alpha: 0.2)),
+        boxShadow: [BoxShadow(color: c.shadowCard, blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(
         children: [
@@ -119,14 +120,14 @@ class _StaffCard extends StatelessWidget {
               Container(
                 width: 52, height: 52,
                 decoration: BoxDecoration(
-                  gradient: staff.isActive ? AppColors.primaryGradient : null,
+                  gradient: staff.isActive ? c.primaryGradient : null,
                   color: staff.isActive ? null : c.textHint,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Center(
                   child: Text(
                     staff.fullName.split(' ').map((e) => e[0].toUpperCase()).take(2).join(),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                    style: TextStyle(color: c.onPrimary, fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                 ),
               ),
@@ -142,8 +143,8 @@ class _StaffCard extends StatelessWidget {
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-                            child: Text(s.inactive, style: const TextStyle(fontSize: 10, color: AppColors.error, fontWeight: FontWeight.w600)),
+                            decoration: BoxDecoration(color: c.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                            child: Text(s.inactive, style: TextStyle(fontSize: 10, color: c.error, fontWeight: FontWeight.w600)),
                           ),
                         ],
                       ],
@@ -164,7 +165,7 @@ class _StaffCard extends StatelessWidget {
                 itemBuilder: (_) => [
                   PopupMenuItem(value: 'edit', child: Text(s.edit)),
                   PopupMenuItem(value: 'toggle', child: Text(staff.isActive ? s.setInactive : s.setActive)),
-                  PopupMenuItem(value: 'delete', child: Text(s.delete, style: const TextStyle(color: AppColors.error))),
+                  PopupMenuItem(value: 'delete', child: Text(s.delete, style: TextStyle(color: c.error))),
                 ],
               ),
             ],
@@ -177,8 +178,8 @@ class _StaffCard extends StatelessWidget {
               spacing: 6, runSpacing: 4,
               children: staff.serviceNames.map((svc) => Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: c.secondaryBg, borderRadius: BorderRadius.circular(8)),
-                child: Text(svc, style: const TextStyle(fontSize: 11, color: AppColors.primaryDark, fontWeight: FontWeight.w500)),
+                decoration: BoxDecoration(color: c.secondary, borderRadius: BorderRadius.circular(8)),
+                child: Text(svc, style: TextStyle(fontSize: 11, color: c.primaryDark, fontWeight: FontWeight.w500)),
               )).toList(),
             ),
           ],
@@ -234,8 +235,8 @@ class _StaffFormSheetState extends ConsumerState<_StaffFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final s = S.of(context);
-    final c = context.colors;
     final servicesAsync = ref.watch(servicesProvider);
 
     return Padding(
@@ -297,11 +298,11 @@ class _StaffFormSheetState extends ConsumerState<_StaffFormSheet> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: selected ? AppColors.primary : c.surface,
+                              color: selected ? c.primary : c.surface,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: selected ? AppColors.primary : c.secondaryBorder),
+                              border: Border.all(color: selected ? c.primary : c.secondaryDark),
                             ),
-                            child: Text(svc.name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: selected ? Colors.white : c.textSecondary)),
+                            child: Text(svc.name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: selected ? c.onPrimary : c.textSecondary)),
                           ),
                         );
                       }).toList(),
@@ -313,7 +314,7 @@ class _StaffFormSheetState extends ConsumerState<_StaffFormSheet> {
                     child: ElevatedButton(
                       onPressed: _saving ? null : _save,
                       child: _saving
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: c.onPrimary))
                           : Text(s.save),
                     ),
                   ),
@@ -347,7 +348,7 @@ class _StaffFormSheetState extends ConsumerState<_StaffFormSheet> {
     } catch (e) {
       if (mounted) {
         final s = S.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.of(context).error));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

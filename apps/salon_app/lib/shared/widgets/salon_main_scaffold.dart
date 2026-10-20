@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../app/theme/app_colors.dart';
 import '../../core/l10n/app_strings.dart';
 
 class SalonMainScaffold extends StatelessWidget {
@@ -29,6 +30,7 @@ class SalonMainScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final s = S.of(context);
     final currentIndex = _getCurrentIndex(context);
 
@@ -37,7 +39,7 @@ class SalonMainScaffold extends StatelessWidget {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 20, offset: const Offset(0, -4)),
+            BoxShadow(color: c.shadowRaised, blurRadius: 20, offset: const Offset(0, -4)),
           ],
         ),
         child: BottomNavigationBar(

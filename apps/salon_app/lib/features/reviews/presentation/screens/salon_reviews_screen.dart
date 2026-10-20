@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_theme_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../salon/data/salon_provider.dart';
 import '../../data/reviews_provider.dart';
@@ -20,8 +19,8 @@ class _SalonReviewsScreenState extends ConsumerState<SalonReviewsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final s = S.of(context);
-    final c = context.colors;
     final reviewsAsync = ref.watch(reviewsProvider);
     final salonAsync = ref.watch(salonProvider);
 
@@ -54,11 +53,11 @@ class _SalonReviewsScreenState extends ConsumerState<SalonReviewsScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _statItem(avgRating.toStringAsFixed(1), s.reviewsAvg, Icons.star, AppColors.starFilled, c),
+                      _statItem(avgRating.toStringAsFixed(1), s.reviewsAvg, Icons.star, c.starFilled, c),
                       Container(width: 1, height: 36, color: c.surfaceVariant),
-                      _statItem('$totalCount', s.reviewsTotal, Icons.rate_review, AppColors.primary, c),
+                      _statItem('$totalCount', s.reviewsTotal, Icons.rate_review, c.primary, c),
                       Container(width: 1, height: 36, color: c.surfaceVariant),
-                      _statItem('$unrepliedCount', s.reviewsUnanswered, Icons.reply, AppColors.warning, c),
+                      _statItem('$unrepliedCount', s.reviewsUnanswered, Icons.reply, c.warning, c),
                     ],
                   ),
                 ),
@@ -111,7 +110,7 @@ class _SalonReviewsScreenState extends ConsumerState<SalonReviewsScreen> {
     );
   }
 
-  Widget _statItem(String value, String label, IconData icon, Color color, AppThemeColors c) {
+  Widget _statItem(String value, String label, IconData icon, Color color, AppColors c) {
     return Column(
       children: [
         Row(
@@ -126,18 +125,18 @@ class _SalonReviewsScreenState extends ConsumerState<SalonReviewsScreen> {
     );
   }
 
-  Widget _filterChip(String label, String value, AppThemeColors c) {
+  Widget _filterChip(String label, String value, AppColors c) {
     final isSelected = _filter == value;
     return GestureDetector(
       onTap: () => setState(() => _filter = value),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : c.surface,
+          color: isSelected ? c.primary : c.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? AppColors.primary : c.secondaryBorder),
+          border: Border.all(color: isSelected ? c.primary : c.secondaryDark),
         ),
-        child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isSelected ? Colors.white : c.textSecondary)),
+        child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isSelected ? c.onPrimary : c.textSecondary)),
       ),
     );
   }
@@ -165,7 +164,7 @@ class _SalonReviewsScreenState extends ConsumerState<SalonReviewsScreen> {
                 await ref.read(reviewsProvider.notifier).reply(review.id, ctrl.text.trim());
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.replySent)));
               } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: Colors.red));
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.of(context).error));
               }
             },
             child: Text(s.send),
@@ -184,15 +183,15 @@ class _ReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final s = S.of(context);
-    final c = context.colors;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: review.hasReply ? c.surfaceVariant : AppColors.warning.withValues(alpha: 0.3)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        border: Border.all(color: review.hasReply ? c.surfaceVariant : c.warning.withValues(alpha: 0.3)),
+        boxShadow: [BoxShadow(color: c.shadowCard, blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,10 +200,10 @@ class _ReviewCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: c.secondaryBg,
+                backgroundColor: c.secondary,
                 child: Text(
                   review.customerName.split(' ').map((e) => e[0]).join().substring(0, review.customerName.split(' ').length >= 2 ? 2 : 1),
-                  style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 12, color: c.primary, fontWeight: FontWeight.w700),
                 ),
               ),
               const SizedBox(width: 10),
@@ -225,7 +224,7 @@ class _ReviewCard extends StatelessWidget {
                     children: List.generate(5, (i) => Icon(
                       Icons.star,
                       size: 13,
-                      color: i < review.rating.round() ? AppColors.starFilled : c.surfaceVariant,
+                      color: i < review.rating.round() ? c.starFilled : c.surfaceVariant,
                     )),
                   ),
                   Text(
@@ -245,15 +244,15 @@ class _ReviewCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: c.secondaryBg,
+                color: c.secondary,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.reply, size: 14, color: AppColors.primary),
+                  Icon(Icons.reply, size: 14, color: c.primary),
                   const SizedBox(width: 6),
-                  Expanded(child: Text(review.replyText!, style: const TextStyle(fontSize: 12, color: AppColors.primaryDark))),
+                  Expanded(child: Text(review.replyText!, style: TextStyle(fontSize: 12, color: c.primaryDark))),
                 ],
               ),
             ),

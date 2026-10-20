@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_theme_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/widgets/state_view.dart';
 import '../../data/appointments_provider.dart';
@@ -27,8 +26,8 @@ class _SalonAppointmentsScreenState extends ConsumerState<SalonAppointmentsScree
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final s = S.of(context);
-    final c = context.colors;
     final apptAsync = ref.watch(salonAppointmentsProvider);
 
     return Scaffold(
@@ -60,9 +59,9 @@ class _SalonAppointmentsScreenState extends ConsumerState<SalonAppointmentsScree
                 titleTextStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               calendarStyle: CalendarStyle(
-                selectedDecoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-                todayDecoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.2), shape: BoxShape.circle),
-                todayTextStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                selectedDecoration: BoxDecoration(color: c.primary, shape: BoxShape.circle),
+                todayDecoration: BoxDecoration(color: c.primary.withValues(alpha: 0.2), shape: BoxShape.circle),
+                todayTextStyle: TextStyle(color: c.primary, fontWeight: FontWeight.w600),
               ),
               onDaySelected: (selectedDay, focusedDay) {
                 setState(() {
@@ -156,19 +155,19 @@ class _SalonAppointmentsScreenState extends ConsumerState<SalonAppointmentsScree
     return dateFiltered.where((a) => a.status == _statusFilter).toList();
   }
 
-  Widget _filterChip(String label, String? status, AppThemeColors c) {
+  Widget _filterChip(String label, String? status, AppColors c) {
     final isSelected = _statusFilter == status;
     return GestureDetector(
       onTap: () => setState(() => _statusFilter = status),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : c.surface,
+          color: isSelected ? c.primary : c.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? AppColors.primary : c.secondaryBorder),
+          border: Border.all(color: isSelected ? c.primary : c.secondaryDark),
         ),
         child: Text(label,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: isSelected ? Colors.white : c.textSecondary)),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: isSelected ? c.onPrimary : c.textSecondary)),
       ),
     );
   }
@@ -187,12 +186,13 @@ class _SalonAppointmentsScreenState extends ConsumerState<SalonAppointmentsScree
         );
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: Colors.red));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.of(context).error));
     }
   }
 
   void _showCancelDialog(String id, String customerName) {
     final s = S.of(context);
+    final c = AppColors.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -206,13 +206,13 @@ class _SalonAppointmentsScreenState extends ConsumerState<SalonAppointmentsScree
               Navigator.pop(ctx);
               try {
                 await ref.read(salonAppointmentsProvider.notifier).cancel(id);
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.appointmentCancelled), backgroundColor: AppColors.error));
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.appointmentCancelled), backgroundColor: c.error));
               } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: Colors.red));
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.of(context).error));
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: Text(s.cancelAction, style: const TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(backgroundColor: c.error),
+            child: Text(s.cancelAction, style: TextStyle(color: c.onPrimary)),
           ),
         ],
       ),
@@ -237,8 +237,8 @@ class _AppointmentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final s = S.of(context);
-    final c = context.colors;
     final isPending = appointment.status == 'PENDING';
     final isConfirmed = appointment.status == 'CONFIRMED';
 
@@ -249,8 +249,8 @@ class _AppointmentTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: c.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isPending ? AppColors.warning.withValues(alpha: 0.4) : c.surfaceVariant),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+          border: Border.all(color: isPending ? c.warning.withValues(alpha: 0.4) : c.surfaceVariant),
+          boxShadow: [BoxShadow(color: c.shadowCard, blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Column(
           children: [
@@ -258,12 +258,12 @@ class _AppointmentTile extends StatelessWidget {
               children: [
                 Column(
                   children: [
-                    Text(appointment.startTime, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                    Text(appointment.startTime, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: c.primary)),
                     Text(appointment.endTime, style: TextStyle(fontSize: 12, color: c.textSecondary)),
                   ],
                 ),
                 const SizedBox(width: 14),
-                Container(width: 2, height: 40, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(1))),
+                Container(width: 2, height: 40, decoration: BoxDecoration(color: c.primary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(1))),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -278,7 +278,7 @@ class _AppointmentTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                _statusBadge(s),
+                _statusBadge(s, c),
               ],
             ),
             if (isPending || isConfirmed) ...[
@@ -288,10 +288,10 @@ class _AppointmentTile extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (onConfirm != null) _actionBtn(s.confirm, Icons.check, AppColors.success, onConfirm!),
-                  if (onComplete != null) _actionBtn(s.complete, Icons.done_all, AppColors.info, onComplete!),
-                  if (onNoShow != null) _actionBtn(s.markNoShow, Icons.person_off_outlined, AppColors.warning, onNoShow!),
-                  if (onCancel != null) _actionBtn(s.cancel, Icons.close, AppColors.error, onCancel!),
+                  if (onConfirm != null) _actionBtn(s.confirm, Icons.check, c.success, onConfirm!),
+                  if (onComplete != null) _actionBtn(s.complete, Icons.done_all, c.info, onComplete!),
+                  if (onNoShow != null) _actionBtn(s.markNoShow, Icons.person_off_outlined, c.warning, onNoShow!),
+                  if (onCancel != null) _actionBtn(s.cancel, Icons.close, c.error, onCancel!),
                 ],
               ),
             ],
@@ -301,15 +301,15 @@ class _AppointmentTile extends StatelessWidget {
     );
   }
 
-  Widget _statusBadge(S s) {
+  Widget _statusBadge(S s, AppColors c) {
     Color color;
     String label;
     switch (appointment.status) {
-      case 'CONFIRMED': color = AppColors.success; label = s.statusConfirmed;
-      case 'PENDING': color = AppColors.warning; label = s.statusPending;
-      case 'COMPLETED': color = AppColors.info; label = s.statusCompleted;
-      case 'CANCELLED': color = AppColors.error; label = s.statusCancelled;
-      default: color = const Color(0xFF757575); label = appointment.status;
+      case 'CONFIRMED': color = c.success; label = s.statusConfirmed;
+      case 'PENDING': color = c.warning; label = s.statusPending;
+      case 'COMPLETED': color = c.info; label = s.statusCompleted;
+      case 'CANCELLED': color = c.error; label = s.statusCancelled;
+      default: color = c.textSecondary; label = appointment.status;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

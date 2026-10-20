@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_theme_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/l10n/locale_provider.dart';
 import '../../../../core/network/media_url.dart';
@@ -30,8 +29,8 @@ class SalonProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
     final s = S.of(context);
-    final c = context.colors;
     final salonAsync = ref.watch(salonProvider);
     final salon = salonAsync.asData?.value;
     final themeMode = ref.watch(themeProvider);
@@ -52,8 +51,8 @@ class SalonProfileScreen extends ConsumerWidget {
           // Gradient header
           SliverToBoxAdapter(
             child: Container(
-              decoration: const BoxDecoration(
-                gradient: AppColors.headerGradient,
+              decoration: BoxDecoration(
+                gradient: c.headerGradient,
                 borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
               ),
               padding: EdgeInsets.only(
@@ -67,9 +66,9 @@ class SalonProfileScreen extends ConsumerWidget {
                   Container(
                     width: 86, height: 86,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: c.onBanner.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
+                      border: Border.all(color: c.onBanner.withValues(alpha: 0.3), width: 2),
                     ),
                     child: salon?.logoUrl != null
                         ? ClipRRect(
@@ -78,16 +77,16 @@ class SalonProfileScreen extends ConsumerWidget {
                               resolveMediaUrl(salon!.logoUrl),
                               fit: BoxFit.cover,
                               errorBuilder: (_, _, _) =>
-                                  const Icon(Icons.store_rounded, size: 44, color: Colors.white),
+                                  Icon(Icons.store_rounded, size: 44, color: c.onPrimary),
                             ),
                           )
-                        : const Icon(Icons.store_rounded, size: 44, color: Colors.white),
+                        : Icon(Icons.store_rounded, size: 44, color: c.onPrimary),
                   ),
                   const SizedBox(height: 14),
-                  Text(salon?.name ?? '...', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
+                  Text(salon?.name ?? '...', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: c.onPrimary)),
                   const SizedBox(height: 4),
                   if (salon?.address != null)
-                    Text(salon!.address!, style: const TextStyle(fontSize: 13, color: Colors.white70), textAlign: TextAlign.center),
+                    Text(salon!.address!, style: TextStyle(fontSize: 13, color: c.onPrimary.withValues(alpha: 0.82)), textAlign: TextAlign.center),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -95,24 +94,24 @@ class SalonProfileScreen extends ConsumerWidget {
                       if (salon?.isVerified == true)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
+                          decoration: BoxDecoration(color: c.onBanner.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
                           child: Row(
                             children: [
-                              const Icon(Icons.check_circle_rounded, size: 14, color: Colors.white),
+                              Icon(Icons.check_circle_rounded, size: 14, color: c.onPrimary),
                               const SizedBox(width: 4),
-                              Text(s.verified, style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600)),
+                              Text(s.verified, style: TextStyle(fontSize: 12, color: c.onPrimary, fontWeight: FontWeight.w600)),
                             ],
                           ),
                         ),
                       if (salon?.isVerified == true) const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
+                        decoration: BoxDecoration(color: c.onBanner.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
                         child: Row(
                           children: [
-                            const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFD95A)),
+                            Icon(Icons.star_rounded, size: 14, color: c.starFilled),
                             const SizedBox(width: 4),
-                            Text((salon?.ratingAvg ?? 0).toStringAsFixed(1), style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600)),
+                            Text((salon?.ratingAvg ?? 0).toStringAsFixed(1), style: TextStyle(fontSize: 12, color: c.onPrimary, fontWeight: FontWeight.w600)),
                           ],
                         ),
                       ),
@@ -132,7 +131,7 @@ class SalonProfileScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: c.surface,
                   borderRadius: BorderRadius.circular(18),
-                  boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 4))],
+                  boxShadow: [BoxShadow(color: c.primary.withValues(alpha: 0.08), blurRadius: 16, offset: Offset(0, 4))],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -183,11 +182,11 @@ class SalonProfileScreen extends ConsumerWidget {
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: () => _showLogoutDialog(context, ref, s),
-                  icon: const Icon(Icons.logout, color: AppColors.error),
-                  label: Text(s.signOut, style: const TextStyle(color: AppColors.error)),
+                  icon: Icon(Icons.logout, color: c.error),
+                  label: Text(s.signOut, style: TextStyle(color: c.error)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: AppColors.error),
+                    side: BorderSide(color: c.error),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
@@ -199,11 +198,11 @@ class SalonProfileScreen extends ConsumerWidget {
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: () => _showDeleteSalonDialog(context, ref, salon, s),
-                    icon: const Icon(Icons.delete_forever_outlined, color: Colors.red),
-                    label: const Text('Salonu Sil', style: TextStyle(color: Colors.red)),
+                    icon: Icon(Icons.delete_forever_outlined, color: AppColors.of(context).error),
+                    label: Text('Salonu Sil', style: TextStyle(color: AppColors.of(context).error)),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: const BorderSide(color: Colors.red),
+                      side: BorderSide(color: AppColors.of(context).error),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
@@ -219,17 +218,18 @@ class SalonProfileScreen extends ConsumerWidget {
   );
   }
 
-  Widget _buildStat(String value, String label, AppThemeColors c) {
+  Widget _buildStat(String value, String label, AppColors c) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
+        Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: c.primary)),
         const SizedBox(height: 2),
         Text(label, style: TextStyle(fontSize: 12, color: c.textSecondary)),
       ],
     );
   }
 
-  Widget _buildSection(BuildContext context, String title, AppThemeColors c, List<_MenuItem> items) {
+  Widget _buildSection(BuildContext context, String title, AppColors c, List<_MenuItem> items) {
+    final c = AppColors.of(context);
     if (items.isEmpty) return const SizedBox();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,7 +242,7 @@ class SalonProfileScreen extends ConsumerWidget {
           decoration: BoxDecoration(
             color: c.surface,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 2))],
+            boxShadow: [BoxShadow(color: c.shadowRaised, blurRadius: 10, offset: const Offset(0, 2))],
           ),
           child: Column(
             children: items.asMap().entries.map((entry) {
@@ -253,8 +253,8 @@ class SalonProfileScreen extends ConsumerWidget {
                   ListTile(
                     leading: Container(
                       width: 38, height: 38,
-                      decoration: BoxDecoration(color: c.secondaryBg, borderRadius: BorderRadius.circular(10)),
-                      child: Icon(item.icon, color: AppColors.primary, size: 20),
+                      decoration: BoxDecoration(color: c.secondary, borderRadius: BorderRadius.circular(10)),
+                      child: Icon(item.icon, color: c.primary, size: 20),
                     ),
                     title: Text(item.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                     subtitle: item.subtitle.isNotEmpty
@@ -352,6 +352,7 @@ class SalonProfileScreen extends ConsumerWidget {
   }
 
   void _showThemeDialog(BuildContext context, WidgetRef ref, S s, ThemeMode current) {
+    final c = AppColors.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -362,17 +363,17 @@ class SalonProfileScreen extends ConsumerWidget {
           children: [
             ListTile(
               title: Text(s.themeSystem),
-              trailing: current == ThemeMode.system ? const Icon(Icons.check, color: AppColors.primary) : null,
+              trailing: current == ThemeMode.system ? Icon(Icons.check, color: c.primary) : null,
               onTap: () { ref.read(themeProvider.notifier).setTheme(ThemeMode.system); Navigator.pop(ctx); },
             ),
             ListTile(
               title: Text(s.themeLight),
-              trailing: current == ThemeMode.light ? const Icon(Icons.check, color: AppColors.primary) : null,
+              trailing: current == ThemeMode.light ? Icon(Icons.check, color: c.primary) : null,
               onTap: () { ref.read(themeProvider.notifier).setTheme(ThemeMode.light); Navigator.pop(ctx); },
             ),
             ListTile(
               title: Text(s.themeDark),
-              trailing: current == ThemeMode.dark ? const Icon(Icons.check, color: AppColors.primary) : null,
+              trailing: current == ThemeMode.dark ? Icon(Icons.check, color: c.primary) : null,
               onTap: () { ref.read(themeProvider.notifier).setTheme(ThemeMode.dark); Navigator.pop(ctx); },
             ),
           ],
@@ -382,6 +383,7 @@ class SalonProfileScreen extends ConsumerWidget {
   }
 
   void _showLanguageDialog(BuildContext context, WidgetRef ref, S s) {
+    final c = AppColors.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -392,7 +394,7 @@ class SalonProfileScreen extends ConsumerWidget {
           children: [
             ListTile(
               title: Text(s.turkish),
-              trailing: s.lang == 'tr' ? const Icon(Icons.check, color: AppColors.primary) : null,
+              trailing: s.lang == 'tr' ? Icon(Icons.check, color: c.primary) : null,
               onTap: () {
                 ref.read(localeProvider.notifier).setLocale(const Locale('tr'));
                 Navigator.pop(ctx);
@@ -400,7 +402,7 @@ class SalonProfileScreen extends ConsumerWidget {
             ),
             ListTile(
               title: Text(s.english),
-              trailing: s.lang == 'en' ? const Icon(Icons.check, color: AppColors.primary) : null,
+              trailing: s.lang == 'en' ? Icon(Icons.check, color: c.primary) : null,
               onTap: () {
                 ref.read(localeProvider.notifier).setLocale(const Locale('en'));
                 Navigator.pop(ctx);
@@ -423,13 +425,13 @@ class SalonProfileScreen extends ConsumerWidget {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('İptal')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.of(context).error),
             onPressed: () async {
               Navigator.pop(ctx);
               await ref.read(salonProvider.notifier).deleteSalon(salon.id);
               if (context.mounted) context.go('/login');
             },
-            child: const Text('Sil', style: TextStyle(color: Colors.white)),
+            child: Text('Sil', style: TextStyle(color: AppColors.of(context).onPrimary)),
           ),
         ],
       ),
@@ -437,6 +439,7 @@ class SalonProfileScreen extends ConsumerWidget {
   }
 
   void _showLogoutDialog(BuildContext context, WidgetRef ref, S s) {
+    final c = AppColors.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -450,8 +453,8 @@ class SalonProfileScreen extends ConsumerWidget {
               Navigator.pop(ctx);
               ref.read(authProvider.notifier).logout();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: Text(s.signOut, style: const TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(backgroundColor: c.error),
+            child: Text(s.signOut, style: TextStyle(color: c.onPrimary)),
           ),
         ],
       ),
@@ -474,8 +477,8 @@ class _SalonGallerySection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
     final s = S.of(context);
-    final c = context.colors;
     final gallery = salon?.galleryImages ?? const <String>[];
     final cover = salon?.coverImageUrl;
     final images = <String>[
@@ -494,7 +497,7 @@ class _SalonGallerySection extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.photo_album_outlined, size: 20, color: AppColors.primary),
+              Icon(Icons.photo_album_outlined, size: 20, color: c.primary),
               const SizedBox(width: 8),
               Text(s.photos, style: const TextStyle(fontWeight: FontWeight.w700)),
               const Spacer(),
@@ -542,6 +545,7 @@ class _SalonGallerySection extends ConsumerWidget {
   }
 
   Future<void> _addPhotos(BuildContext context, WidgetRef ref, List<String> existing) async {
+    final c = AppColors.of(context);
     final s = S.of(context);
     final picked = await ImagePicker().pickMultiImage(limit: 5);
     if (picked.isEmpty) return;
@@ -561,7 +565,7 @@ class _SalonGallerySection extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.error),
+          SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: c.error),
         );
       }
     }
@@ -641,7 +645,7 @@ class _SalonEditSheetState extends State<_SalonEditSheet> {
                     child: ElevatedButton(
                       onPressed: _saving ? null : _save,
                       child: _saving
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.of(context).onPrimary))
                           : Text(s.save),
                     ),
                   ),
@@ -668,7 +672,7 @@ class _SalonEditSheetState extends State<_SalonEditSheet> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.of(context).error));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -706,7 +710,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
     if (_currentCtrl.text.isEmpty || _newCtrl.text.isEmpty) return;
     if (_newCtrl.text != _confirmCtrl.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(s.passwordsDoNotMatch), backgroundColor: Colors.red),
+        SnackBar(content: Text(s.passwordsDoNotMatch), backgroundColor: AppColors.of(context).error),
       );
       return;
     }
@@ -723,7 +727,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: Colors.red),
+          SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.of(context).error),
         );
       }
     } finally {
@@ -808,7 +812,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                     child: ElevatedButton(
                       onPressed: _saving ? null : _save,
                       child: _saving
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.of(context).onPrimary))
                           : Text(s.save),
                     ),
                   ),
@@ -874,7 +878,7 @@ class _WorkingHoursSheetState extends State<_WorkingHoursSheet> {
       if (mounted) {
         final s = S.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: Colors.red),
+          SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.of(context).error),
         );
       }
     } finally {
@@ -884,8 +888,8 @@ class _WorkingHoursSheetState extends State<_WorkingHoursSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final s = S.of(context);
-    final c = context.colors;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
@@ -928,7 +932,7 @@ class _WorkingHoursSheetState extends State<_WorkingHoursSheet> {
                             ),
                             Switch(
                               value: !day.isClosed,
-                              activeThumbColor: AppColors.primary,
+                              activeThumbColor: c.primary,
                               onChanged: (val) => setState(() {
                                 _hours[key] = WorkingDay(open: day.open, close: day.close, isClosed: !val);
                               }),
@@ -956,7 +960,7 @@ class _WorkingHoursSheetState extends State<_WorkingHoursSheet> {
                       child: ElevatedButton(
                         onPressed: _saving ? null : _save,
                         child: _saving
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.of(context).onPrimary))
                             : Text(s.save),
                       ),
                     ),
@@ -979,17 +983,17 @@ class _TimeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
+    final c = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: c.secondaryBg,
+          color: c.secondary,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+          border: Border.all(color: c.primary.withValues(alpha: 0.4)),
         ),
-        child: Text(time, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary)),
+        child: Text(time, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.primary)),
       ),
     );
   }
@@ -1052,7 +1056,7 @@ class _ContactChangeSheetState extends State<_ContactChangeSheet> {
       if (!mounted) return;
       final s = S.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: Colors.red),
+        SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.of(context).error),
       );
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -1113,13 +1117,13 @@ class _ContactChangeSheetState extends State<_ContactChangeSheet> {
                   setDialogState(() => confirming = false);
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: Colors.red),
+                      SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.of(ctx).error),
                     );
                   }
                 }
               },
               child: confirming
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.of(context).onPrimary))
                   : Text(s.confirm),
             ),
           ],
@@ -1208,7 +1212,7 @@ class _ContactChangeSheetState extends State<_ContactChangeSheet> {
                     child: ElevatedButton(
                       onPressed: _sending ? null : _sendCode,
                       child: _sending
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.of(context).onPrimary))
                           : Text(s.sendCode),
                     ),
                   ),
@@ -1240,7 +1244,7 @@ class _VerifyOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
+    final c = AppColors.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -1253,7 +1257,7 @@ class _VerifyOption extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: selected ? AppColors.primary : c.textHint,
+                  color: selected ? c.primary : c.textHint,
                   width: selected ? 6 : 2,
                 ),
               ),

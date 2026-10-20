@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_theme_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../data/auth_provider.dart';
 
@@ -28,8 +27,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final s = S.of(context);
-    final c = context.colors;
     final authAsync = ref.watch(authProvider);
     final isLoading = authAsync.isLoading;
 
@@ -39,7 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
       if (next.hasError) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.error.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(next.error.toString()), backgroundColor: AppColors.of(context).error),
         );
       }
     });
@@ -53,8 +52,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             children: [
           // Gradient top section
           Container(
-            decoration: const BoxDecoration(
-              gradient: AppColors.headerGradient,
+            decoration: BoxDecoration(
+              gradient: c.headerGradient,
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(36)),
             ),
             padding: EdgeInsets.only(
@@ -68,17 +67,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Container(
                   width: 76, height: 76,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: c.onBanner.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(22),
                   ),
-                  child: const Icon(Icons.store_rounded, size: 40, color: Colors.white),
+                  child: Icon(Icons.store_rounded, size: 40, color: c.onPrimary),
                 ),
                 const SizedBox(height: 16),
                 Text(s.appTitle,
-                    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.5)),
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: c.onPrimary, letterSpacing: -0.5)),
                 const SizedBox(height: 6),
                 Text(s.loginSubtitle,
-                    style: const TextStyle(fontSize: 14, color: Colors.white70),
+                    style: TextStyle(fontSize: 14, color: c.onPrimary.withValues(alpha: 0.82)),
                     textAlign: TextAlign.center),
               ],
             ),
@@ -97,7 +96,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
                         labelText: s.emailLabel,
-                        prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
+                        prefixIcon: Icon(Icons.email_outlined, color: c.primary),
                       ),
                       validator: (val) {
                         if (val == null || val.isEmpty) return s.emailRequired;
@@ -111,7 +110,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: s.passwordLabel,
-                        prefixIcon: const Icon(Icons.lock_outlined, color: AppColors.primary),
+                        prefixIcon: Icon(Icons.lock_outlined, color: c.primary),
                         suffixIcon: IconButton(
                           icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: c.textHint),
                           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -132,7 +131,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: () => _showForgotPasswordDialog(context, s),
-                              child: Text(s.forgotPassword, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                              child: Text(s.forgotPassword, style: TextStyle(color: c.primary, fontWeight: FontWeight.w600)),
                             ),
                           ),
                         ),
@@ -141,14 +140,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () => context.push('/register'),
-                      child: Text(s.isEn ? 'Don\'t have an account? Register' : 'Hesabın yok mu? Kayıt Ol', style: const TextStyle(color: AppColors.primary)),
+                      child: Text(s.isEn ? 'Don\'t have an account? Register' : 'Hesabın yok mu? Kayıt Ol', style: TextStyle(color: c.primary)),
                     ),
                     const SizedBox(height: 16),
                     Container(
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [Color(0xFF9B7FE0), Color(0xFF6644B8)], begin: Alignment.centerLeft, end: Alignment.centerRight),
+                        gradient: c.primaryGradient,
                         borderRadius: BorderRadius.circular(14),
-                        boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 6))],
+                        boxShadow: [BoxShadow(color: c.primary.withValues(alpha: 0.35), blurRadius: 16, offset: Offset(0, 6))],
                       ),
                       child: ElevatedButton(
                         onPressed: isLoading ? null : _login,
@@ -159,8 +158,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
                         child: isLoading
-                            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : Text(s.loginButton, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+                            ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: c.onPrimary, strokeWidth: 2))
+                            : Text(s.loginButton, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: c.onPrimary)),
                       ),
                     ),
                   ],
@@ -226,13 +225,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   setDialogState(() => sending = false);
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                      SnackBar(content: Text(e.toString()), backgroundColor: AppColors.of(context).error),
                     );
                   }
                 }
               },
               child: sending
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.of(context).onPrimary))
                   : Text(s.sendCode),
             ),
           ],
@@ -301,13 +300,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   setDialogState(() => confirming = false);
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                      SnackBar(content: Text(e.toString()), backgroundColor: AppColors.of(context).error),
                     );
                   }
                 }
               },
               child: confirming
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.of(context).onPrimary))
                   : Text(s.confirm),
             ),
           ],

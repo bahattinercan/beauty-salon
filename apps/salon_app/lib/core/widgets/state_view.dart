@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/app_colors.dart';
-import '../../app/theme/app_theme_colors.dart';
 import '../l10n/app_strings.dart';
 
 /// Uygulama genelinde tutarlı "yükleniyor / boş / hata" durumları.
 
-// Testlerde (düz MaterialApp) tema extension'ı olmayabilir; light fallback'u
-// widget'ların tek başına test edilebilmesini sağlar.
-AppThemeColors _colors(BuildContext context) =>
-    Theme.of(context).extension<AppThemeColors>() ?? AppThemeColors.light;
+// Tema tokenları extension değil; AppColors.of tema parlaklığına göre set seçer,
+// böylece düz MaterialApp ile yazılan testler de doğru tema setini alır.
+AppColors _colors(BuildContext context) =>
+    AppColors.of(context);
 ///
 /// Ekranlar artık kendi başına CircularProgressIndicator veya düz metin
 /// yerine SkeletonList / EmptyState / ErrorState kullanıyor.
@@ -145,6 +144,7 @@ class ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     final c = _colors(context);
     final s = S.of(context);
 
@@ -161,8 +161,8 @@ class ErrorState extends StatelessWidget {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: onRetry,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              child: Text(s.retry, style: const TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: c.primary),
+              child: Text(s.retry, style: TextStyle(color: c.onPrimary)),
             ),
           ],
         ],

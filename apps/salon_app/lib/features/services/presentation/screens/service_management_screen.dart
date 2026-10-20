@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_theme_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/widgets/state_view.dart';
 import '../../data/services_provider.dart';
@@ -11,8 +10,8 @@ class ServiceManagementScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
     final s = S.of(context);
-    final c = context.colors;
     final servicesAsync = ref.watch(servicesProvider);
 
     return Scaffold(
@@ -46,8 +45,8 @@ class ServiceManagementScreen extends ConsumerWidget {
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(color: c.secondaryBg, borderRadius: BorderRadius.circular(10)),
-                                child: Text('${entry.value.length}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                                decoration: BoxDecoration(color: c.secondary, borderRadius: BorderRadius.circular(10)),
+                                child: Text('${entry.value.length}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.primary)),
                               ),
                             ],
                           ),
@@ -71,14 +70,15 @@ class ServiceManagementScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showServiceForm(context, ref),
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(s.addService, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        backgroundColor: c.primary,
+        icon: Icon(Icons.add, color: c.onPrimary),
+        label: Text(s.addService, style: TextStyle(color: c.onPrimary, fontWeight: FontWeight.w600)),
       ),
     );
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, SalonService service, S s) {
+    final c = AppColors.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -93,11 +93,11 @@ class ServiceManagementScreen extends ConsumerWidget {
               try {
                 await ref.read(servicesProvider.notifier).delete(service.id);
               } catch (e) {
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: Colors.red));
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.of(context).error));
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: Text(s.delete, style: const TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(backgroundColor: c.error),
+            child: Text(s.delete, style: TextStyle(color: c.onPrimary)),
           ),
         ],
       ),
@@ -124,15 +124,15 @@ class _ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final s = S.of(context);
-    final c = context.colors;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: service.isActive ? c.surfaceVariant : AppColors.error.withValues(alpha: 0.2)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        border: Border.all(color: service.isActive ? c.surfaceVariant : c.error.withValues(alpha: 0.2)),
+        boxShadow: [BoxShadow(color: c.shadowCard, blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Row(
         children: [
@@ -147,8 +147,8 @@ class _ServiceCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-                        child: Text(s.inactive, style: const TextStyle(fontSize: 10, color: AppColors.error, fontWeight: FontWeight.w600)),
+                        decoration: BoxDecoration(color: c.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                        child: Text(s.inactive, style: TextStyle(fontSize: 10, color: c.error, fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ],
@@ -161,7 +161,7 @@ class _ServiceCard extends StatelessWidget {
                     Text('${service.durationMinutes} ${s.minAbbr}', style: TextStyle(fontSize: 12, color: c.textSecondary)),
                     const SizedBox(width: 12),
                     Icon(Icons.attach_money, size: 12, color: c.textSecondary),
-                    Text('${service.price.toStringAsFixed(0)} ₺', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                    Text('${service.price.toStringAsFixed(0)} ₺', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.primary)),
                   ],
                 ),
                 if (service.description != null && service.description!.trim().isNotEmpty) ...[
@@ -185,7 +185,7 @@ class _ServiceCard extends StatelessWidget {
             itemBuilder: (_) => [
               PopupMenuItem(value: 'edit', child: Text(s.edit)),
               PopupMenuItem(value: 'toggle', child: Text(service.isActive ? s.setInactive : s.setActive)),
-              PopupMenuItem(value: 'delete', child: Text(s.delete, style: const TextStyle(color: AppColors.error))),
+              PopupMenuItem(value: 'delete', child: Text(s.delete, style: TextStyle(color: c.error))),
             ],
           ),
         ],
@@ -294,7 +294,7 @@ class _ServiceFormSheetState extends State<_ServiceFormSheet> {
                     child: ElevatedButton(
                       onPressed: _saving ? null : _save,
                       child: _saving
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: c.onPrimary))
                           : Text(s.save),
                     ),
                   ),
@@ -328,7 +328,7 @@ class _ServiceFormSheetState extends State<_ServiceFormSheet> {
     } catch (e) {
       if (mounted) {
         final s = S.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.errorMsg('$e')), backgroundColor: AppColors.of(context).error));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
