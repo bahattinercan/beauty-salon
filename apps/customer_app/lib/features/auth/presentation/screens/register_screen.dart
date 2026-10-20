@@ -5,6 +5,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../providers/auth_provider.dart';
 import '../../../../app/route_names.dart';
+import '../../../../app/widgets/brand_surface.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -72,45 +73,47 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Gradient header
-          Container(
-            decoration: BoxDecoration(gradient: colors.bannerGradient),
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 28,
-              left: 24,
-              right: 24,
-              bottom: 28,
-            ),
-            child: Column(
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    onPressed: () => context.goNamed(RouteNames.login),
-                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                    tooltip: s.back,
-                  ),
-                ),
-                Container(
-                  width: 64, height: 64,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: const Icon(Icons.spa_rounded, color: Colors.white, size: 36),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  s.registerTitle,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  s.registerWelcome,
-                  style: const TextStyle(fontSize: 13, color: Colors.white70),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+          BrandSurface(
+            child: Container(
+                        decoration: BoxDecoration(gradient: colors.bannerGradient),
+                        padding: EdgeInsets.only(
+                          top: MediaQuery.of(context).padding.top + 28,
+                          left: 24,
+                          right: 24,
+                          bottom: 28,
+                        ),
+                        child: Column(
+                          children: [
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: IconButton(
+                                onPressed: () => context.goNamed(RouteNames.login),
+                                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                                tooltip: s.back,
+                              ),
+                            ),
+                            Container(
+                              width: 64, height: 64,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: const Icon(Icons.spa_rounded, color: Colors.white, size: 36),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              s.registerTitle,
+                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              s.registerWelcome,
+                              style: const TextStyle(fontSize: 13, color: Colors.white70),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
           ),
           Expanded(
             child: SingleChildScrollView(

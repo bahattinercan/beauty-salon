@@ -13,17 +13,20 @@ class NotificationService {
     tz.setLocalLocation(tz.getLocation('Europe/Istanbul'));
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+    // iOS izinleri init'te istenmez (aşağıda ensurePermissions).
+    const iosSettings = DarwinInitializationSettings();
     const settings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
     );
     await _plugin.initialize(settings);
+  }
 
+  /// Bildirim izinleri UYGULAMA AÇILIŞINDA değil, hatırlatma gerçekten
+  /// planlanırken istenir. Cihazda ölçülen sorun: `main()` içindeki `init()`
+  /// daha ürün görünmeden Android bildirim + tam alarm dialoglarını
+  /// açıyordu (kullanıcı bağlamsız iki izin sorusu görüyordu).
+  static Future<void> ensurePermissions() async {
     await _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
@@ -48,6 +51,10 @@ class NotificationService {
   }) async {
     final reminderTime = appointmentDateTime.subtract(const Duration(hours: 1));
     if (reminderTime.isBefore(DateTime.now())) return;
+
+    // İzinler tam bu noktada sorulur: kullanıcı az önce randevusunu onayladı,
+    // "neden soruyorsun" bağlamı ortada.
+    await ensurePermissions();
 
     const details = NotificationDetails(
       android: AndroidNotificationDetails(

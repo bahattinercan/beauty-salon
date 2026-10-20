@@ -9,6 +9,7 @@ import '../widgets/email_field.dart';
 import '../widgets/auth_footer_links.dart';
 import '../widgets/auth_password_field.dart';
 import '../widgets/gradient_button.dart';
+import '../../../../app/widgets/brand_surface.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -102,15 +103,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           // center olduğu için Container çocuğun genişliğine daralıyordu).
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              decoration: BoxDecoration(gradient: colors.bannerGradient),
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 48,
-                left: 28,
-                right: 28,
-                bottom: 40,
-              ),
-              child: const AuthLogo(),
+            BrandSurface(
+              child: Container(
+                            decoration: BoxDecoration(gradient: colors.bannerGradient),
+                            padding: EdgeInsets.only(
+                              top: MediaQuery.of(context).padding.top + 48,
+                              left: 28,
+                              right: 28,
+                              bottom: 40,
+                            ),
+                            child: const AuthLogo(),
+                          ),
             ),
             Expanded(
               child: SingleChildScrollView(

@@ -24,9 +24,17 @@ class LocationService {
         return const Left(LocationPermissionDeniedFailure());
       }
 
+      // `forceLocationManager`: Android'in kendi LocationManager'ı kullanılır.
+      // Varsayılan (Google Play) istemcisi, konum servisleri kapalıyken
+      // `LocationSettingsCheckerActivity` dialogunu açıp uygulamayı arka plana
+      // atıyordu (emülatörde tekrar tekrar ölçüldü: ekran gidiyor, GMS dialogu
+      // geliyor). Bizim zaten konumsuz bir yolumuz var (LocationNotice), o
+      // yüzden Google'ın ayar dialogunu tetiklemektense kendi yolumuza düşeriz.
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
+        locationSettings: AndroidSettings(
           accuracy: LocationAccuracy.medium,
+          forceLocationManager: true,
+          timeLimit: Duration(seconds: 8),
         ),
       );
 

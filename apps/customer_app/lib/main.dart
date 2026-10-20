@@ -15,10 +15,6 @@ void main() async {
   await configureDependencies();
   await NotificationService.init();
 
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
-  );
-
   runApp(const ProviderScope(child: BeautySalonApp()));
 }
 
@@ -46,6 +42,35 @@ class BeautySalonApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       routerConfig: router,
+      // Sistem çubukları tema ile birlikte uygulanır: `appBarTheme` stili
+      // yalnızca AppBar'lı ekranlarda devreye giriyordu, login/home
+      // CustomScrollView kullanıyor → cihazda siyah gezinme çubuğu + mor
+      // hero üstünde koyu ikon göründü.
+      builder: (context, child) =>
+          _SystemUiChrome(child: child ?? const SizedBox.shrink()),
     );
   }
+}
+
+/// Tema değiştiğinde (light/dark/system) sistem çubuklarını yeniden uygular.
+class _SystemUiChrome extends StatefulWidget {
+  const _SystemUiChrome({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_SystemUiChrome> createState() => _SystemUiChromeState();
+}
+
+class _SystemUiChromeState extends State<_SystemUiChrome> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    SystemChrome.setSystemUIOverlayStyle(
+      AppTheme.overlayFor(Theme.of(context).brightness),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

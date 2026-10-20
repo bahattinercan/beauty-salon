@@ -6,6 +6,37 @@ import 'app_colors.dart';
 class AppTheme {
   AppTheme._();
 
+  /// Tema başına TAM sistem çubuğu stili.
+  ///
+  /// Cihazda ölçülen kusur: eskiden yalnızca `appBarTheme.systemOverlayStyle`
+  /// içinde `statusBarColor: transparent` vardı; o stil sadece AppBar'ı olan
+  /// ekranlarda uygulanıyor. Login/home `CustomScrollView` kullandığı için
+  /// hiçbir şey uygulanmıyordu → mor hero'nun üstünde KAYU durum ikonları
+  /// (~3:1) ve altta siyah gezinme çubuğu.
+  static SystemUiOverlayStyle overlayFor(Brightness brightness) {
+    final dark = brightness == Brightness.dark;
+    return SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: dark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+      systemNavigationBarDividerColor: Colors.transparent,
+    );
+  }
+
+  /// Marka yüzeyi (`bannerGradient` başlık) durum çubuğunun altına girdiğinde
+  /// ikonlar beyaz olmalı; tema rengiyle (light temada koyu ikon) mor üstünde
+  /// kontrast AA altına düşüyordu. `BrandSurface` bu değeri kullanır.
+  static const SystemUiOverlayStyle onBrandSurface = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    statusBarBrightness: Brightness.dark,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.dark,
+    systemNavigationBarDividerColor: Colors.transparent,
+  );
+
   static ThemeData get lightTheme {
     const c = AppColors.light;
     return ThemeData(
@@ -31,11 +62,7 @@ class AppTheme {
         centerTitle: true,
         backgroundColor: c.surface,
         foregroundColor: c.textPrimary,
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.dark,
-          statusBarBrightness: Brightness.light,
-        ),
+        systemOverlayStyle: overlayFor(Brightness.light),
         titleTextStyle: GoogleFonts.nunito(
           fontSize: 18,
           fontWeight: FontWeight.w700,
@@ -179,11 +206,7 @@ class AppTheme {
         centerTitle: true,
         backgroundColor: c.surface,
         foregroundColor: c.textPrimary,
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          statusBarBrightness: Brightness.dark,
-        ),
+        systemOverlayStyle: overlayFor(Brightness.dark),
         titleTextStyle: GoogleFonts.nunito(
           fontSize: 18,
           fontWeight: FontWeight.w700,
