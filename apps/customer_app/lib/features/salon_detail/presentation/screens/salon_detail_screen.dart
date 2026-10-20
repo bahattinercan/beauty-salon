@@ -110,7 +110,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen>
           color: colors.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: colors.shadowFloat,
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),

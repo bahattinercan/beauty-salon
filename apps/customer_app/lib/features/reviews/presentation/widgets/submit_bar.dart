@@ -25,7 +25,7 @@ class SubmitBar extends StatelessWidget {
         color: colors.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: colors.shadowRaised,
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),

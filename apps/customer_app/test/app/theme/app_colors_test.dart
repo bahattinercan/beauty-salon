@@ -134,4 +134,38 @@ void main() {
           greaterThanOrEqualTo(4.5));
     });
   });
+  group('gölge ve puan tokenları (SA-001 ile aynı kapı)', () {
+    // AP-001/SA-001 kurali: gölge yalnizca açık temada; koyuda yüzey ayrımı
+    // kenarlıkla yapılır, gölge koyu zeminde kaybolur.
+    test('açık temada gölgeler görünür, koyu temada kapalı', () {
+      for (final c in [AppColors.light.shadowCard, AppColors.light.shadowRaised,
+            AppColors.light.shadowFloat, AppColors.light.shadowPill]) {
+        expect(c.a, greaterThanOrEqualTo(0.01));
+        expect(c.a, lessThanOrEqualTo(0.25));
+      }
+      for (final c in [AppColors.dark.shadowCard, AppColors.dark.shadowRaised,
+            AppColors.dark.shadowFloat, AppColors.dark.shadowPill]) {
+        expect(c.a, 0.0);
+      }
+    });
+
+    // Fotoğraf üstü karartma gölge değildir; iki temada da kalmalı.
+    test('kapak karartma tokenları iki temada da korunuyor', () {
+      expect(AppColors.dark.coverScrimButton.a, greaterThanOrEqualTo(0.30));
+      expect(AppColors.dark.coverScrimFade.a, greaterThanOrEqualTo(0.30));
+    });
+
+    // Yildiz bir ikon: WCAG non-text esigi 3:1. Eski deger (#FFB547) yuzey
+    // üzerinde 1.76:1'di.
+    test('yildiz dolgusu yüzey üzerinde >= 3:1 (light + dark)', () {
+      expect(contrastRatio(AppColors.light.starFilled, AppColors.light.surface),
+          greaterThanOrEqualTo(3.0));
+      expect(contrastRatio(AppColors.light.starFilled, AppColors.light.background),
+          greaterThanOrEqualTo(3.0));
+      expect(contrastRatio(AppColors.dark.starFilled, AppColors.dark.surface),
+          greaterThanOrEqualTo(3.0));
+      expect(contrastRatio(AppColors.dark.starFilled, AppColors.dark.background),
+          greaterThanOrEqualTo(3.0));
+    });
+  });
 }

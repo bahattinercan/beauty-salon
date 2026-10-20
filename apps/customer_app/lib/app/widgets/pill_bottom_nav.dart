@@ -59,7 +59,7 @@ class PillBottomNav extends StatelessWidget {
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.22),
+              color: colors.shadowPill,
               blurRadius: 22,
               offset: const Offset(0, 6),
             ),

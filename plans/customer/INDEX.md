@@ -33,6 +33,7 @@
 | [CA-009](CA-009-salon-action-buttons.md) | Salon aksiyon butonları | ✅ uygulandı (`url_launcher` call/directions + share) |
 | [CA-010](CA-010-review-pagination.md) | Review pagination | ✅ uygulandı (2026-07-27, `ReviewPage` + `AsyncNotifier.family` + load-more) |
 | [CA-013](CA-013-email-change.md) | Email change | ✅ uygulandı (2026-07-27 — backend zaten hazırdı, `EmailChangeSection` widget'ı + 2 use case) |
+| [CA-020](CA-020-shadow-star-tokens.md) | Gölge + puan tokenları (SA-001 paritesi) | ✅ uygulandı (2026-10-21 — 20 `Colors.black` → 0, `starFilled` 1.76→3.47:1) |
 
 ---
 

@@ -20,6 +20,18 @@ class AppColors {
   final Color info;
   final Color starFilled;
   final Color starEmpty;
+
+  // Gölge tokenları (AP-001/SA-001 kuralı): gölge YALNIZCA açık temada.
+  // Koyu tema yüzeyleri üst üste binince gölge görünmüyor; ayrım kenarlıkla
+  // yapılıyor, bu yüzden koyuda gölgelerin opaklığı 0.
+  final Color shadowCard;      // kartlar (eski %4 siyah)
+  final Color shadowRaised;    // öne çıkan kart / bölüm (eski %5-6)
+  final Color shadowFloat;     // sabit alta çubuk / yüzen öğe (eski %8)
+  final Color shadowPill;      // alt gezinme hapı (eski %22)
+
+  // Fotoğraf üstü karartmalar: gölge değil, her iki temada da kalır.
+  final Color coverScrimButton; // kapak üstü dairesel buton (eski %42 siyah)
+  final Color coverScrimFade;   // kapak altı degrade karartma (eski %50)
   final Color divider;
 
   // ── Aksan / yüzey tokenları (CA-019) ────────────────────────────────────
@@ -74,6 +86,12 @@ class AppColors {
     required this.info,
     required this.starFilled,
     required this.starEmpty,
+    required this.shadowCard,
+    required this.shadowRaised,
+    required this.shadowFloat,
+    required this.shadowPill,
+    required this.coverScrimButton,
+    required this.coverScrimFade,
     required this.divider,
     required this.onPrimary,
     required this.accentLime,
@@ -108,8 +126,14 @@ class AppColors {
     error: Color(0xFFE05C6C),
     warning: Color(0xFFFFB547),
     info: Color(0xFF5B8DEF),
-    starFilled: Color(0xFFFFB547),
+    starFilled: Color(0xFFBF7B00), // yuzey ustunde 3.47:1 (ikon esigi 3:1),
     starEmpty: Color(0xFFE0E0E0),
+    shadowCard: Color(0x0A000000),
+    shadowRaised: Color(0x0D000000),
+    shadowFloat: Color(0x14000000),
+    shadowPill: Color(0x38000000),
+    coverScrimButton: Color(0x6B000000),
+    coverScrimFade: Color(0x80000000),
     divider: Color(0xFFEEEBF8),
     onPrimary: Color(0xFFFFFFFF),
     accentLime: Color(0xFFC9F04F),
@@ -170,6 +194,12 @@ class AppColors {
     info: Color(0xFF7AAEF5),
     starFilled: Color(0xFFFFBF5A),
     starEmpty: Color(0xFF3D3360),
+    shadowCard: Color(0x00000000),
+    shadowRaised: Color(0x00000000),
+    shadowFloat: Color(0x00000000),
+    shadowPill: Color(0x00000000),
+    coverScrimButton: Color(0x6B000000),
+    coverScrimFade: Color(0x80000000),
     divider: Color(0xFF2D2B47),
     // Dark temada primary açılır → üstündeki metin koyu olmalı (5.44:1).
     onPrimary: Color(0xFF1C1828),

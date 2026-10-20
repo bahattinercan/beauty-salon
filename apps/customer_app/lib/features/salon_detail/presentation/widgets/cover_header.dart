@@ -17,6 +17,7 @@ class CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.all(4),
       child: GestureDetector(
@@ -25,7 +26,7 @@ class CircleIconButton extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.42),
+            color: colors.coverScrimButton,
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: iconColor, size: 20),
@@ -96,7 +97,7 @@ class CoverHeader extends StatelessWidget {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.5),
+                      colors.coverScrimFade,
                     ],
                   ),
                 ),
