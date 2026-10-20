@@ -76,6 +76,7 @@ dev_dependencies:
   mocktail: ^1.0.4
   # riverpod_generator: incompatible with current Dart SDK 3.10.7 — using manual providers
   json_serializable: ^6.8.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -118,3 +119,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# flutter_launcher_icons 0.14 x, image 4.11 + archive 4.x ile kırılıyor
+# (ZLibDecoder.decodeLazy kaldırıldı). İkon üretici bu iki paketle çalışsın diye
+# sabitleniyor; uygulama çalışma zamanını etkilemez (dev_dependency zinciri).
+dependency_overrides:
+  image: 4.1.7
+  archive: 3.6.1
