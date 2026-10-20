@@ -11,8 +11,11 @@
 | 2 | [CA-015](CA-015-unit-tests-usecases.md) | 15 use case unit test | 🟡 | 6-8 sa | ✅ Bitti (18 dosya, 97 test) |
 | 3 | [CA-016](CA-016-named-routes.md) | Named route refactor (34 çağrı sitesi) | 🟡 | 3-4 sa | ✅ Bitti |
 | 4 | [CA-017](CA-017-large-widget-split.md) | 200+ satır widget bölünmesi | 🟢 | 6-8 sa | ✅ Bitti |
+| 5 | [CA-019](CA-019-visual-redesign.md) | Görsel yenileme (Booksy referansı, "Seçenek A") | 🟡 | 36-46 sa (5-6 gün) | 📋 Plan hazır |
 
 **Neden bu sıra?** CA-018 önce yapılmalı çünkü `BookingNotifier`, `LocationService`, `ImagePickerService` gibi yeni sınıflar tanımlıyor; CA-015 testleri bu sınıflar üzerine yazılacak, CA-017 aynı dosyaları bölüyor. CA-016 bağımsız, her zaman yapılabilir.
+
+**CA-019 sırası (kendi içinde):** WP0 (görsel boru hattı) ve WP1 (token + `onPrimary` düzeltmesi) her şeyin ön koşulu ve bağımsız. WP2 (onboarding) mevcut ekranlara dokunmadığı için en düşük riskli büyük parça → erken yapılır, WP0+WP1+WP2 sonunda ara onay noktası var. WP0 gereklidir çünkü `seed.js` salonlara `logoUrl`/`coverImageUrl` yazmıyor ve `assets/` boş → fotoğrafsız tasarım "yüklenmemiş" görünür.
 
 ---
 
