@@ -93,7 +93,7 @@ test('apiFetch: token yokken Authorization başlığı GÖNDERİLMEZ', async () 
   const fetchSpy = await mockFetch(fakeResponse(true, 200, async () => ({ items: [] })));
   try {
     // `installDom` çağrılmıyor: window/localStorage yok => sunucu tarafı yolu.
-    const body = await apiFetch('/salons?page=2');
+    const body = (await apiFetch('/salons?page=2')) as { items: unknown[] };
     const [{ url, init }] = fetchSpy.calls;
     const headers = init.headers as Record<string, string>;
     assert.equal(body.items.length, 0);
