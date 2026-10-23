@@ -8,7 +8,7 @@
 Customers discover salons and book appointments; salon owners manage their team, services and
 appointments; the platform admin oversees every tenant — all through a single backend.
 
-4 applications · role-based authorization
+4 applications · 646 tests · role-based authorization
 
 [![Node.js](https://img.shields.io/badge/Node.js-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![Express](https://img.shields.io/badge/Express%205-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com)
@@ -105,11 +105,11 @@ The numbers were obtained by running the suites in this repo, not copied from do
 | Application | Command | Result |
 |---|---|---|
 | API | `npm test` (Mocha) | **291 tests passing** |
-| customer_app | `flutter test` | **DOES NOT COMPILE (2026-10-23)** — `UploadFilesUseCase` is not defined anywhere in the repo (`lib/features/uploads/` was never committed; `core/di/injection.config.dart` imports the class). Last green run: 201 tests |
+| customer_app | `flutter test` | **271 tests passing** |
 | salon_app | `flutter test` | **84 tests passing** |
 | admin_panel | — | no tests (see below) |
 
-Total measured today: 375 tests (API + salon_app).
+Total measured today: 646 tests (API 291 · customer_app 271 · salon_app 84; admin_panel excluded).
 
 The tests cover session isolation, role-based access, appointment status transitions, media path
 resolution and body-validation edge cases. For example, there is a test for `DashboardNotifier` —
@@ -133,9 +133,6 @@ I am not hiding these; this is what the repo actually looks like today:
 - **No migrations.** The schema is kept in line by `sequelize.sync()` + `ensureColumns()`. Reversible
   schema changes require moving to `sequelize-cli` migrations.
 - **`admin_panel` is untested.** This is where most of the screens are; top-priority debt.
-- **`customer_app` does not compile.** `lib/features/uploads/` (use case, repository, datasource) was
-  never committed; since `core/di/injection.config.dart` imports those classes the package does not
-  compile and `flutter test` cannot load 9 test files. Fixing it is a separate task.
 - **The Swagger packages are not wired up.** `swagger-jsdoc` and `swagger-ui-express` exist as
   dependencies but are not mounted anywhere under `src/`. Today's API documentation is the Markdown
   files under `docs/api/` — either wire up Swagger or drop the dependencies.
@@ -169,6 +166,6 @@ screenshots/      # application screenshots (E2E verification output)
 
 <sub>**Türkçe** — Güzellik salonları için çok kiracılı rezervasyon ve işletme platformu: Express 5 +
 Sequelize REST API, Next.js yönetim paneli ve iki Flutter uygulaması (müşteri ve salon sahibi); rol
-bazlı yetkilendirme ve kiracı izolasyonu. API ve salon_app sayıları bu repoda testler çalıştırılarak
-alındı; customer_app bugün derlenmiyor. Tam mimari için [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Türkçe sürüm:
+bazlı yetkilendirme ve kiracı izolasyonu. Üç uygulamanın test sayıları da bu repoda çalıştırılarak
+alındı. Tam mimari için [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Türkçe sürüm:
 [README.md](README.md).</sub>

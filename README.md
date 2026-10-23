@@ -8,7 +8,7 @@
 Müşteri salon keşfeder ve randevu alır; salon sahibi ekibini, hizmetlerini ve randevularını yönetir;
 platform yöneticisi tüm kiracıları denetler — hepsi tek bir backend üzerinden.
 
-4 uygulama · rol bazlı yetkilendirme
+4 uygulama · 646 test · rol bazlı yetkilendirme
 
 [![Node.js](https://img.shields.io/badge/Node.js-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![Express](https://img.shields.io/badge/Express%205-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com)
@@ -105,11 +105,11 @@ Sayılar bu repoda çalıştırılarak alındı, dokümandan kopyalanmadı:
 | Uygulama | Komut | Sonuç |
 |---|---|---|
 | API | `npm test` (Mocha) | **291 test geçiyor** |
-| customer_app | `flutter test` | **DERLENMİYOR (2026-10-23)** — `UploadFilesUseCase` tanımı repoda yok (`lib/features/uploads/` hiç commit edilmemiş; `core/di/injection.config.dart` bu sınıfı import ediyor). Son yeşil ölçüm: 201 test |
+| customer_app | `flutter test` | **271 test geçiyor** |
 | salon_app | `flutter test` | **84 test geçiyor** |
 | admin_panel | — | test yok (aşağıya bakın) |
 
-Bugün ölçülen toplam: 375 test (API + salon_app).
+Bugün ölçülen toplam: 646 test (API 291 · customer_app 271 · salon_app 84; admin_panel hariç).
 
 Testler; oturum izolasyonu, rol bazlı erişim, randevu durum geçişleri, medya yolu çözümlemesi ve
 gövde doğrulama kenar durumlarını kapsar. Örnek: `DashboardNotifier` için *"randevular için tek
@@ -132,9 +132,6 @@ Bunları saklamıyorum; reponun bugünkü gerçeği:
 - **Migration yok.** Şema `sequelize.sync()` + `ensureColumns()` ile hizalanıyor. Geri alınabilir
   şema değişikliği için `sequelize-cli` migration'larına geçilmesi gerekiyor.
 - **`admin_panel` test edilmiyor.** En çok ekran burada; öncelikli borç.
-- **`customer_app` derlenmiyor.** `lib/features/uploads/` (use case, repository, datasource) hiç
-  commit edilmemiş; `core/di/injection.config.dart` bu sınıfları import ettiği için paket
-  derlenmiyor ve `flutter test` 9 test dosyasını yükleyemiyor. Düzeltme ayrı bir iş.
 - **Swagger paketleri bağlanmamış.** `swagger-jsdoc` ve `swagger-ui-express` bağımlılık olarak var
   ama `src/` içinde hiçbir yere mount edilmemiş. Bugünkü API dokümantasyonu `docs/api/` altındaki
   Markdown dosyaları — ya Swagger bağlanmalı ya bağımlılıklar kaldırılmalı.

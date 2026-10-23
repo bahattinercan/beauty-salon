@@ -163,3 +163,13 @@ da `NEXT_PUBLIC_API_URL` değeri yazılı.
 > (12 test) ve upload middleware hataları düzeltildi. CROSS-003 (loading/empty/error
 > durum bileşenleri), UI-001, ADMIN-001 ve salon app provider testleri kapatıldı.
 > (API 285 test, customer_app 197 test, salon_app 43 test — hepsi geçiyor).
+
+### customer_app uploads katmanı onarımı (2026-10-23)
+
+`lib/features/uploads/**` katmanı (datasource, repository, usecase) hiç commit edilmemişti;
+`core/di/injection.config.dart` bu sınıfları import ettiği için paket derlenmiyor ve `flutter test`
+9 test dosyasını yükleyemiyordu. Katman mevcut kod kalıplarına (ApiClient, fpdart `Either`,
+`Failure` eşlemesi, `@Injectable`/`@injectable`) göre yeniden yazıldı. Kök `.gitignore`'daki jenerik
+`uploads/` deseni bu dizini de yuttuğu için dosyalar hiç commit edilmemişti; desen `apps/api/uploads/`
+olarak daraltıldı. DI `build_runner` ile üretildi (çıktı içerik olarak değişmedi); `dart analyze`
+temiz, `flutter test` 271 test geçiyor. CA-003/CA-005 işaretleri bu onarımla yeniden doğru.
