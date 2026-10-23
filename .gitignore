@@ -10,7 +10,7 @@ node_modules/
 *.sqlite
 
 # Yüklenen kullanıcı dosyaları
-uploads/
+apps/api/uploads/
 
 # Log
 *.log
