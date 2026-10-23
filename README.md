@@ -98,6 +98,14 @@ ortam değişkeninden gelir (`SEED_ADMIN_PASSWORD`, `SEED_SALON_PASSWORD`, `SEED
 verilmezse seed **çalışmayı reddeder**, böylece canlı kurulumda herkesin bildiği bir yönetici
 şifresi oluşmaz.
 
+### Geliştirme ortamı
+
+- `node` 22.23.4 ve `flutter` 3.47.7 sürümleri depo kökündeki `.tool-versions` dosyasında pinlidir.
+- Kapı komutu: `bash scripts/check_toolchain.sh` — sürümler pinlerle uyuşmazsa `exit 1` döner.
+- Not: flutter 3.47.7, `flutter analyze` / `flutter test` sırasında `analyzer.exclude` bloğunu kendisi
+  yazar. Bu blok artık `apps/customer_app` ve `apps/salon_app` içinde deterministik olarak commit'li
+  olduğu için test sonrası çalışma ağacı kirlenmez.
+
 ## Test
 
 Sayılar bu repoda çalıştırılarak alındı (2026-10-23 ölçümü), dokümandan kopyalanmadı:

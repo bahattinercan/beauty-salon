@@ -98,6 +98,15 @@ variables (`SEED_ADMIN_PASSWORD`, `SEED_SALON_PASSWORD`, `SEED_CUSTOMER_PASSWORD
 missing, the seed **refuses to run**, so a live installation never ends up with an admin password
 everyone knows.
 
+### Toolchain
+
+- `node` 22.23.4 and `flutter` 3.47.7 are pinned in the repo-root `.tool-versions` file.
+- Gate command: `bash scripts/check_toolchain.sh` — it returns `exit 1` when the versions do not match
+  the pins.
+- Note: flutter 3.47.7 writes the `analyzer.exclude` block itself during `flutter analyze` /
+  `flutter test`. Because that block is now committed deterministically in `apps/customer_app` and
+  `apps/salon_app`, the working tree does not get dirty after a test run.
+
 ## Tests
 
 The numbers were obtained by running the suites in this repo on 2026-10-23, not copied from documentation:
