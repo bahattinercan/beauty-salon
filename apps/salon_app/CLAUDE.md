@@ -293,3 +293,8 @@ class WorkingDay {
 2. Create `lib/features/<feature>/presentation/screens/<screen>.dart`
 3. Add route in `app/router.dart` inside ShellRoute (if nav needed) or standalone GoRoute
 4. Update `SalonMainScaffold._getCurrentIndex()` and `_onTap()` if adding bottom nav item
+
+## Doğrulama notu (Flutter aracı)
+
+`flutter analyze` çalıştırıldığında Flutter tool'u `analysis_options.yaml` dosyasına otomatik bir `analyzer.exclude` bloğu ekliyor ve commit diff'ini kirletiyor (gözlenen sürüm: bu makinedeki Flutter SDK).
+Bu yüzden doğrulama için `dart analyze <yollar>` kullanın: yan etkisi yoktur, aynı analiz sonucunu verir.

@@ -4,7 +4,9 @@ Aşağıdakiler kod okunarak (ve API tarafıyla çapraz kontrol edilerek) tespit
 
 ---
 
-## 🔴 1. Dashboard haftalık grafik ay başında eksik veri gösterir
+## ✅ 1. (Kapatıldı 2026-10-23) Dashboard haftalık grafik ay başında eksik veri gösterirdi
+
+**Çözüm notu:** Sorgu başlangıcı artık `min(ay başı, bugün-6)` olarak hesaplanıyor (`dashboardQueryRange`), böylece ayın ilk günlerinde de haftalık grafiğin 7 günü tek istekte kapsanıyor. Zaman kaynağı `dashboardNowProvider` üzerinden enjekte edildiği için sınır durumları deterministik test edilebiliyor. Kanıt: `test/features/dashboard/dashboard_week_boundary_test.dart` (6 test).
 
 `DashboardNotifier._fetch()` sorgusu:
 ```dart
@@ -28,7 +30,9 @@ weeklyChart = son 7 günün sayıları (now-6 … now)
 
 ---
 
-## 🔴 3. Çıkış sunucu tarafında yapılmıyor
+## ✅ 3. (Kapatıldı 2026-10-23) Çıkış artık sunucu tarafında da yapılıyor
+
+**Çözüm notu:** `logout()` artık `ref.read(apiClientProvider).dio.post('/auth/logout')` çağrısıyla refresh token'ı sunucu tarafında da iptal ediyor; ağ hatası (timeout/4xx/5xx) yerel çıkışı engellemiyor, hata yutulup storage yine siliniyor. Kanıt: `test/features/auth/auth_logout_test.dart` (2 test).
 
 `logout()` sadece `_storage.deleteAll()`. API'de `POST /auth/logout` var ama çağrılmıyor → refresh token DB'de aktif kalır.
 

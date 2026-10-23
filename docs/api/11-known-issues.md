@@ -4,10 +4,8 @@
 
 | # | Sorun | Etki |
 |---|---|---|
-| 1 | `GET /appointments/salon/:salonId` sahiplik kontrolü yok | Her SALON_OWNER herhangi bir salonun randevularını okuyabilir. Canlı: `salon@` → Zen SPA & Masaj (salon2'nin) randevuları 200 |
 | 2 | `GET /reviews/salon/:salonId` public + sahiplik kontrolü yok | Yorumlar zaten public; ancak `is_visible=false` yorumlar da bu endpoint'te görünmez — tutarlı. Asıl risk: salon istatistiklerinin başka sahipler tarafından okunabilmesi |
 | 3 | `GET /appointments/available-slots`'te `authenticate` yok | CLAUDE.md "required" der, fiilen public |
-| 4 | `toSafeJSON()` `passwordResetToken` / `passwordResetTokenExpiry` çıkarmaz | Login/register yanıtlarında hassas alan sızıntısı |
 | 5 | `PATCH /users/:id/toggle-active` rol kontrolü yapar, sahiplik kontrolü yapmaz | Kullanıcı kendi `isActive`'ünü ADMIN endpoint'i üzerinden kapatabilir (test bunu doğruluyor) |
 | 6 | Staff/service sahipliğinde ADMIN yetkili değil | Admin, salon içeriğini düzeltemez (tasarım kararı ama tutarsız) |
 | 7 | `serviceId` salon uyumu doğrulanmaz | Başka salonun hizmeti bu salonun çalışanına bağlanmışsa randevu kabul edilir |
@@ -46,3 +44,26 @@
 | 30 | User e-posta değişikliği `password_reset_token` alanını paylaşıyor | İki akış birbirini bozabilir |
 | 31 | `GET /` endpoint listesi eksik (`/staff`, `/upload`, `/admin`) | Keşif yanıltıcı |
 | 32 | Rate limit testte kapalı, production'ta açık | Testler 429 davranışını kapsamıyor |
+| 33 | `src/app.js` statik `/uploads` route'u ile upload middleware'i `UPLOAD_DEST`'u iki ayrı yerde okuyor | İkisi de cwd'ye göre çözülüyor ve davranış tutarlı, ama tek kaynak olmalı → küçük teknik borç |
+
+## Kapatılanlar (2026-10-23)
+
+### #1 · `GET /appointments/salon/:salonId` sahiplik kontrolü yok — kapatıldı
+
+**Sorun:** Endpoint yalnızca `authenticate` ile korunuyordu; herhangi bir SALON_OWNER başka bir salonun randevularını okuyabiliyordu (canlıda `salon@` → Zen SPA & Masaj randevuları 200 dönüyordu).
+
+**Çözüm:** `apps/api/src/controllers/appointment.controller.js` → `getSalonAppointments`: önce salon `findByPk` ile okunur; salon yoksa **404** döner. `req.user.role === 'SALON_OWNER'` ve `salon.ownerId !== req.user.id` ise **403** döner. ADMIN için ek kısıt yoktur, her salonu okuyabilir.
+
+**Kanıt:** `apps/api/tests/appointment.test.js` →
+- `should return own salon appointments for the owning salon owner`
+- `should return 403 when salon owner requests another salon's appointments`
+- `should allow admin to read any salon's appointments`
+- `should return 404 for a non-existent salon id`
+
+### #4 · `toSafeJSON()` şifre sıfırlama token alanlarını çıkarmıyordu — kapatıldı
+
+**Sorun:** `toSafeJSON()` yalnızca `passwordHash` ve `refreshToken` alanlarını siliyordu; `passwordResetToken` / `passwordResetTokenExpiry` login ve register yanıtlarında istemciye sızıyordu.
+
+**Çözüm:** `apps/api/src/models/User.js` → `toSafeJSON`: `passwordResetToken` ve `passwordResetTokenExpiry` alanları da yanıttan çıkarılır. Alanlar veritabanında kalmaya devam eder, yalnızca serileştirme çıktısından düşer.
+
+**Kanıt:** `apps/api/tests/auth.test.js` → `should not expose sensitive user fields in login response`
