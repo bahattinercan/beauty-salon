@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_provider.dart';
 import '../../salon/data/salon_provider.dart';
@@ -61,6 +62,35 @@ class DashboardData {
   });
 }
 
+/// Dashboard'ın "bugün"ü. Testler sabit bir tarih vermek için override eder;
+/// varsayılan davranış (cihaz saati) değişmez.
+@visibleForTesting
+final dashboardNowProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+/// `YYYY-MM-DD` biçimi (API'nin beklediği tarih formatı).
+String dashboardDateStr(DateTime d) =>
+    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+/// Dashboard sorgu aralığı: `from = min(ay başı, bugün-6)`, `to = bugün`.
+///
+/// Haftalık grafik son 7 günü (bugün-6 … bugün), gelir kartı ayın tamamını
+/// istiyor; aralığın başı ikisinin minimumu olmalı. Aksi halde ay başında
+/// (ör. 3 Ekim) son 7 günün bir kısmı sorgu kapsamı dışında kalıp grafikte 0
+/// görünüyordu. Tek istek korunur, ekstra çağrı yoktur.
+typedef DashboardQueryRange = ({String from, String to, String monthStart});
+
+DashboardQueryRange dashboardQueryRange(DateTime now) {
+  final today = dashboardDateStr(now);
+  final monthStart = dashboardDateStr(DateTime(now.year, now.month, 1));
+  final weekStart = dashboardDateStr(now.subtract(const Duration(days: 6)));
+  final from = weekStart.compareTo(monthStart) < 0 ? weekStart : monthStart;
+  return (from: from, to: today, monthStart: monthStart);
+}
+
+/// Haftalık grafiğin 7 kovası: bugün-6 … bugün (artan sırada).
+List<String> dashboardChartDays(DateTime now) =>
+    List.generate(7, (i) => dashboardDateStr(now.subtract(Duration(days: 6 - i))));
+
 final dashboardProvider = AsyncNotifierProvider<DashboardNotifier, DashboardData>(DashboardNotifier.new);
 
 class DashboardNotifier extends AsyncNotifier<DashboardData> {
@@ -77,30 +107,27 @@ class DashboardNotifier extends AsyncNotifier<DashboardData> {
     }
 
     final api = ref.read(apiClientProvider);
-    final now = DateTime.now();
-    final today = _dateStr(now);
-    final monthStart = _dateStr(DateTime(now.year, now.month, 1));
-    final weekStart = _dateStr(now.subtract(const Duration(days: 6)));
-    // Haftalık grafik son 7 günü, gelir kartı ayın tamamını istiyor.
-    // Aralığın başı ikisinin minimumu olmalı; aksi halde ay başında (ör. 3 Ekim)
-    // son 7 günün bir kısmı sorgu kapsamı dışında kalıp grafikte 0 görünüyordu.
-    final from = weekStart.compareTo(monthStart) < 0 ? weekStart : monthStart;
+    final now = ref.read(dashboardNowProvider)();
+    final range = dashboardQueryRange(now);
+    final today = range.to;
+    final monthStart = range.monthStart;
 
     // Tek istek: from -> bugün. Önceki hali gün başına istek atıyor,
     // dashboard açılışında ~39 istek (1 + 7 + 31) üretip rate limit'i (100/dk) tetikliyordu.
     final res = await api.dio.get(
       '/appointments/salon/${salon.id}',
-      queryParameters: {'from': from, 'to': today},
+      queryParameters: {'from': range.from, 'to': range.to},
     );
     final rangeList = ((res.data['data'] as List?) ?? [])
         .map((e) => DashboardAppointment.fromJson(e as Map<String, dynamic>))
         .toList();
 
     final todayList = rangeList.where((a) => _dayOf(a.date) == today).toList();
-    final weeklyChart = List.generate(7, (i) {
-      final day = _dateStr(now.subtract(Duration(days: 6 - i)));
-      return rangeList.where((a) => _dayOf(a.date) == day).length;
-    });
+    final chartDays = dashboardChartDays(now);
+    final weeklyChart = List.generate(
+      7,
+      (i) => rangeList.where((a) => _dayOf(a.date) == chartDays[i]).length,
+    );
 
     // Gelir yalnızca ay içindeki randevlardan hesaplanır (from ay başından önce olabilir).
     double monthRevenue = 0;
@@ -126,9 +153,6 @@ class DashboardNotifier extends AsyncNotifier<DashboardData> {
     state = const AsyncLoading();
     state = await AsyncValue.guard(_fetch);
   }
-
-  String _dateStr(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   /// API bazen tam ISO timestamp döndürüyor; karşılaştırma için YYYY-MM-DD'e indirgenir.
   String _dayOf(String date) => date.split('T').first;
