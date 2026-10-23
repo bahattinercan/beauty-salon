@@ -102,6 +102,9 @@ User.prototype.toSafeJSON = function () {
   const values = this.toJSON();
   delete values.passwordHash;
   delete values.refreshToken;
+  // Şifre sıfırlama akışının token alanları da yanıta sızmamalı (DB'de kalır)
+  delete values.passwordResetToken;
+  delete values.passwordResetTokenExpiry;
   return values;
 };
 

@@ -154,6 +154,32 @@ describe('Auth API', () => {
       expect(res.body.data).to.have.property('refreshToken');
     });
 
+    it('should not expose sensitive user fields in login response', async () => {
+      // Alanlar gerçekten dolu olsun ki serialize çıktısı anlamlı test edilsin
+      const user = await User.findOne({ where: { email: 'customer@test.com' } });
+      await user.update({
+        passwordResetToken: 'hashed-reset-token',
+        passwordResetTokenExpiry: new Date(Date.now() + 3600000),
+      });
+
+      const res = await supertest(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: 'customer@test.com',
+          password: 'Musteri123!',
+        });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.data.user).to.be.an('object');
+      ['passwordHash', 'refreshToken', 'passwordResetToken', 'passwordResetTokenExpiry'].forEach((field) => {
+        expect(res.body.data.user).to.not.have.property(field);
+      });
+
+      // Alanlar DB'de korunur; sadece serialize edilen çıktıdan çıkarılır
+      const reloaded = await User.findByPk(user.id);
+      expect(reloaded.passwordResetToken).to.equal('hashed-reset-token');
+    });
+
     it('should return 401 for wrong password', async () => {
       const res = await supertest(app)
         .post('/api/v1/auth/login')
