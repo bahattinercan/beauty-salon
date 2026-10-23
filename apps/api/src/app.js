@@ -90,7 +90,10 @@ if (process.env.NODE_ENV === 'development') {
 
 // ==================== STATIC FILES ====================
 
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+// Yükleme hedefi upload middleware'i ile AYNI dizin olmalı: UPLOAD_DEST
+// (varsayılan ./uploads) tıpkı multer gibi cwd'ye göre çözülür; aksi halde
+// yüklenen dosya /uploads/<ad> üzerinden 404 döner.
+app.use('/uploads', express.static(path.resolve(process.cwd(), process.env.UPLOAD_DEST || './uploads')));
 
 // ==================== ROUTES ====================
 
