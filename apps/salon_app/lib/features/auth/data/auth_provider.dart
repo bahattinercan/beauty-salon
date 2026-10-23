@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_provider.dart';
 
 class AuthState {
   final bool isLoggedIn;
@@ -86,6 +87,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    // Refresh token'ı sunucu tarafında da iptal et.
+    // Ağ hatası (timeout, 4xx, 5xx) yerel çıkışı engellemez: hata yutulur,
+    // storage yine silinir ve state yine initial'a döner.
+    try {
+      await ref.read(apiClientProvider).dio.post('/auth/logout');
+    } catch (_) {
+      // bilinçli olarak yutuluyor — çıkış her koşulda tamamlanmalı
+    }
     await _storage.deleteAll();
     state = const AsyncData(AuthState.initial());
   }
