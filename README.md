@@ -1,3 +1,5 @@
+<sub><a href="README.en.md">English</a> · <b>Türkçe</b></sub>
+
 <div align="center">
 
 # Beauty Salon Platform
@@ -6,7 +8,7 @@
 Müşteri salon keşfeder ve randevu alır; salon sahibi ekibini, hizmetlerini ve randevularını yönetir;
 platform yöneticisi tüm kiracıları denetler — hepsi tek bir backend üzerinden.
 
-4 uygulama · 535 test · rol bazlı yetkilendirme
+4 uygulama · rol bazlı yetkilendirme
 
 [![Node.js](https://img.shields.io/badge/Node.js-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![Express](https://img.shields.io/badge/Express%205-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com)
@@ -102,10 +104,12 @@ Sayılar bu repoda çalıştırılarak alındı, dokümandan kopyalanmadı:
 
 | Uygulama | Komut | Sonuç |
 |---|---|---|
-| API | `npm test` (Mocha) | **286 test geçiyor** |
-| customer_app | `flutter test` | **201 test geçiyor** |
-| salon_app | `flutter test` | **48 test geçiyor** |
+| API | `npm test` (Mocha) | **291 test geçiyor** |
+| customer_app | `flutter test` | **DERLENMİYOR (2026-10-23)** — `UploadFilesUseCase` tanımı repoda yok (`lib/features/uploads/` hiç commit edilmemiş; `core/di/injection.config.dart` bu sınıfı import ediyor). Son yeşil ölçüm: 201 test |
+| salon_app | `flutter test` | **84 test geçiyor** |
 | admin_panel | — | test yok (aşağıya bakın) |
+
+Bugün ölçülen toplam: 375 test (API + salon_app).
 
 Testler; oturum izolasyonu, rol bazlı erişim, randevu durum geçişleri, medya yolu çözümlemesi ve
 gövde doğrulama kenar durumlarını kapsar. Örnek: `DashboardNotifier` için *"randevular için tek
@@ -128,6 +132,9 @@ Bunları saklamıyorum; reponun bugünkü gerçeği:
 - **Migration yok.** Şema `sequelize.sync()` + `ensureColumns()` ile hizalanıyor. Geri alınabilir
   şema değişikliği için `sequelize-cli` migration'larına geçilmesi gerekiyor.
 - **`admin_panel` test edilmiyor.** En çok ekran burada; öncelikli borç.
+- **`customer_app` derlenmiyor.** `lib/features/uploads/` (use case, repository, datasource) hiç
+  commit edilmemiş; `core/di/injection.config.dart` bu sınıfları import ettiği için paket
+  derlenmiyor ve `flutter test` 9 test dosyasını yükleyemiyor. Düzeltme ayrı bir iş.
 - **Swagger paketleri bağlanmamış.** `swagger-jsdoc` ve `swagger-ui-express` bağımlılık olarak var
   ama `src/` içinde hiçbir yere mount edilmemiş. Bugünkü API dokümantasyonu `docs/api/` altındaki
   Markdown dosyaları — ya Swagger bağlanmalı ya bağımlılıklar kaldırılmalı.
@@ -158,7 +165,4 @@ screenshots/      # uygulama ekran görüntüleri (E2E doğrulama çıktıları)
 
 ---
 
-<sub>**English** — A multi-tenant booking and management platform for beauty salons: an Express 5 +
-Sequelize REST API, a Next.js admin panel and two Flutter apps (customer and salon owner), with
-role-based access control and tenant isolation. 535 tests, run to verify the numbers in this README.
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full architecture.</sub>
+<sub>İngilizce sürüm: [README.en.md](README.en.md)</sub>
