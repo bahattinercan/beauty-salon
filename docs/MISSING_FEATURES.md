@@ -1,6 +1,6 @@
 # Beauty Salon — Özellik Durum Raporu (doğrulanmış)
 
-> Oluşturma: 2026-06-14 · **Yeniden doğrulama: 2026-10-12**
+> Oluşturma: 2026-06-14 · **Yeniden doğrulama: 2026-10-23**
 > Yöntem: her madde kod üzerinde grep/çalıştırma ile kontrol edildi.
 > Kapsam: `apps/api/` (Node/Express), `apps/customer_app/` (Flutter), `apps/salon_app/` (Flutter), `apps/admin_panel/` (Next.js)
 
@@ -14,10 +14,12 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 | Durum | Sayı |
 |-------|------|
 | ✅ Tamamlandı | 50 |
-| ⚠️ Kısmen | 1 |
+| ⚠️ Kısmen | 0 |
 | ❌ Yapılmadı | 0 |
 
 **Kapandı (2026-10-12):** ADMIN-001, UI-001, salon app provider testleri, 404 fallback testleri.
+**2026-10-23:** test sayıları yeniden ölçüldü — API 291 (`cd apps/api && npm test`),
+customer_app 271, salon_app 84; aşağıdaki tablolarda işaretli 50 maddenin tamamı ✅.
 
 ---
 
@@ -88,7 +90,7 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 
 | ID | Madde | Durum | Not |
 |----|-------|-------|-----|
-| CROSS-001 | Test coverage | ✅ | API 272, customer_app 197, salon_app 43 test. salon_app'de artık provider (fake Dio) + state-view widget testleri var. |
+| CROSS-001 | Test coverage | ✅ | API 291 (`npm test`), customer_app 271, salon_app 84 test (2026-10-23 ölçümü). salon_app'de artık provider (fake Dio) + state-view widget testleri var. |
 | CROSS-002 | Error handling tutarlılığı | ✅ | `errorHandler.js` Sequelize/validator/multer hatalarını tek formatta döndürüyor |
 | CROSS-003 | Loading state tutarlılığı | ✅ | `core/widgets/state_view.dart` (iki app): `Skeleton`/`SkeletonList`, `EmptyState`, `ErrorState` (retry), `AsyncStateView<T>` |
 
@@ -162,7 +164,8 @@ da `NEXT_PUBLIC_API_URL` değeri yazılı.
 "> 2026-10-12: SA-004, SA-008, BUG-010, CA-012, CA-014 kapatıldı; upload endpoint'leri
 > (12 test) ve upload middleware hataları düzeltildi. CROSS-003 (loading/empty/error
 > durum bileşenleri), UI-001, ADMIN-001 ve salon app provider testleri kapatıldı.
-> (API 285 test, customer_app 197 test, salon_app 43 test — hepsi geçiyor).
+> (2026-10-12 ölçümü: API 285 test, customer_app 197 test, salon_app 43 test — hepsi geçiyor;
+> güncel sayılar CROSS-001'de).
 
 ### customer_app uploads katmanı onarımı (2026-10-23)
 

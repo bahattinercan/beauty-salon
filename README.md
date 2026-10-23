@@ -42,7 +42,7 @@ Bu bir monorepo; dört uygulama aynı API sözleşmesini paylaşır.
 | Uygulama | Teknoloji | Ne yapar |
 |---|---|---|
 | [`apps/api`](apps/api) | Node.js · Express 5 · Sequelize 6 · JWT | REST API, iş kuralları, yetkilendirme, dosya yükleme, bildirim |
-| [`apps/admin_panel`](apps/admin_panel) | Next.js 16 · TypeScript · Tailwind 4 · recharts | Platform yönetim paneli (kiracılar, kullanıcılar, kategoriler, ayarlar) |
+| [`apps/admin_panel`](apps/admin_panel) | Next.js 16 · TypeScript · Tailwind 4 · recharts | Platform yönetim paneli (salonlar, kullanıcılar, randevular, yorumlar, kategoriler, ayarlar) |
 | [`apps/customer_app`](apps/customer_app) | Flutter · Riverpod 3 · go_router · Dio | Müşteri mobil uygulaması |
 | [`apps/salon_app`](apps/salon_app) | Flutter · Riverpod 3 · go_router · Dio | Salon sahibi mobil uygulaması (randevu, ekip, hizmet, panel) |
 
@@ -54,14 +54,14 @@ Flutter salon_app ────┼──►  Express API  ──►  Sequelize  �
 Next.js admin_panel ──┘        │                              PostgreSQL (yapılandırılabilir)
                                ├── JWT access (15 dk) + refresh (7 gün), bcrypt
                                ├── express-validator ile gövde doğrulama
-                               ├── Multer + sharp ile görsel yükleme (maks. 5 MB)
+                               ├── Multer ile görsel yükleme (JPEG/PNG/WebP/GIF, maks. 5 MB, diske)
                                ├── rate limit · Helmet · CORS allowlist
                                └── Nodemailer (SMTP) · Twilio (SMS, kimlik yoksa konsola düşer)
 ```
 
 **İzolasyon sınırı kiracıdır (salon).** Yetkilendirme rol bazlı; salon sahibi yalnızca kendi
 salonunun verisini görebilir, admin uçları müşteri ve salon rollerine kapalıdır. Bu kural test edilir
-(`tests/admin.test.js` → *Session isolation*, *Role-based access*).
+(`tests/user.test.js` → *Session isolation*, *Role-based access*).
 
 Veri modeli 12 tablo: `User`, `Salon`, `Staff`, `StaffService`, `Service`, `ServiceCategory`,
 `Appointment`, `Review`, `Favorite`, `Notification`, `Product`, `Setting`.
@@ -100,7 +100,7 @@ verilmezse seed **çalışmayı reddeder**, böylece canlı kurulumda herkesin b
 
 ## Test
 
-Sayılar bu repoda çalıştırılarak alındı, dokümandan kopyalanmadı:
+Sayılar bu repoda çalıştırılarak alındı (2026-10-23 ölçümü), dokümandan kopyalanmadı:
 
 | Uygulama | Komut | Sonuç |
 |---|---|---|
@@ -109,7 +109,7 @@ Sayılar bu repoda çalıştırılarak alındı, dokümandan kopyalanmadı:
 | salon_app | `flutter test` | **84 test geçiyor** |
 | admin_panel | — | test yok (aşağıya bakın) |
 
-Bugün ölçülen toplam: 646 test (API 291 · customer_app 271 · salon_app 84; admin_panel hariç).
+2026-10-23 ölçümü: toplam 646 test (API 291 · customer_app 271 · salon_app 84; admin_panel hariç).
 
 Testler; oturum izolasyonu, rol bazlı erişim, randevu durum geçişleri, medya yolu çözümlemesi ve
 gövde doğrulama kenar durumlarını kapsar. Örnek: `DashboardNotifier` için *"randevular için tek
@@ -120,7 +120,8 @@ istek yapar (gün başına N+1 yok)"* testi vardır — panel istatistikleri gü
 - `.env`, `*.sqlite`, `uploads/` **izlenmez**; repoda yalnızca `.env.example` yer tutucuları var.
 - Üretimde (`NODE_ENV=production`) varsayılan demo şifreleriyle seed reddedilir.
 - JWT: kısa ömürlü access token + refresh token; şifreler bcrypt ile saklanır.
-- Yükleme: tür ve boyut doğrulaması, `sharp` ile işleme; hatalı yükleme 500 yerine 400 döner.
+- Yükleme: tür ve boyut doğrulaması (JPEG/PNG/WebP/GIF, varsayılan 5 MB); hatalı yükleme 500 yerine
+  400 döner. Görseller olduğu gibi diske yazılıyor; yeniden boyutlandırma/dönüştürme adımı yok.
 - CORS origin listesi ortam değişkeninden gelir; varsayılanı yalnızca yerel geliştirmedir.
 - Yönetim panelinde giriş formu üretim derlemesinde **boş** açılır; demo ön doldurma yalnızca
   geliştirmede etkindir (Next.js `NODE_ENV` kapısı, üretimde dead-code olarak elenir).
@@ -129,14 +130,22 @@ istek yapar (gün başına N+1 yok)"* testi vardır — panel istatistikleri gü
 
 Bunları saklamıyorum; reponun bugünkü gerçeği:
 
-- **Migration yok.** Şema `sequelize.sync()` + `ensureColumns()` ile hizalanıyor. Geri alınabilir
-  şema değişikliği için `sequelize-cli` migration'larına geçilmesi gerekiyor.
+- **Migration'lar tanımlı ama runtime çalıştırmıyor.** `.sequelizerc` → `src/config/sequelize-config.js`
+  (dialect **postgres**) ve `src/database/migrations/` altında 12 migration dosyası duruyor; `npm run migrate`,
+  `migrate:status`, `migrate:undo` script'leri tanımlı. Buna karşın açılışta migration çalışmıyor: şema
+  `sequelize.sync()` + `ensureColumns()` ile hizalanıyor ve SQLite veritabanında `SequelizeMeta` tablosu
+  yok (`src/test-database.sqlite` kontrol edildi) — yani migration'lar hiç uygulanmamış, model tanımlarıyla
+  birebir uyuşmuyor. Geri alınabilir şema değişikliği için runtime'ın migration'lara geçirilmesi gerekiyor
+  (ayrıntı: [docs/api/09-seed-and-migrations.md](docs/api/09-seed-and-migrations.md)).
 - **`admin_panel` test edilmiyor.** En çok ekran burada; öncelikli borç.
 - **Swagger paketleri bağlanmamış.** `swagger-jsdoc` ve `swagger-ui-express` bağımlılık olarak var
   ama `src/` içinde hiçbir yere mount edilmemiş. Bugünkü API dokümantasyonu `docs/api/` altındaki
   Markdown dosyaları — ya Swagger bağlanmalı ya bağımlılıklar kaldırılmalı.
 - **Yüklemeler yerel diske yazılıyor.** Yatay ölçekleme veya çok örnekli dağıtım için paylaşımlı
   nesne depolamaya taşınmalı.
+- **`sharp` bağımlılığı kullanılmıyor.** Dosyalar Multer ile olduğu gibi diske yazılıyor; yeniden
+  boyutlandırma veya format dönüştürme yok. `sharp` `package.json`'da duruyor ama `src/` içinde
+  require edilmiyor — ya görsel işleme eklenmeli ya bağımlılık kaldırılmalı.
 - **Ödeme ve abonelik yok.** Platform yönetimi var, tahsilat yok.
 - **SMS/е-posta sağlayıcıları dış servis.** Kimlik bilgisi yoksa SMS konsola loglanır (geliştirme).
 

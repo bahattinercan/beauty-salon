@@ -42,7 +42,7 @@ This is a monorepo; four applications share the same API contract.
 | Application | Tech | What it does |
 |---|---|---|
 | [`apps/api`](apps/api) | Node.js · Express 5 · Sequelize 6 · JWT | REST API, business rules, authorization, file upload, notifications |
-| [`apps/admin_panel`](apps/admin_panel) | Next.js 16 · TypeScript · Tailwind 4 · recharts | Platform admin panel (tenants, users, categories, settings) |
+| [`apps/admin_panel`](apps/admin_panel) | Next.js 16 · TypeScript · Tailwind 4 · recharts | Platform admin panel (salons, users, appointments, reviews, categories, settings) |
 | [`apps/customer_app`](apps/customer_app) | Flutter · Riverpod 3 · go_router · Dio | Customer mobile app |
 | [`apps/salon_app`](apps/salon_app) | Flutter · Riverpod 3 · go_router · Dio | Salon owner mobile app (appointments, team, services, dashboard) |
 
@@ -54,14 +54,14 @@ Flutter salon_app ────┼──►  Express API  ──►  Sequelize  �
 Next.js admin_panel ──┘        │                              PostgreSQL (configurable)
                                ├── JWT access (15 min) + refresh (7 days), bcrypt
                                ├── request body validation with express-validator
-                               ├── image upload with Multer + sharp (max 5 MB)
+                               ├── image upload with Multer (JPEG/PNG/WebP/GIF, max 5 MB, to disk)
                                ├── rate limit · Helmet · CORS allowlist
                                └── Nodemailer (SMTP) · Twilio (SMS, falls back to the console without credentials)
 ```
 
 **The isolation boundary is the tenant (salon).** Authorization is role-based; a salon owner can only
 see their own salon's data, and admin endpoints are closed to the customer and salon roles. This rule
-is tested (`tests/admin.test.js` → *Session isolation*, *Role-based access*).
+is tested (`tests/user.test.js` → *Session isolation*, *Role-based access*).
 
 The data model has 12 tables: `User`, `Salon`, `Staff`, `StaffService`, `Service`, `ServiceCategory`,
 `Appointment`, `Review`, `Favorite`, `Notification`, `Product`, `Setting`.
@@ -100,7 +100,7 @@ everyone knows.
 
 ## Tests
 
-The numbers were obtained by running the suites in this repo, not copied from documentation:
+The numbers were obtained by running the suites in this repo on 2026-10-23, not copied from documentation:
 
 | Application | Command | Result |
 |---|---|---|
@@ -109,7 +109,7 @@ The numbers were obtained by running the suites in this repo, not copied from do
 | salon_app | `flutter test` | **84 tests passing** |
 | admin_panel | — | no tests (see below) |
 
-Total measured today: 646 tests (API 291 · customer_app 271 · salon_app 84; admin_panel excluded).
+Total measured on 2026-10-23: 646 tests (API 291 · customer_app 271 · salon_app 84; admin_panel excluded).
 
 The tests cover session isolation, role-based access, appointment status transitions, media path
 resolution and body-validation edge cases. For example, there is a test for `DashboardNotifier` —
@@ -121,7 +121,8 @@ one request per day.
 - `.env`, `*.sqlite`, `uploads/` are **not tracked**; the repo only carries `.env.example` placeholders.
 - In production (`NODE_ENV=production`) seeding with the default demo passwords is refused.
 - JWT: short-lived access token + refresh token; passwords are stored with bcrypt.
-- Uploads: type and size validation, processing with `sharp`; a bad upload returns 400 instead of 500.
+- Uploads: type and size validation (JPEG/PNG/WebP/GIF, 5 MB default); a bad upload returns 400 instead
+  of 500. Images are written to disk as-is; there is no resize/convert step.
 - The CORS origin list comes from an environment variable; the default allows local development only.
 - The admin panel login form opens **empty** in a production build; demo prefill is enabled only in
   development (Next.js `NODE_ENV` gate, stripped as dead code in production).
@@ -130,14 +131,23 @@ one request per day.
 
 I am not hiding these; this is what the repo actually looks like today:
 
-- **No migrations.** The schema is kept in line by `sequelize.sync()` + `ensureColumns()`. Reversible
-  schema changes require moving to `sequelize-cli` migrations.
+- **Migrations exist, but the runtime does not run them.** `.sequelizerc` points at
+  `src/config/sequelize-config.js` (dialect **postgres**) and `src/database/migrations/` holds 12 migration
+  files; the `npm run migrate`, `migrate:status` and `migrate:undo` scripts are defined. Startup still does
+  not run migrations: the schema is kept in line by `sequelize.sync()` + `ensureColumns()`, and the SQLite
+  database has no `SequelizeMeta` table (`src/test-database.sqlite` checked) — the migrations have never
+  been applied and do not match the model definitions exactly. Reversible schema changes require moving the
+  runtime to migrations
+  (details: [docs/api/09-seed-and-migrations.md](docs/api/09-seed-and-migrations.md)).
 - **`admin_panel` is untested.** This is where most of the screens are; top-priority debt.
 - **The Swagger packages are not wired up.** `swagger-jsdoc` and `swagger-ui-express` exist as
   dependencies but are not mounted anywhere under `src/`. Today's API documentation is the Markdown
   files under `docs/api/` — either wire up Swagger or drop the dependencies.
 - **Uploads are written to local disk.** Horizontal scaling or multi-instance deployment requires
   moving them to shared object storage.
+- **The `sharp` dependency is unused.** Files are written to disk as-is by Multer; there is no resizing
+  or format conversion. `sharp` is listed in `package.json` but never required under `src/` — either add
+  image processing or drop the dependency.
 - **No payments or subscriptions.** Platform administration exists, billing does not.
 - **SMS/e-mail providers are external services.** Without credentials, SMS is logged to the console
   (development).
