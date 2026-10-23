@@ -211,7 +211,17 @@ const getMyAppointments = async (req, res, next) => {
 // GET /appointments/salon/:salonId
 const getSalonAppointments = async (req, res, next) => {
   try {
-    const where = { salonId: req.params.salonId };
+    // Sahiplik kontrolü: SALON_OWNER yalnızca kendi salonunu okuyabilir, ADMIN her salonu okur
+    const salon = await Salon.findByPk(req.params.salonId, { attributes: ['id', 'ownerId'] });
+    if (!salon) {
+      return res.status(404).json({ success: false, message: 'Salon bulunamadı' });
+    }
+
+    if (req.user.role === 'SALON_OWNER' && salon.ownerId !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Bu salonun randevularını görüntüleme yetkiniz yok' });
+    }
+
+    const where = { salonId: salon.id };
     // Tek istekte tarih aralığı verilebilir (dashboard N+1'i için): ?from=YYYY-MM-DD&to=YYYY-MM-DD
     if (req.query.from && req.query.to) {
       where.date = { [Op.between]: [req.query.from, req.query.to] };

@@ -33,7 +33,7 @@ async function makeAppointment(status, customer, salon, staff, service) {
 
 describe('Appointment API', () => {
   let data;
-  let customer, owner1, salon1, staff1, staff2, service1;
+  let customer, owner1, owner2, admin, salon1, salon2, staff1, staff2, service1;
   let customerToken;
 
   before(async () => {
@@ -41,7 +41,10 @@ describe('Appointment API', () => {
     data = await seedTestData();
     customer = data.users.customer;
     owner1 = data.users.owner1;
+    owner2 = data.users.owner2;
+    admin = data.users.admin;
     salon1 = data.salons.salon1;
+    salon2 = data.salons.salon2;
     staff1 = data.staff.staff1;
     staff2 = data.staff.staff2;
     service1 = data.services.service1;
@@ -556,6 +559,66 @@ describe('Appointment API', () => {
         const d = String(apt.date).split('T')[0];
         expect(d >= monthStart && d <= today).to.be.true;
       });
+    });
+
+    it('should return own salon appointments for the owning salon owner', async () => {
+      const token = createToken(owner1);
+
+      const res = await supertest(app)
+        .get(`/api/v1/appointments/salon/${salon1.id}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).to.equal(200);
+      expect(res.body).to.have.property('success', true);
+      expect(res.body.data).to.be.an('array').with.length.greaterThan(0);
+      res.body.data.forEach((apt) => {
+        expect(apt.salonId).to.equal(salon1.id);
+      });
+    });
+
+    it('should return 403 when salon owner requests another salon\'s appointments', async () => {
+      // Kontrol: salon2'nin gerçek sahibi okuyabiliyor
+      const owner2Res = await supertest(app)
+        .get(`/api/v1/appointments/salon/${salon2.id}`)
+        .set('Authorization', `Bearer ${createToken(owner2)}`);
+      expect(owner2Res.status).to.equal(200);
+
+      // owner1, owner2'nin salonunu okuyamaz
+      const token = createToken(owner1);
+
+      const res = await supertest(app)
+        .get(`/api/v1/appointments/salon/${salon2.id}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).to.equal(403);
+      expect(res.body).to.have.property('success', false);
+      expect(res.body.message).to.be.a('string').and.not.empty;
+      expect(res.body).to.not.have.property('data');
+    });
+
+    it('should allow admin to read any salon\'s appointments', async () => {
+      const token = createToken(admin);
+
+      const res = await supertest(app)
+        .get(`/api/v1/appointments/salon/${salon2.id}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).to.equal(200);
+      expect(res.body).to.have.property('success', true);
+      expect(res.body.data).to.be.an('array');
+    });
+
+    it('should return 404 for a non-existent salon id', async () => {
+      const token = createToken(owner1);
+      const missingSalonId = 999999;
+
+      const res = await supertest(app)
+        .get(`/api/v1/appointments/salon/${missingSalonId}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).to.equal(404);
+      expect(res.body).to.have.property('success', false);
+      expect(res.body.message).to.equal('Salon bulunamadı');
     });
   });
 
