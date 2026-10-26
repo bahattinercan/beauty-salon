@@ -169,11 +169,13 @@ Tekrar eden rozet stilleri `globals.css` içinde utility olarak tanımlıdır:
 
 ---
 
-## Admin Endpoint'ler
+## Test kapısı
 
-| Method | Path | Auth | Açıklama |
-|--------|------|----------|
-| GET | `/admin/dashboard` | ADMIN | Dashboard (stats, recent appointments, reviews) |
-| GET | `/admin/salons` | ADMIN | Tüm salonlar (verified filter, sayfalı) |
-| GET | `/admin/appointments` | ADMIN | Tüm randevular (status filter, sayfalı) |
-| GET | `/admin/reviews` | ADMIN | Tüm yorumlar (sayfalı) |
+| Adım | Komut | Beklenen sonuç |
+|---|---|---|
+| Tip kontrolü | `npm run typecheck` | hatasız (`tsc --noEmit`) |
+| Lint | `npm run lint` | hatasız (`eslint`) |
+| Test | `npm test` | **156 test** yeşil (29 `node:test` + 127 vitest) |
+| Build | `npm run build` | T1 ölçümü: 11 statik route, build **exit 0** |
+
+`npm test` sırasıyla `npm run test:node` (`node --test`, 29 test) ve `npm run test:unit` (vitest, 127 test) çalıştırır; toplam **156 test**.

@@ -8,10 +8,10 @@
 |------|------|------|---------|------|-------|
 | 0 | [CA-014](CA-014-p0-fixes-applied.md) | Compile error + bug düzeltmeleri | 🔴 | — | ✅ Bitti |
 | 1 | [CA-018](CA-018-presentation-error-handling.md) | Presentation'da try/catch + throw temizliği | 🟡 | 4-5 sa | ✅ Bitti |
-| 2 | [CA-015](CA-015-unit-tests-usecases.md) | 15 use case unit test | 🟡 | 6-8 sa | ✅ Bitti (18 dosya, 97 test) |
+| 2 | [CA-015](CA-015-unit-tests-usecases.md) | 15 use case unit test | 🟡 | 6-8 sa | ✅ Bitti (25 dosya, 110 test — 2026-10-26 statik sayım) |
 | 3 | [CA-016](CA-016-named-routes.md) | Named route refactor (34 çağrı sitesi) | 🟡 | 3-4 sa | ✅ Bitti |
 | 4 | [CA-017](CA-017-large-widget-split.md) | 200+ satır widget bölünmesi | 🟢 | 6-8 sa | ✅ Bitti |
-| 5 | [CA-019](CA-019-visual-redesign.md) | Görsel yenileme (Booksy referansı, "Seçenek A") | 🟡 | 36-46 sa (5-6 gün) | 📋 Plan hazır |
+| 5 | [CA-019](CA-019-visual-redesign.md) | Görsel yenileme (Booksy referansı, "Seçenek A") | 🟡 | 36-46 sa (5-6 gün) | ✅ Bitti (2026-10-21; kanıt CA-019-visual-redesign.md:3-5) |
 
 **Neden bu sıra?** CA-018 önce yapılmalı çünkü `BookingNotifier`, `LocationService`, `ImagePickerService` gibi yeni sınıflar tanımlıyor; CA-015 testleri bu sınıflar üzerine yazılacak, CA-017 aynı dosyaları bölüyor. CA-016 bağımsız, her zaman yapılabilir.
 

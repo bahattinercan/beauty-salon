@@ -13,13 +13,18 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 
 | Durum | Sayı |
 |-------|------|
-| ✅ Tamamlandı | 50 |
+| ✅ Tamamlandı | 49 |
 | ⚠️ Kısmen | 0 |
-| ❌ Yapılmadı | 0 |
+| ❌ Yapılmadı | 1 |
 
 **Kapandı (2026-10-12):** ADMIN-001, UI-001, salon app provider testleri, 404 fallback testleri.
 **2026-10-23:** test sayıları yeniden ölçüldü — API 291 (`cd apps/api && npm test`),
-customer_app 271, salon_app 84; aşağıdaki tablolarda işaretli 50 maddenin tamamı ✅.
+customer_app 271, salon_app 84; listede SA-002 (paralelleştirme) dışındaki maddeler ✅.
+
+**Gerçek durum notu (2026-10-26):** Aşağıdaki 50 maddenin 49'u kapandı, ama depo "eksik yok" değil —
+`docs/api/11-known-issues.md` içinde **31 açık teknik borç kaydı** ve `README.md`'de **7 bilinen sınır**
+(migration, admin test, Swagger, sharp, disk upload vb.) duruyor. SA-002 (dashboard fetch'lerinin
+paralelleştirilmesi) yapılmadı olarak işaretlendi.
 
 ---
 
@@ -45,7 +50,7 @@ customer_app 271, salon_app 84; aşağıdaki tablolarda işaretli 50 maddenin ta
 | CA-001 | Şifre sıfırlama akışı | ✅ | forgot/reset ekranları + testler |
 | CA-002 | Nearby search | ✅ | `locationProvider`, haversine; backend `/salons/nearby` |
 | CA-003 | Review image upload | ✅ | `UploadFilesUseCase` + backend `images`; **2026-10-12**: `ReviewModel`/`SalonReviewModel` artık `images` parse ediyor ve kartlarda thumbnail gösteriliyor |
-| CA-004 | Bildirim ekranı | ✅ | `features/notifications` (screen + provider + 6 test) |
+| CA-004 | Bildirim ekranı | ✅ | `features/notifications` (screen + provider + 7 dosya / 29 test) |
 | CA-005 | Avatar upload | ✅ | `ImagePickerService` + `avatar_upload_section.dart` |
 | CA-006 | Salon entity eksik alanları | ✅ | `Salon` entity: distance, ratingAvg, priceRange vb. |
 | CA-007 | Discovery filtreleri | ✅ | server-side `SalonFilter` + `/categories` |
@@ -63,8 +68,8 @@ customer_app 271, salon_app 84; aşağıdaki tablolarda işaretli 50 maddenin ta
 
 | ID | Madde | Durum | Kanıt |
 |----|-------|-------|-------|
-| SA-001 | Dashboard gelir hesabı | ✅ | `dashboard_provider.dart` — aylık gelir, `Future.wait` ile paralel |
-| SA-002 | Sequential API çağrıları | ✅ | `Future.wait` (satır 93, 119) |
+| SA-001 | Dashboard gelir hesabı | ✅ | `dashboard_provider.dart:100-117` — aylık gelir tek istekle geliyor; `salon_app/lib` kodunda paralel toplama (eşzamanlı fetch) yok |
+| SA-002 | Sequential API çağrıları | ❌ | Yapılmadı: `salon_app/lib` kodunda paralel toplama yok; `_fetch` sıralı `await` zinciri (tek `dio.get`, `dashboard_provider.dart:100-117`). Paralelleştirme işi açık. |
 | SA-003 | Salon soft delete | ✅ | backend `isActive` filtresi |
 | SA-004 | Salon profile image upload | ✅ | `core/network/upload_service.dart` + profile ekranında "Fotoğraf ekle" (image_picker → `/upload/multiple`) |
 | SA-005 | Staff active/inactive toggle | ✅ | `staff_management_screen.dart` PopupMenu 'toggle' |
@@ -73,7 +78,7 @@ customer_app 271, salon_app 84; aşağıdaki tablolarda işaretli 50 maddenin ta
 | SA-008 | Reviews pagination | ✅ | `ReviewFeed` (page/limit/total/hasMore) + "Daha fazla göster" butonu |
 | SA-009 | Dashboard chart | ✅ | zaten çalışıyordu |
 | SA-010 | Verified badge | ✅ | `salon_profile_screen.dart` `isVerified` conditional |
-| SA-011 | Working hours `isClosed` toggle | ✅ | satır 815-821 toggle |
+| SA-011 | Working hours `isClosed` toggle | ✅ | `salon_profile_screen.dart:934-940` (`isClosed` toggle) |
 | SA-012 | Appointment status filtreleri | ✅ | `_statusFilter` + `refresh(date, status)` |
 
 ---
@@ -82,7 +87,7 @@ customer_app 271, salon_app 84; aşağıdaki tablolarda işaretli 50 maddenin ta
 
 | ID | Madde | Durum | Not |
 |----|-------|-------|-----|
-| ADMIN-001 | Admin uygulaması | ✅ | Kapsam Next.js'e çevrildi: `apps/admin_panel/` (dashboard, users, salons, reviews, categories, settings, appointments). `Sidebar.tsx`'teki eksik `return (` düzeltildi. **API'ye bağlanan ekranlar:** categories (CRUD + serviceCount), settings (yeni `Setting` modeli, GET/PUT `/settings`), appointments (Tamamla/İptal → `PATCH /appointments/:id/status`), salons (verify + soft-delete), users (toggle-active), reviews (visibility). `npm run lint` temiz, `npm run build` 9 route. |
+| ADMIN-001 | Admin uygulaması | ✅ | Kapsam Next.js'e çevrildi: `apps/admin_panel/` (dashboard, users, salons, reviews, categories, settings, appointments). `Sidebar.tsx`'teki eksik `return (` düzeltildi. **API'ye bağlanan ekranlar:** categories (CRUD + serviceCount), settings (yeni `Setting` modeli, GET/PUT `/settings`), appointments (Tamamla/İptal → `PATCH /appointments/:id/status`), salons (verify + soft-delete), users (toggle-active), reviews (visibility). `npm run lint` temiz, `npm run build` — 8 `page.tsx`; `next build` 11 statik route (2026-10-26 T1 ölçümü). |
 
 ---
 
@@ -124,7 +129,7 @@ customer_app 271, salon_app 84; aşağıdaki tablolarda işaretli 50 maddenin ta
 3. ~~Salon app provider testleri~~ tamamlandı (15 test)
 4. ~~404 fallback~~ — zaten `app.js`'te JSON 404 dönüyordu; 6 testle doğrulandı
 
-Kalan: yok — seed ve DB sync sorunları kapatıldı (aşağıdaki "Seed & DB sync" bölümü).
+Seed ve DB sync sorunları kapatıldı (aşağıdaki "Seed & DB sync" bölümü).
 
 ### Seed & DB sync (2026-10-13)
 

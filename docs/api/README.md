@@ -1,8 +1,8 @@
 # 🏨 Beauty Salon API — Detaylı Dokümantasyon
 
-> **Kapsam:** `apps/api/` (Node.js 24 / Express 5 / Sequelize 6 / SQLite)
+> **Kapsam:** `apps/api/` (Node.js 22.23.4 — `.tool-versions` ile pinli / Express 5 / Sequelize 6 / SQLite)
 > **Kaynak:** `src/` kodu, `tests/` suite'i, `src/database.sqlite` şeması ve canlı sunucu (`http://localhost:3200/api/v1`) üzerinde yapılan gerçek istekler.
-> **Doğrulama tarihi:** 2026-10-15 (canlı probe + `npm test` → **286 passing**)
+> **Doğrulama tarihi:** 2026-10-23 (canlı probe + `npm test` → **291 passing**)
 
 Bu dizin, API'nin modül modül bölünmüş dokümantasyonudur. Tek dosya özeti için: `docs/BACKEND-API.md`.
 

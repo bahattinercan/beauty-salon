@@ -33,7 +33,7 @@
 | # | Sorun | Etki |
 |---|---|---|
 | 21 | `twilio` bağımlılığı yok | Twilio env tanımlıysa `require('twilio')` throw → 500 |
-| 22 | `sharp`, `swagger-jsdoc`, `swagger-ui-express`, `pg`, `pg-hstore`, `cookie-parser` kullanılmıyor | Ölü bağımlılık |
+| 22 | `sharp`, `swagger-jsdoc`, `swagger-ui-express` kullanılmıyor; `pg`/`pg-hstore` yalnız `sequelize-cli` postgres yolu için gerekli; `cookie-parser` **aktiftir** (`src/app.js:8`, `src/app.js:83`) | Kısmen ölü bağımlılık |
 | 23 | `optionalAuth`, `createProductValidator`, `queryProductValidator` kullanılmıyor | Ölü kod |
 | 24 | `errorHandler`'daki `err.type === 'validation'` dalı ölü | `validate` kendi yanıtlıyor |
 | 25 | `ensureColumns()` eksik tabloda patlar (`PRAGMA` boş → `ALTER TABLE` "no such table") | `sync()` önce çalıştığı için pratikte sorun değil; `ensureColumns()` tek başına çağrılırsa kırılır |

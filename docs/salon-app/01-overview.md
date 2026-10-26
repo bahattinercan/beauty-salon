@@ -27,7 +27,7 @@ Salon sahibi uygulamada şu işleri yapar:
 | Bileşen | Paket | Versiyon | Rol |
 |---|---|---|---|
 | Dil | Dart | SDK `^3.10.7` | — |
-| Framework | Flutter | 3.44.3 (stable, doğrulandı) | UI |
+| Framework | Flutter | 3.47.7 (`.tool-versions` ile pinli) | UI |
 | State | `flutter_riverpod` | ^3.2.1 | AsyncNotifier tabanlı state |
 | Navigasyon | `go_router` | ^17.1.0 | Route + redirect + shell |
 | HTTP | `dio` | ^5.9.1 | API istemcisi, interceptor |

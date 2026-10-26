@@ -8,7 +8,7 @@
 Müşteri salon keşfeder ve randevu alır; salon sahibi ekibini, hizmetlerini ve randevularını yönetir;
 platform yöneticisi tüm kiracıları denetler — hepsi tek bir backend üzerinden.
 
-4 uygulama · 646 test · rol bazlı yetkilendirme
+4 uygulama · 802 test · rol bazlı yetkilendirme
 
 [![Node.js](https://img.shields.io/badge/Node.js-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![Express](https://img.shields.io/badge/Express%205-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com)
@@ -108,16 +108,16 @@ verilmezse seed **çalışmayı reddeder**, böylece canlı kurulumda herkesin b
 
 ## Test
 
-Sayılar bu repoda çalıştırılarak alındı (2026-10-23 ölçümü), dokümandan kopyalanmadı:
+Sayılar bu repoda çalıştırılarak alındı (2026-10-26 koşum ölçümü), dokümandan kopyalanmadı:
 
 | Uygulama | Komut | Sonuç |
 |---|---|---|
 | API | `npm test` (Mocha) | **291 test geçiyor** |
 | customer_app | `flutter test` | **271 test geçiyor** |
 | salon_app | `flutter test` | **84 test geçiyor** |
-| admin_panel | — | test yok (aşağıya bakın) |
+| admin_panel | `npm test` (node:test + vitest) | **156 test** (29 node + 127 bileşen) |
 
-2026-10-23 ölçümü: toplam 646 test (API 291 · customer_app 271 · salon_app 84; admin_panel hariç).
+2026-10-26 ölçümü: toplam 802 test (API 291 · customer_app 271 · salon_app 84 · admin_panel 156).
 
 Testler; oturum izolasyonu, rol bazlı erişim, randevu durum geçişleri, medya yolu çözümlemesi ve
 gövde doğrulama kenar durumlarını kapsar. Örnek: `DashboardNotifier` için *"randevular için tek
@@ -145,7 +145,6 @@ Bunları saklamıyorum; reponun bugünkü gerçeği:
   yok (`src/test-database.sqlite` kontrol edildi) — yani migration'lar hiç uygulanmamış, model tanımlarıyla
   birebir uyuşmuyor. Geri alınabilir şema değişikliği için runtime'ın migration'lara geçirilmesi gerekiyor
   (ayrıntı: [docs/api/09-seed-and-migrations.md](docs/api/09-seed-and-migrations.md)).
-- **`admin_panel` test edilmiyor.** En çok ekran burada; öncelikli borç.
 - **Swagger paketleri bağlanmamış.** `swagger-jsdoc` ve `swagger-ui-express` bağımlılık olarak var
   ama `src/` içinde hiçbir yere mount edilmemiş. Bugünkü API dokümantasyonu `docs/api/` altındaki
   Markdown dosyaları — ya Swagger bağlanmalı ya bağımlılıklar kaldırılmalı.
@@ -161,14 +160,18 @@ Bunları saklamıyorum; reponun bugünkü gerçeği:
 
 ```
 apps/
-  api/            # Express API · 13 model · 14 route · 14 test dosyası
+  api/            # Express API · 12 model · 14 route · 14 test dosyası
   admin_panel/    # Next.js 16 yönetim paneli
   customer_app/   # Flutter müşteri uygulaması
   salon_app/      # Flutter salon uygulaması
 docs/             # ARCHITECTURE, BACKEND-API, ADMIN-PANEL, CUSTOMER-APP, SALON-APP
 plans/            # özellik planları ve karar kayıtları
-screenshots/      # uygulama ekran görüntüleri (E2E doğrulama çıktıları)
+screenshots/      # CDP harness (*.js); üretilen kareler git-ignored
 ```
+
+`screenshots/` altında üretilen kareler — `CA-019` görsel yenileme doğrulama koşuları dahil —
+**git-dışı koşu artefaktıdır** (`.gitignore` PNG/JPG'yi dışlar); repoda yalnızca CDP harness
+betikleri (`*.js`) sürümlenir.
 
 ## Dokümantasyon
 

@@ -1,6 +1,6 @@
 # 10 · Test Stratejisi
 
-> Doğrulama: `flutter test` → **48 test, hepsi geçiyor** (Flutter 3.44.3, ~5 sn). Network erişimi gerekmez.
+> Doğrulama: `flutter test` → **84 test, hepsi geçiyor** (2026-10-26 koşum ölçümü; Flutter 3.47.7, ~5 sn). Network erişimi gerekmez.
 
 ---
 
@@ -34,10 +34,11 @@ ProviderContainer makeContainer(FakeApi api) => ProviderContainer(
 
 ---
 
-## 10.2 Test Envanteri (48 test)
+## 10.2 Test Envanteri (15 dosya / 84 test)
 
 | Dosya | Adet | Ne doğruluyor |
 |---|---|---|
+| `test/app/theme/app_colors_test.dart` | 16 | Kontrast/token sözleşmesi: AA eşikleri, `AppColors.of(context)` çözümü, ham hex kalmaması |
 | `test/core/media_url_test.dart` | 4 | `resolveMediaUrl`: origin tamamlama, slash'siz, idempotent, null/boş |
 | `test/core/state_view_test.dart` | 5 | `AsyncStateView` skeleton/error+retry/empty; `EmptyState` aksiyon koşulu |
 | `test/features/data/salon_data_providers_test.dart` | 15 | SalonNotifier (parse, PATCH, email-change endpoint, 500 hatası), ServicesNotifier (parse/create/edit-delete), StaffNotifier (parse/create), AppointmentsNotifier (parse/refresh/status/salon yok), DashboardNotifier (chart+gelir, **tek istek**, salon yok) |
@@ -48,8 +49,14 @@ ProviderContainer makeContainer(FakeApi api) => ProviderContainer(
 | `test/features/reviews/salon_review_model_test.dart` | 2 | nested customer/service |
 | `test/features/reviews/review_feed_test.dart` | 2 | `hasMore` mantığı |
 | `test/features/dashboard/dashboard_appointment_model_test.dart` | 2 | nested null, price |
+| `test/features/auth/auth_logout_test.dart` | 2 | Çıkış akışı: token temizliği, state sıfırlama |
 | `test/features/auth/auth_state_test.dart` | 2 | AuthState initial/alanlar |
+| `test/features/dashboard/dashboard_week_boundary_test.dart` | 6 | Hafta sınırı: pazartesi/pazar hesabı, ay geçişi, gelir toplamı |
 | `test/widget_test.dart` | 2 | App render, Scaffold var |
+
+> Tablo 15 test dosyasını listeler; satır toplamı 73 statik test bloğudur (`grep "test("` sayımı).
+> `flutter test` 2026-10-26 koşumunda **84** test raporluyor — fark, döngü içinde üretilen
+> (parametrik) testlerin statik sayımda görünmemesinden gelir.
 
 ---
 

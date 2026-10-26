@@ -34,7 +34,7 @@ Salon sahiplerinin kendi salonunu yönettiği mobil/web uygulama: randevu takibi
 - **Auth:** `flutter_secure_storage`'da `access_token`, `refresh_token`, `user_id`, `user_name`. 401'de otomatik refresh + retry.
 - **Rol kapısı:** yalnızca `SALON_OWNER` giriş yapabilir.
 - **Navigasyon:** `/login`, `/register` public; geri kalan 6 route `ShellRoute` içinde `SalonMainScaffold` (5 sekme).
-- **Test:** 48 test, network'siz (`FakeApi` interceptor) — `flutter test` ile geçiyor.
+- **Test:** 84 test (2026-10-26 koşum ölçümü), network'siz (`FakeApi` interceptor) — `flutter test` ile geçiyor.
 
 ---
 

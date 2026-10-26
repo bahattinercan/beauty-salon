@@ -286,10 +286,11 @@ flutter test             # hedef: 197 + ~18 yeni test, hepsi yeşil
 # 2) Web release build + CDP ekran görüntüsü
 flutter build web --release --dart-define=API_BASE_URL=http://127.0.0.1:3200/api/v1
 node screenshots/_harness/serve.js          # 8901
-node screenshots/_harness/drive.js screenshots/_harness/plan-customer-redesign.js
+node screenshots/_harness/drive.js screenshots/_harness/plan-customer-redesign-light.js
+# aynı harness'ın diğer varyantları: -dark.js, -onboarding.js, -360.js, -nav.js
 ```
 
-Yeni plan dosyası `screenshots/_harness/plan-customer-redesign.js` şu kareleri üretir (tek CDP oturumu — harness kuralı):
+Plan, `screenshots/_harness/plan-customer-redesign-{light,dark,onboarding,360,nav}.js` dosyalarıyla şu kareleri üretir (tek CDP oturumu — harness kuralı):
 
 | Kare | Ne kanıtlıyor |
 |---|---|

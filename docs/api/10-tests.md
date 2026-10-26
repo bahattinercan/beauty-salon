@@ -8,16 +8,16 @@ npm run test:watch
 npm run test:coverage    # nyc
 ```
 
-## Sonuç (2026-10-15, bu ortamda)
+## Sonuç (2026-10-23, bu ortamda)
 
-**286 passing**, 0 failing.
+**291 passing**, 0 failing (2026-10-23 ölçümü).
 
 | Dosya | Test |
 |---|---|
 | `admin.test.js` | 8 |
 | `app.test.js` | 11 |
-| `appointment.test.js` | 34 |
-| `auth.test.js` | 26 |
+| `appointment.test.js` | 38 |
+| `auth.test.js` | 27 |
 | `category.test.js` | 23 |
 | `favorite.test.js` | 13 |
 | `notification.test.js` | 22 |
@@ -28,7 +28,7 @@ npm run test:coverage    # nyc
 | `settings.test.js` | 6 |
 | `upload.test.js` | 12 |
 | `user.test.js` | 23 |
-| **Toplam** | **286** |
+| **Toplam** | **291** |
 
 ## `tests/setup.js`
 

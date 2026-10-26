@@ -322,4 +322,4 @@ TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER (opsiyonel)
 ## Test Kullanıcıları (API)
 Backend testleri için seed verilerindeki kullanıcıları kullan.
 
-Testler 2026-10-15 itibarıyla tamamen geçiyor (14 dosya, 286 test). Ayrıntı: `docs/api/10-tests.md`.
+Testler 2026-10-23 itibarıyla tamamen geçiyor (14 dosya, 291 test). Ayrıntı: `docs/api/10-tests.md`.

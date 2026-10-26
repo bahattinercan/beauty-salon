@@ -2,7 +2,7 @@
 
 ## 11.1 Ön Koşullar
 
-- Flutter SDK (repo 3.44.3 ile doğrulandı), Dart ≥ 3.10
+- Flutter SDK 3.47.7 (`.tool-versions` ile pinli), Dart ≥ 3.10
 - Backend: `apps/api` (Node.js) — varsayılan port **3000**
 - Android emulator (Android için) veya Chrome (web için)
 

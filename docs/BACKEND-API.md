@@ -1,8 +1,8 @@
 # 🏨 Beauty Salon Backend — Detaylı Dokümantasyon
 
-> Kapsam: `apps/api/` (Node.js 24 / Express 5 / Sequelize 6 / SQLite)
+> Kapsam: `apps/api/` (Node.js 22.23.4 — `.tool-versions` ile pinli / Express 5 / Sequelize 6 / SQLite)
 > Kaynak: `src/` kodundan, `tests/` suite'inden, `src/database.sqlite` şemasından ve canlı sunucu üzerinde yapılan gerçek isteklerden çıkarılmıştır.
-> **Doğrulama tarihi: 2026-10-15** (`npm test` → 286 passing, canlı probe ile teyit edildi)
+> **Doğrulama tarihi: 2026-10-23** (`npm test` → 291 passing, canlı probe ile teyit edildi)
 >
 > 📁 Modüler asıl dokümantasyon: **`docs/api/`** (README + 01…12 + `openapi.yaml`). Bu dosya tek sayfalık özettir; ayrıntı ve güncel doğrulama `docs/api/` setindedir. Eski (bozuk) içerik `docs/BACKEND-API.md.bak` dosyasında yedeklendi.
 
@@ -92,7 +92,7 @@ apps/api/
 │   ├── utils/                    # helpers, mailer, sms
 │   ├── seeders/                  # seed.js, reset.js
 │   └── database/migrations/      # 12 migration (Postgres/JSONB tabanlı)
-├── tests/                        # 14 dosya, 286 test
+├── tests/                        # 14 dosya, 291 test
 ├── uploads/                      # yüklenen dosyalar
 ├── src/database.sqlite           # ← gerçek runtime DB
 ├── database.sqlite               # eski/yedek dosya (kod kullanmıyor)
@@ -650,13 +650,13 @@ Runtime ise `src/config/database.js` ile **SQLite** kullanır. Sonuçlar:
 
 ## 15. Testler
 
-14 dosya, **286 test** — 2026-10-15'te bu ortamda tamamı geçiyor:
+14 dosya, **291 test** — 2026-10-23'te bu ortamda tamamı geçiyor:
 
 | Dosya | Test |
 |---|---|
 | `salon.test.js` | 37 ✅ |
-| `appointment.test.js` | 34 ✅ |
-| `auth.test.js` | 26 ✅ |
+| `appointment.test.js` | 38 ✅ |
+| `auth.test.js` | 27 ✅ |
 | `service-staff.test.js` | 26 ✅ |
 | `category.test.js` | 23 ✅ |
 | `product.test.js` | 23 ✅ |
@@ -756,7 +756,7 @@ curl -s -X POST $BASE/upload/single -H "Authorization: Bearer $TOKEN" -F "file=@
 
 ## 18. Dokümantasyon Notu
 
-Bu dosya `apps/api/` kodunun gerçek davranışını esas alır ve **2026-10-15** doğrulamasıyla hizalandı (canlı probe + `npm test` → 286 passing + `src/database.sqlite` şeması). Modüler ayrıntılı set: `docs/api/`.
+Bu dosya `apps/api/` kodunun gerçek davranışını esas alır ve **2026-10-23** doğrulamasıyla hizalandı (canlı probe + `npm test` → 291 passing + `src/database.sqlite` şeması). Modüler ayrıntılı set: `docs/api/`.
 
 2026-10-12 öncesindeki sürümde şema tablolarındaki `nullable` bilgileri hatalıydı, `Notifications` ve `Products` endpoint'leri eksikti ve son ~120 satır kopyalanmış "JWT doğrulama" metinlerinden oluşuyordu. Eski hali `docs/BACKEND-API.md.bak` içinde duruyor (gereksizse silinebilir).
 

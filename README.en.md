@@ -8,7 +8,7 @@
 Customers discover salons and book appointments; salon owners manage their team, services and
 appointments; the platform admin oversees every tenant — all through a single backend.
 
-4 applications · 646 tests · role-based authorization
+4 applications · 802 tests · role-based authorization
 
 [![Node.js](https://img.shields.io/badge/Node.js-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![Express](https://img.shields.io/badge/Express%205-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com)
@@ -109,16 +109,16 @@ everyone knows.
 
 ## Tests
 
-The numbers were obtained by running the suites in this repo on 2026-10-23, not copied from documentation:
+The numbers were obtained by running the suites in this repo on 2026-10-26, not copied from documentation:
 
 | Application | Command | Result |
 |---|---|---|
 | API | `npm test` (Mocha) | **291 tests passing** |
 | customer_app | `flutter test` | **271 tests passing** |
 | salon_app | `flutter test` | **84 tests passing** |
-| admin_panel | — | no tests (see below) |
+| admin_panel | `npm test` (node:test + vitest) | **156 tests** (29 node + 127 component) |
 
-Total measured on 2026-10-23: 646 tests (API 291 · customer_app 271 · salon_app 84; admin_panel excluded).
+Total measured on 2026-10-26: 802 tests (API 291 · customer_app 271 · salon_app 84 · admin_panel 156).
 
 The tests cover session isolation, role-based access, appointment status transitions, media path
 resolution and body-validation edge cases. For example, there is a test for `DashboardNotifier` —
@@ -148,7 +148,6 @@ I am not hiding these; this is what the repo actually looks like today:
   been applied and do not match the model definitions exactly. Reversible schema changes require moving the
   runtime to migrations
   (details: [docs/api/09-seed-and-migrations.md](docs/api/09-seed-and-migrations.md)).
-- **`admin_panel` is untested.** This is where most of the screens are; top-priority debt.
 - **The Swagger packages are not wired up.** `swagger-jsdoc` and `swagger-ui-express` exist as
   dependencies but are not mounted anywhere under `src/`. Today's API documentation is the Markdown
   files under `docs/api/` — either wire up Swagger or drop the dependencies.
@@ -165,14 +164,18 @@ I am not hiding these; this is what the repo actually looks like today:
 
 ```
 apps/
-  api/            # Express API · 13 models · 14 routes · 14 test files
+  api/            # Express API · 12 models · 14 routes · 14 test files
   admin_panel/    # Next.js 16 admin panel
   customer_app/   # Flutter customer app
   salon_app/      # Flutter salon app
 docs/             # ARCHITECTURE, BACKEND-API, ADMIN-PANEL, CUSTOMER-APP, SALON-APP
 plans/            # feature plans and decision records
-screenshots/      # application screenshots (E2E verification output)
+screenshots/      # CDP harness (*.js); generated frames are git-ignored
 ```
+
+The frames produced under `screenshots/` — including the `CA-019` visual-refresh verification runs —
+are **non-git run artifacts** (`.gitignore` excludes PNG/JPG); only the CDP harness scripts (`*.js`)
+are versioned.
 
 ## Documentation
 
@@ -185,6 +188,6 @@ screenshots/      # application screenshots (E2E verification output)
 
 <sub>**Türkçe** — Güzellik salonları için çok kiracılı rezervasyon ve işletme platformu: Express 5 +
 Sequelize REST API, Next.js yönetim paneli ve iki Flutter uygulaması (müşteri ve salon sahibi); rol
-bazlı yetkilendirme ve kiracı izolasyonu. Üç uygulamanın test sayıları da bu repoda çalıştırılarak
+bazlı yetkilendirme ve kiracı izolasyonu. Dört uygulamanın test sayıları da bu repoda çalıştırılarak
 alındı. Tam mimari için [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Türkçe sürüm:
 [README.md](README.md).</sub>
