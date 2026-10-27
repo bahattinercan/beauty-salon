@@ -310,6 +310,70 @@ describe('Salon API', () => {
         .set('Authorization', `Bearer ${owner1Token}`);
 
     });
+
+    it('should update workingHours and return it as an object (AP-007)', async () => {
+      const workingHours = {
+        monday: { open: '08:30', close: '19:00' },
+        tuesday: { open: '08:30', close: '19:00' },
+        saturday: { open: '10:00', close: '16:00' },
+      };
+
+      const res = await supertest(app)
+        .patch(`/api/v1/salons/${salon1.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          workingHours,
+          latitude: 41.0082,
+          longitude: 28.9784,
+          galleryImages: ['/uploads/a.jpg', '/uploads/b.jpg'],
+        });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.data.workingHours).to.be.an('object');
+      expect(res.body.data.workingHours).to.deep.equal(workingHours);
+      expect(res.body.data.latitude).to.be.closeTo(41.0082, 0.0001);
+      expect(res.body.data.longitude).to.be.closeTo(28.9784, 0.0001);
+      expect(res.body.data.galleryImages).to.deep.equal(['/uploads/a.jpg', '/uploads/b.jpg']);
+
+      // Restore
+      const salon = await Salon.findByPk(salon1.id);
+      await salon.update({
+        workingHours: salon1.workingHours,
+        latitude: salon1.latitude,
+        longitude: salon1.longitude,
+        galleryImages: [],
+      });
+    });
+
+    it('should reject invalid workingHours with 400 (AP-007)', async () => {
+      const openAfterClose = await supertest(app)
+        .patch(`/api/v1/salons/${salon1.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ workingHours: { monday: { open: '18:00', close: '09:00' } } });
+
+      expect(openAfterClose.status).to.equal(400);
+      expect(openAfterClose.body.success).to.equal(false);
+
+      const invalidTime = await supertest(app)
+        .patch(`/api/v1/salons/${salon1.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ workingHours: { monday: { open: '25:00', close: '09:00' } } });
+
+      expect(invalidTime.status).to.equal(400);
+    });
+
+    it('should keep partial owner updates working (validator is not a whitelist)', async () => {
+      const res = await supertest(app)
+        .patch(`/api/v1/salons/${salon1.id}`)
+        .set('Authorization', `Bearer ${owner1Token}`)
+        .send({ address: 'Yeni Adres Cad. No:1, Kadıköy', city: 'İstanbul', district: 'Kadıköy' });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.data.address).to.equal('Yeni Adres Cad. No:1, Kadıköy');
+
+      const salon = await Salon.findByPk(salon1.id);
+      await salon.update({ address: salon1.address, city: salon1.city, district: salon1.district });
+    });
   });
 
   describe('DELETE /salons/:id (soft delete)', () => {

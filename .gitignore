@@ -20,6 +20,9 @@ apps/api/uploads/
 .claude/settings.local.json
 .vscode/
 
+# Uygulama bazlı yerel ajan talimatı (sürümlenmez)
+apps/admin_panel/AGENTS.md
+
 # Flutter / Dart build artefaktları
 build/
 .dart_tool/

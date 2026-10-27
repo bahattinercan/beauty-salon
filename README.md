@@ -108,16 +108,17 @@ verilmezse seed **çalışmayı reddeder**, böylece canlı kurulumda herkesin b
 
 ## Test
 
-Sayılar bu repoda çalıştırılarak alındı (2026-10-26 koşum ölçümü), dokümandan kopyalanmadı:
+Sayılar bu repoda çalıştırılarak alındı (2026-10-27 koşum ölçümü), dokümandan kopyalanmadı:
 
 | Uygulama | Komut | Sonuç |
 |---|---|---|
-| API | `npm test` (Mocha) | **291 test geçiyor** |
+| API | `npm test` (Mocha) | **308 test geçiyor** |
 | customer_app | `flutter test` | **271 test geçiyor** |
 | salon_app | `flutter test` | **84 test geçiyor** |
-| admin_panel | `npm test` (node:test + vitest) | **156 test** (29 node + 127 bileşen) |
+| admin_panel | `npm test` (node:test + vitest) | **232 test** (43 node + 189 bileşen) |
 
-2026-10-26 ölçümü: toplam 802 test (API 291 · customer_app 271 · salon_app 84 · admin_panel 156).
+2026-10-27 ölçümü: toplam 895 test (API 308 · customer_app 271 · salon_app 84 · admin_panel 232).
+(customer_app/salon_app satırları 2026-10-26 koşumundan; API ve admin_panel 2026-10-27'de yeniden çalıştırıldı.)
 
 Testler; oturum izolasyonu, rol bazlı erişim, randevu durum geçişleri, medya yolu çözümlemesi ve
 gövde doğrulama kenar durumlarını kapsar. Örnek: `DashboardNotifier` için *"randevular için tek

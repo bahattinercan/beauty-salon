@@ -4,7 +4,7 @@ const staffController = require('../controllers/staff.controller');
 const serviceController = require('../controllers/service.controller');
 const productController = require('../controllers/product.controller');
 const { authenticate, authorize, optionalAuth } = require('../middlewares/auth');
-const { createSalonValidator, querySalonValidator, nearbyValidator } = require('../validators/salon.validator');
+const { createSalonValidator, querySalonValidator, nearbyValidator, updateSalonValidator } = require('../validators/salon.validator');
 const validate = require('../middlewares/validate');
 
 // Public salon endpoints
@@ -15,7 +15,7 @@ router.get('/:id', salonController.getById);
 
 // Salon CRUD (owner)
 router.post('/', authenticate, authorize('SALON_OWNER'), createSalonValidator, validate, salonController.create);
-router.patch('/:id', authenticate, authorize('SALON_OWNER', 'ADMIN'), salonController.update);
+router.patch('/:id', authenticate, authorize('SALON_OWNER', 'ADMIN'), updateSalonValidator, validate, salonController.update);
 router.delete('/:id', authenticate, authorize('SALON_OWNER', 'ADMIN'), salonController.remove);
 
 // Admin: salon onay

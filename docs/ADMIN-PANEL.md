@@ -169,13 +169,50 @@ Tekrar eden rozet stilleri `globals.css` içinde utility olarak tanımlıdır:
 
 ---
 
+## Salon Yönetimi — filtre çubuğu (AP-007)
+
+`apps/admin_panel/src/app/salons/page.tsx` + `components/ui/{FilterBar,FilterChips}.tsx`.
+
+### Yerleşim sözleşmesi
+
+| Genişlik | Kural |
+|---|---|
+| ≥1024px | Çubuk `lg:flex-nowrap`: tüm kontroller **tek satır** (tek dikey merkez), çubuk yüksekliği ≤ 56px |
+| <1024px | `flex-wrap`: çubuk sarar (kabul istisnası); yatay **taşma yok** (`scrollWidth <= clientWidth`) |
+
+Görünüm seçimi (Tablo/Kartlar) filtre değil sunum kontrolü olduğu için **başlık aksiyonlarına** taşındı; 1280px'te filtre çubuğuna sığmıyordu.
+
+### Ölçülen kök nedenler (2026-10-27, production build)
+
+1. **`w-full` ezmesi:** `Field.tsx` içindeki `CONTROL` taban sınıfı `w-full` taşıyor; `cx` sınıf birleştirmediği için `Select`'e verilen `w-40` **eziliyordu**. Select'ler satırı 1105px genişliğe şişirip 1440px'te bile 2773px yatay taşma üretiyordu. Çözüm: genişlik sınıfları **sarmalayıcıda** (`<div className="min-w-28 max-w-40 flex-1">`), kontrol `w-full` ile doluyor.
+2. **`min-w-0` ezmesi:** `FilterBar`'ın `[&>*]:min-w-0` kuralı `leading` yuvasının `min-w-[12rem]`'ini eziyor, arama 65px'e çöküp input komşu sekmelerin **üzerine biniyordu** (ölçüm: `inputRight 448` > `firstTabLeft 365`, 83px örtüşme). Çözüm: kural **bileşenin kendisinde** çözüldü — `FilterBar` yuvası `!min-w-[12rem]` (`!` özgüllük yarışını bitirir), sayfa yalnız `min-w-[10rem] flex-1 overflow-hidden` sarmalayıcı verir.
+3. **2px dikey kayma:** `Tabs` kökü `pb-1` ayırıyor; sekme düğmeleri 112px'te, input/select 114px'te başlayıp "tek satır" ölçütünü (`benzersiz dikey merkez = 1`) düşürüyordu. Çözüm: `Tabs`'a `-mb-1`.
+4. **Chip satırı örtüşmesi (390px):** `FilterChips` kökü `flex` (nowrap) + liste `-mx-1` negatif margin'liydi; liste daralınca son chip kırpılıyor ve "3 filtre etkin" özeti chip'in **üzerine biniyordu**. Çözüm: kök `flex flex-wrap`, liste `flex-1 min-w-[12rem] overflow-x-auto` (kendi içinde kayar, negatif margin yok), özet + Temizle **ayrı flex öğesinde** (`shrink-0`) — dar ekranda alt satıra iner.
+
+### Kanıt (harness)
+
+`CDP_PORT=9444 node screenshots/_harness/drive.js screenshots/_harness/plan-admin-salons-filters.js`
+(production `next start`, API :3000 canlı; ekran görüntüsü **veri geldikten sonra**: `table tbody tr > 0` ya da boş durum, en fazla 20 sn).
+
+| Genişlik | `scrollWidth/clientWidth` | Tek satır | Çubuk | Kontrol | Chip satırı |
+|---|---|---|---|---|---|
+| 1440 | 1440/1440 → taşma **0** | evet (merkez 1) | 44px | 8 (arama + 4 durum sekmesi + 3 select) | tek satır, örtüşme **0** |
+| 1280 | 1280/1280 → taşma **0** | evet (merkez 1) | 44px | 8 | tek satır, örtüşme **0** |
+| 390 | 390/390 → taşma **0** | hayır (3 satır, istisna §5.3) | 148px | 8 | liste kendi içinde kayar (`440/343`), özet **alt satırda**, örtüşme **0** |
+
+Arama input'u ile ilk sekme arasındaki yatay boşluk 1440/1280'de **12px** (kesişim yok; eski durumda 83-94px örtüşme vardı).
+
+Kanıt görselleri: `screenshots/admin-salons-filters-{1440,1280,390}.png` (tablo satırı görünür).
+
+---
+
 ## Test kapısı
 
 | Adım | Komut | Beklenen sonuç |
 |---|---|---|
 | Tip kontrolü | `npm run typecheck` | hatasız (`tsc --noEmit`) |
 | Lint | `npm run lint` | hatasız (`eslint`) |
-| Test | `npm test` | **156 test** yeşil (29 `node:test` + 127 vitest) |
+| Test | `npm test` | **232 test** yeşil (43 `node:test` + 189 vitest) |
 | Build | `npm run build` | T1 ölçümü: 11 statik route, build **exit 0** |
 
-`npm test` sırasıyla `npm run test:node` (`node --test`, 29 test) ve `npm run test:unit` (vitest, 127 test) çalıştırır; toplam **156 test**.
+`npm test` sırasıyla `npm run test:node` (`node --test`, 43 test) ve `npm run test:unit` (vitest, 189 test) çalıştırır; toplam **232 test**.

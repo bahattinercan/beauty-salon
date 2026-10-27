@@ -1,6 +1,21 @@
 const { sequelize } = require('../config/database');
+const { Op } = require('sequelize');
 const { User, Salon, Appointment, Review, Staff, Service } = require('../models');
 const { successResponse, paginate, paginatedResponse } = require('../utils/helpers');
+
+// Paneldeki türetilmiş durum -> Salon kolonları (AP-007 §4.1)
+const SALON_STATUS_FILTERS = {
+  'onaylı': { isActive: true, isVerified: true },
+  'bekliyor': { isActive: true, isVerified: false },
+  'pasif': { isActive: false },
+};
+
+// Sıralama parametresi -> Salon kolonu
+const SALON_SORT_COLUMNS = {
+  createdAt: 'createdAt',
+  name: 'name',
+  rating: 'ratingAvg',
+};
 
 // GET /admin/dashboard
 const getDashboard = async (req, res, next) => {
@@ -135,18 +150,72 @@ const getDashboard = async (req, res, next) => {
 const getAllSalons = async (req, res, next) => {
   try {
     const { limit, offset, page } = paginate(req.query.page, req.query.limit);
+    const {
+      search, status, city, district, minRating,
+      sort = 'createdAt', order = 'desc', verified,
+    } = req.query;
+
     const where = {};
-    if (req.query.verified !== undefined) where.isVerified = req.query.verified === 'true';
+    const conditions = [];
+    if (verified !== undefined) conditions.push({ isVerified: verified === 'true' });
+    if (status) conditions.push(SALON_STATUS_FILTERS[status]);
+    if (city) conditions.push({ city: { [Op.like]: city } });
+    if (district) conditions.push({ district: { [Op.like]: district } });
+    if (minRating !== undefined && minRating !== '') {
+      conditions.push({ ratingAvg: { [Op.gte]: parseFloat(minRating) } });
+    }
+    if (search) {
+      // Sahip araması üst seviye where içinde: include.where count'u bozar (AP-007 R1).
+      // `$owner.fullName$` SQLite'ta alan adına çevrilmiyor → LOWER(kolon) LIKE ile açıkça yazılıyor.
+      const term = `%${String(search).toLowerCase()}%`;
+      const lowerLike = (column) => sequelize.where(
+        sequelize.fn('LOWER', sequelize.col(column)),
+        { [Op.like]: term },
+      );
+      conditions.push({
+        [Op.or]: [
+          lowerLike('Salon.name'),
+          lowerLike('Salon.address'),
+          lowerLike('Salon.city'),
+          lowerLike('Salon.district'),
+          lowerLike('owner.full_name'),
+          lowerLike('owner.email'),
+        ],
+      });
+    }
+    if (conditions.length) where[Op.and] = conditions;
 
-    const { count, rows } = await Salon.findAndCountAll({
-      where,
-      include: [{ model: User, as: 'owner', attributes: ['fullName', 'email'] }],
-      order: [['createdAt', 'DESC']],
-      limit,
-      offset,
-    });
+    const orderColumn = SALON_SORT_COLUMNS[sort] || 'createdAt';
+    const orderDirection = order === 'asc' ? 'ASC' : 'DESC';
 
-    successResponse(res, paginatedResponse(rows, count, page, limit));
+    // counts/cities filtrelerden bağımsız (global) — panel sekmeleri ve şehir select'i için
+    const [result, totalSalons, verifiedSalons, pendingSalons, inactiveSalons, cityRows] = await Promise.all([
+      Salon.findAndCountAll({
+        where,
+        include: [{ model: User, as: 'owner', attributes: ['fullName', 'email'] }],
+        order: [[orderColumn, orderDirection]],
+        limit,
+        offset,
+        distinct: true,
+        subQuery: false,
+      }),
+      Salon.count(),
+      Salon.count({ where: { isActive: true, isVerified: true } }),
+      Salon.count({ where: { isActive: true, isVerified: false } }),
+      Salon.count({ where: { isActive: false } }),
+      Salon.findAll({ attributes: ['city'], group: ['city'], order: [['city', 'ASC']], raw: true }),
+    ]);
+
+    const payload = paginatedResponse(result.rows, result.count, page, limit);
+    payload.meta.counts = {
+      'tümü': totalSalons,
+      'onaylı': verifiedSalons,
+      'bekliyor': pendingSalons,
+      'pasif': inactiveSalons,
+    };
+    payload.meta.cities = cityRows.map((row) => row.city).filter(Boolean);
+
+    successResponse(res, payload);
   } catch (error) {
     next(error);
   }
