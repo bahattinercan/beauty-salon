@@ -359,4 +359,108 @@ describe('Category API', () => {
       expect(res.body.data.description).to.equal('Masaj ve wellness');
     });
   });
+
+  describe('Kategori medyası (imageUrl / videoUrl)', () => {
+    it('POST imageUrl ve videoUrl ile kategori oluşturur', async () => {
+      const res = await supertest(app)
+        .post('/api/v1/categories')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Medya Test Kategorisi',
+          iconName: 'image',
+          sortOrder: 42,
+          imageUrl: '/uploads/kategori.png',
+          videoUrl: '/uploads/kategori.mp4',
+        });
+
+      expect(res.status).to.equal(201);
+      expect(res.body.success).to.equal(true);
+      expect(res.body.data.imageUrl).to.equal('/uploads/kategori.png');
+      expect(res.body.data.videoUrl).to.equal('/uploads/kategori.mp4');
+
+      const stored = await ServiceCategory.findByPk(res.body.data.id);
+      expect(stored.imageUrl).to.equal('/uploads/kategori.png');
+      expect(stored.videoUrl).to.equal('/uploads/kategori.mp4');
+
+      await stored.destroy();
+    });
+
+    it('POST medya alanları verilmezse null kalır', async () => {
+      const res = await supertest(app)
+        .post('/api/v1/categories')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Medyasız Kategori', iconName: 'block' });
+
+      expect(res.status).to.equal(201);
+      expect(res.body.data.imageUrl).to.be.null;
+      expect(res.body.data.videoUrl).to.be.null;
+
+      await ServiceCategory.findByPk(res.body.data.id).then((s) => s.destroy());
+    });
+
+    it('PATCH imageUrl ve videoUrl günceller', async () => {
+      const category = await ServiceCategory.create({
+        name: 'Medya Güncelleme Kategorisi',
+        iconName: 'edit',
+        sortOrder: 43,
+      });
+
+      const res = await supertest(app)
+        .patch(`/api/v1/categories/${category.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ imageUrl: '/uploads/yeni.png', videoUrl: '/uploads/yeni.webm' });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.data.imageUrl).to.equal('/uploads/yeni.png');
+      expect(res.body.data.videoUrl).to.equal('/uploads/yeni.webm');
+
+      await category.destroy();
+    });
+
+    it('PATCH null ile medya alanlarını temizler', async () => {
+      const category = await ServiceCategory.create({
+        name: 'Medya Temizleme Kategorisi',
+        iconName: 'delete_sweep',
+        sortOrder: 44,
+        imageUrl: '/uploads/silinecek.png',
+        videoUrl: '/uploads/silinecek.mp4',
+      });
+
+      const res = await supertest(app)
+        .patch(`/api/v1/categories/${category.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ imageUrl: null, videoUrl: null });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.data.imageUrl).to.be.null;
+      expect(res.body.data.videoUrl).to.be.null;
+
+      const stored = await ServiceCategory.findByPk(category.id);
+      expect(stored.imageUrl).to.be.null;
+      expect(stored.videoUrl).to.be.null;
+
+      await stored.destroy();
+    });
+
+    it('PATCH medya alanlarına dokunmazsa mevcut değerler korunur', async () => {
+      const category = await ServiceCategory.create({
+        name: 'Medya Koruma Kategorisi',
+        iconName: 'lock',
+        sortOrder: 45,
+        imageUrl: '/uploads/korunan.png',
+        videoUrl: '/uploads/korunan.mp4',
+      });
+
+      const res = await supertest(app)
+        .patch(`/api/v1/categories/${category.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ description: 'Sadece açıklama güncellendi' });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.data.imageUrl).to.equal('/uploads/korunan.png');
+      expect(res.body.data.videoUrl).to.equal('/uploads/korunan.mp4');
+
+      await category.destroy();
+    });
+  });
 });

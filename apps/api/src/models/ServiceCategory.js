@@ -26,6 +26,16 @@ const ServiceCategory = sequelize.define('ServiceCategory', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  imageUrl: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'image_url',
+  },
+  videoUrl: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'video_url',
+  },
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,

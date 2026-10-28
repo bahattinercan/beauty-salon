@@ -36,4 +36,21 @@ const uploadMultiple = (req, res, next) => {
   }
 };
 
-module.exports = { uploadSingle, uploadMultiple };
+// POST /upload/video
+const uploadVideo = (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Dosya yüklenmedi' });
+    }
+
+    successResponse(res, {
+      url: `/uploads/${req.file.filename}`,
+      originalName: req.file.originalname,
+      size: req.file.size,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { uploadSingle, uploadMultiple, uploadVideo };

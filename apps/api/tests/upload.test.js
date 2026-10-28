@@ -216,6 +216,69 @@ describe('Upload API', () => {
     });
   });
 
+  describe('POST /upload/video', () => {
+    // Minimal MP4 başlığı (ftyp box) — multer sadece mimetype'a bakar
+    const MP4 = Buffer.concat([
+      Buffer.from([0x00, 0x00, 0x00, 0x18]),
+      Buffer.from('ftypisom', 'ascii'),
+      Buffer.from([0x00, 0x00, 0x02, 0x00]),
+      Buffer.from('isomiso2avc1mp41', 'ascii'),
+    ]);
+
+    it('should upload a valid mp4 video and serve it under /uploads', async () => {
+      const res = await upload('/api/v1/upload/video', [
+        { name: 'file', filename: 'tanitim.mp4', type: 'video/mp4', data: MP4 },
+      ]);
+
+      expect(res.status).to.equal(200);
+      expect(res.body).to.have.property('success', true);
+      expect(res.body.data.url).to.match(/^\/uploads\/[a-f0-9-]+\.mp4$/);
+      expect(res.body.data.originalName).to.equal('tanitim.mp4');
+      expect(res.body.data.size).to.equal(MP4.length);
+
+      const onDisk = path.join(UPLOAD_DEST, path.basename(res.body.data.url));
+      expect(fs.existsSync(onDisk)).to.equal(true);
+      track(res.body.data.url);
+
+      const served = await supertest(app).get(res.body.data.url);
+      expect(served.status).to.equal(200);
+      expect(served.body.length).to.equal(MP4.length);
+    });
+
+    it('should reject an image mimetype with 400', async () => {
+      const res = await upload('/api/v1/upload/video', [
+        { name: 'file', filename: 'logo.png', type: 'image/png', data: PNG },
+      ]);
+
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property('success', false);
+      expect(res.body.message).to.include('MP4');
+    });
+
+    it('should return 400 when no file is attached', async () => {
+      const m = multipart([]);
+      const res = await supertest(app)
+        .post('/api/v1/upload/video')
+        .set('Authorization', `Bearer ${token}`)
+        .set('Content-Type', m.contentType)
+        .send(m.body);
+
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property('success', false);
+      expect(res.body.message).to.include('Dosya yüklenmedi');
+    });
+
+    it('should require authentication', async () => {
+      const m = multipart([{ name: 'file', filename: 'x.mp4', type: 'video/mp4', data: MP4 }]);
+      const res = await supertest(app)
+        .post('/api/v1/upload/video')
+        .set('Content-Type', m.contentType)
+        .send(m.body);
+
+      expect(res.status).to.equal(401);
+    });
+  });
+
   describe('Ucdan uca: galeri alanına kaydetme', () => {
     it('should store uploaded gallery urls on the salon record', async () => {
       const uploadRes = await upload('/api/v1/upload/multiple', [

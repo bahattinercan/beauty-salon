@@ -161,11 +161,12 @@ Tekrar eden rozet stilleri `globals.css` içinde utility olarak tanımlıdır:
 ## Admin Endpoint'ler
 
 | Method | Path | Auth | Açıklama |
-|--------|------|----------|
+|--------|------|------|----------|
 | GET | `/admin/dashboard` | ADMIN | Dashboard (stats, recent appointments, reviews) |
 | GET | `/admin/salons` | ADMIN | Tüm salonlar (verified filter, sayfalı) |
 | GET | `/admin/appointments` | ADMIN | Tüm randevular (status filter, sayfalı) |
 | GET | `/admin/reviews` | ADMIN | Tüm yorumlar (sayfalı) |
+| POST | `/upload/video` | ADMIN | Video yükleme (mp4/webm/ogg/quicktime, ≤50 MB) |
 
 ---
 
@@ -206,13 +207,88 @@ Kanıt görselleri: `screenshots/admin-salons-filters-{1440,1280,390}.png` (tabl
 
 ---
 
+## Kategori Yönetimi — tablo, filtre çubuğu ve medya (AP-009)
+
+`apps/admin_panel/src/app/categories/page.tsx` (kart ızgarası → `DataTable`) + `src/lib/categoriesQuery.ts` (saf mantık) + `components/categories/VideoField.tsx`. Plan: `plans/admin/AP-009-categories-table-filters-media.md`.
+
+### Tablo kolonları
+
+| Kolon | İçerik | Mobil |
+|---|---|---|
+| Kategori | dairesel ikon çipi + kategori adı | `mobile: "primary"` |
+| Açıklama | blok metin, `line-clamp-2` | — |
+| Medya | 40×40 görsel + varsa **Video** badge'i | — |
+| Hizmet | sağ hizalı sayı, `tnum` | — |
+| Durum | Aktif / Pasif badge | — |
+| İşlemler | **Düzenle** + **Sil** | `mobile: false` |
+
+Kart ızgarası **korundu**; görünüm seçimi (Tablo / Kartlar) AP-007'deki aynı kararla **başlık aksiyonlarındadır** (filtre değil sunum kontrolü).
+
+### Filtre kontrolleri (tek satır, ≥1024px)
+
+1. **Arama** — `Input` (`leading`, `flex-1`); kategori adı veya açıklama (`q` ≤100 karakter)
+2. **Durum** — `Tabs` segment şeridi: tümü / aktif / pasif, **global** sayaçlı
+3. **Medya** — `Select`: Tümü / Görselli / Videolu / Medyasız
+4. **İkon** — `Select`: Tüm ikonlar + ikon seçenekleri
+5. **Sıralama** — `Select`: tek parametre `sirala=<sort>:<order>`
+
+### Chip satırı
+
+`FilterChips` filtre çubuğunun **içinde değil**, ondan **ayrı ve tek satır blokta** yer alır; böylece çubuğun "tek satır" ölçütü chip sayısından bağımsız kalır. Genişlik kuralları (≥1024px tek satır, <1024px `flex-wrap`, yatay taşma yok) yukarıdaki **AP-007 "Yerleşim sözleşmesi"** ile birebir aynıdır. Chip sırası: **Durum → Medya → İkon → Arama → Sıralama**; **Temizle** tümünü sıfırlar.
+
+### Sayfalama ve URL parametreleri
+
+Sayfa boyutu **20 / 50 / 100**, varsayılan **20**; tercih `localStorage` anahtarı **`categories_page_size`**'te saklanır. Filtre + sayfa + sıralama + görünüm URL'de taşınır (derin bağlantı çalışır); varsayılanlar URL'e yazılmaz, geçersiz değer `normalizeQuery` ile varsayılana döner.
+
+| Parametre | Anlamı | Değer kümesi / varsayılan |
+|---|---|---|
+| `q` | arama metni | boş = filtre yok |
+| `durum` | durum filtresi | `tümü` (var.) · `aktif` · `pasif` |
+| `medya` | medya filtresi | `tümü` (var.) · `görselli` · `videolu` · `medyasız` |
+| `ikon` | ikon anahtarı | boş = tüm ikonlar |
+| `sayfa` | sayfa numarası | `1` (var.), `<1` → `1` |
+| `limit` | sayfa boyutu | `20` (var.) · `50` · `100` |
+| `sirala` | `<sort>:<order>` | `sortOrder:asc` (var.) · `name:asc` · `name:desc` · `serviceCount:desc` · `createdAt:desc` |
+| `gorunum` | görünüm | `tablo` (var.) · `kartlar` |
+
+### Medya alanları
+
+| Katman | Detay |
+|---|---|
+| Model | `ServiceCategory.imageUrl` → kolon `image_url`, `ServiceCategory.videoUrl` → kolon `video_url` (ikisi de nullable) |
+| API | `createCategory` / `updateCategory` bu alanları kabul eder: `undefined` = **dokunma**, `null` = **temizle** |
+| Dialog | `ImageField` (**Kategori görseli**) + `VideoField` (**Kategori videosu**); `POST`/`PATCH` gövdesinde `imageUrl` / `videoUrl`, boşsa `null`; dialog içeriği kaydırılabilir |
+| Yeni uç | `POST /api/v1/upload/video` — form alanı `file`, izinli tipler `video/mp4`, `video/webm`, `video/ogg`, `video/quicktime`, sınır `MAX_VIDEO_SIZE` env yoksa **50 MB**, yanıt `{ url, originalName, size }` |
+| Görsel yükleme | `ALLOWED_TYPES`, `MAX_SIZE`, `POST /upload/single`, `POST /upload/multiple` **değişmedi** |
+| Migration | `apps/api/src/database/migrations/20240101000013-add-media-to-service-categories.js` — `describeTable` ile **idempotent**; **henüz çalıştırılmadı** (`cd apps/api && npm run migrate`) |
+
+### Neden filtreleme istemci tarafında?
+
+Panel listeyi tek `GET /categories` çağrısıyla çeker; sıralama/filtreleme/dilimleme `categoriesQuery.ts` içindeki saf fonksiyonlarla yapılır (**19** ağsız `node:test` testi). Gerekçe: `GET /categories` sözleşmesi **`apps/customer_app` tarafından da kullanılıyor** — API'yi genişletmek o istemciyi kırma riski taşırdı, kategori listesi ise küçük. AP-007/AP-008'in sunucu tarafı kararından **bilinçli sapmadır** ve yalnız bu sayfaya aittir.
+
+### Kapı / kanıt (2026-10-28)
+
+| Katman | Komut | Sonuç |
+|---|---|---|
+| API test | `cd apps/api && npm test` | **329 passing / 0 failing** (baseline 320 + 9 yeni) |
+| Panel tip / lint / build | `npm run typecheck` · `npm run lint` · `npm run build` | temiz |
+| Panel test | `npm test` | **84 `node:test` + 218 vitest** (düşüş yok) |
+| Görsel (headless Chromium) | 1280 ve 390px ölçümü | 1280px'te filtre çubuğu **tek satır**; 390px'te **4 satıra sarar**; iki genişlikte yatay taşma **0** (`scrollWidth == clientWidth`); chip bloğu **ayrı satırda** |
+
+### Kalan risk
+
+- Seed verisinde `imageUrl` / `videoUrl` olmadığı için **Medya hücresinin görsel doğrulaması gerçek veriyle yapılmadı** (içerik doğrulaması **ölçülmedi**).
+- Dev veritabanında kolonlar için **migration çalıştırılmalı**: `cd apps/api && npm run migrate`.
+
+---
+
 ## Test kapısı
 
 | Adım | Komut | Beklenen sonuç |
 |---|---|---|
 | Tip kontrolü | `npm run typecheck` | hatasız (`tsc --noEmit`) |
 | Lint | `npm run lint` | hatasız (`eslint`) |
-| Test | `npm test` | **232 test** yeşil (43 `node:test` + 189 vitest) |
+| Test | `npm test` | **302 test** yeşil (84 `node:test` + 218 vitest) |
 | Build | `npm run build` | T1 ölçümü: 11 statik route, build **exit 0** |
 
-`npm test` sırasıyla `npm run test:node` (`node --test`, 43 test) ve `npm run test:unit` (vitest, 189 test) çalıştırır; toplam **232 test**.
+`npm test` sırasıyla `npm run test:node` (`node --test`, 84 test) ve `npm run test:unit` (vitest, 218 test) çalıştırır; toplam **302 test**.
