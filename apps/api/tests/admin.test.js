@@ -332,6 +332,231 @@ describe('Admin API', () => {
     });
   });
 
+  describe('GET /admin/appointments filtreleri', () => {
+    let salon2;
+    let staff2;
+    let extraAppointment;
+
+    const getAppointments = (query) => request
+      .get('/api/v1/admin/appointments')
+      .query(query)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    const addDays = (days) => {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      return date.toISOString().split('T')[0];
+    };
+
+    before(async () => {
+      const { Salon, Staff, Service, User, Appointment } = require('../src/models');
+
+      salon2 = await Salon.findOne({ where: { name: 'Bella Güzellik' } });
+      const service4 = await Service.findOne({ where: { name: 'Pedikür' } });
+      const customer2 = await User.findOne({ where: { email: 'customer2@test.com' } });
+
+      // salon2 + ayrı personel + ayrı hizmet: salonId/staffId/search ayrımı için tek randevu
+      staff2 = await Staff.create({
+        salonId: salon2.id,
+        fullName: 'Buse Kılıç',
+        title: 'Pedikür Uzmanı',
+        isActive: true,
+      });
+      extraAppointment = await Appointment.create({
+        customerId: customer2.id,
+        salonId: salon2.id,
+        staffId: staff2.id,
+        serviceId: service4.id,
+        date: addDays(30),
+        startTime: '09:00:00',
+        endTime: '10:00:00',
+        status: 'PENDING',
+      });
+    });
+
+    after(async () => {
+      if (extraAppointment) await extraAppointment.destroy();
+      if (staff2) await staff2.destroy();
+    });
+
+    it('parametresiz istek mevcut davranışı korur (createdAt DESC)', async () => {
+      const res = await getAppointments({});
+
+      expect(res.status).to.equal(200);
+      expect(res.body.success).to.equal(true);
+      const { data, meta } = res.body.data;
+      expect(data).to.be.an('array').that.is.not.empty;
+      expect(meta.total).to.be.a('number');
+      expect(meta.page).to.equal(1);
+      expect(meta.limit).to.equal(20);
+
+      const createdAt = data.map((row) => new Date(row.createdAt).getTime());
+      expect(createdAt).to.deep.equal([...createdAt].sort((a, b) => b - a));
+    });
+
+    it('status=COMPLETED yalnız COMPLETED satırları döndürür', async () => {
+      const res = await getAppointments({ status: 'COMPLETED', limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.be.greaterThan(0);
+      expect(data.length).to.equal(meta.total);
+      data.forEach((row) => {
+        expect(row.status).to.equal('COMPLETED');
+      });
+      expect(meta.total).to.equal(meta.counts.COMPLETED);
+    });
+
+    it('search müşteri adında eşleşir (customer.fullName)', async () => {
+      const res = await getAppointments({ search: 'zeynep', limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(2);
+      expect(data.length).to.equal(2);
+      data.forEach((row) => {
+        expect(row.customer.fullName.toLowerCase()).to.contain('zeynep');
+      });
+    });
+
+    it('search personel adında eşleşir, count join yüzünden şişmez (staff.fullName)', async () => {
+      const res = await getAppointments({ search: 'Buse', limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(1);
+      expect(data.length).to.equal(1);
+      expect(data[0].staff.fullName).to.equal('Buse Kılıç');
+      expect(data[0].id).to.equal(extraAppointment.id);
+    });
+
+    it('search hizmet adında eşleşir (service.name)', async () => {
+      const res = await getAppointments({ search: 'pedik', limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(1);
+      expect(data[0].service.name).to.equal('Pedikür');
+    });
+
+    it('salonId filtresi yalnız o salonun randevularını döndürür', async () => {
+      const res = await getAppointments({ salonId: salon2.id, limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(1);
+      expect(data[0].salonId).to.equal(salon2.id);
+      data.forEach((row) => {
+        expect(row.salonId).to.equal(salon2.id);
+      });
+    });
+
+    it('staffId filtresi yalnız o personelin randevularını döndürür', async () => {
+      const res = await getAppointments({ staffId: staff2.id, limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(1);
+      data.forEach((row) => {
+        expect(row.staffId).to.equal(staff2.id);
+      });
+    });
+
+    it('dateFrom/dateTo aralık filtresi aralık dışını döndürmez', async () => {
+      const inRange = await getAppointments({ dateFrom: addDays(29), dateTo: addDays(31), limit: 100 });
+      expect(inRange.status).to.equal(200);
+      expect(inRange.body.data.meta.total).to.equal(1);
+      expect(inRange.body.data.data[0].id).to.equal(extraAppointment.id);
+
+      const outside = await getAppointments({ dateFrom: '2020-01-01', dateTo: '2020-12-31' });
+      expect(outside.status).to.equal(200);
+      expect(outside.body.data.meta.total).to.equal(0);
+      expect(outside.body.data.data).to.deep.equal([]);
+    });
+
+    it('sort=date&order=asc tarihleri artan sıralar, varsayılan createdAt DESC', async () => {
+      const byDate = await getAppointments({ sort: 'date', order: 'asc', limit: 100 });
+      expect(byDate.status).to.equal(200);
+      const dates = byDate.body.data.data.map((row) => row.date);
+      expect(dates).to.deep.equal([...dates].sort());
+
+      const byDateDesc = await getAppointments({ sort: 'date', order: 'desc', limit: 100 });
+      expect(byDateDesc.body.data.data.map((row) => row.date)).to.deep.equal([...dates].reverse());
+
+      const explicit = await getAppointments({ sort: 'createdAt', order: 'desc', limit: 100 });
+      const plain = await getAppointments({ limit: 100 });
+      expect(explicit.body.data.data.map((row) => row.id))
+        .to.deep.equal(plain.body.data.data.map((row) => row.id));
+    });
+
+    it('meta.counts filtrelerden bağımsız global, meta.salons/staff dizi', async () => {
+      const { Appointment } = require('../src/models');
+      const { fn, col } = require('sequelize');
+
+      const plain = await getAppointments({ limit: 100 });
+      const { meta } = plain.body.data;
+
+      expect(meta.counts['tümü']).to.equal(meta.total);
+      expect(meta.counts).to.have.all.keys(
+        'tümü', 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW',
+      );
+
+      const statusRows = await Appointment.findAll({
+        attributes: ['status', [fn('COUNT', col('id')), 'n']],
+        group: ['status'],
+        raw: true,
+      });
+      statusRows.forEach((row) => {
+        expect(meta.counts[row.status]).to.equal(parseInt(row.n, 10));
+      });
+      const sum = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW']
+        .reduce((total, key) => total + meta.counts[key], 0);
+      expect(sum).to.equal(meta.counts['tümü']);
+
+      expect(meta.salons).to.be.an('array').that.is.not.empty;
+      expect(meta.staff).to.be.an('array').that.is.not.empty;
+      meta.salons.forEach((salon) => {
+        expect(salon).to.have.all.keys('id', 'name');
+      });
+      meta.staff.forEach((member) => {
+        expect(member).to.have.all.keys('id', 'fullName');
+      });
+      const salonNames = meta.salons.map((salon) => salon.name);
+      expect(salonNames).to.deep.equal([...salonNames].sort());
+      const staffNames = meta.staff.map((member) => member.fullName);
+      expect(staffNames).to.deep.equal([...staffNames].sort());
+
+      // Filtreli istekte sayaçlar global kalır
+      const filtered = await getAppointments({ status: 'COMPLETED' });
+      expect(filtered.body.data.meta.total).to.equal(meta.counts.COMPLETED);
+      expect(filtered.body.data.meta.counts['tümü']).to.equal(meta.counts['tümü']);
+    });
+
+    it('geçersiz status/sort/order ve ters tarih aralığı 400 döndürür', async () => {
+      const badStatus = await getAppointments({ status: 'xyz' });
+      expect(badStatus.status).to.equal(400);
+      expect(badStatus.body.success).to.equal(false);
+      expect(badStatus.body.errors).to.be.an('array').that.is.not.empty;
+
+      const badSort = await getAppointments({ sort: 'foo' });
+      expect(badSort.status).to.equal(400);
+
+      const badOrder = await getAppointments({ order: 'sideways' });
+      expect(badOrder.status).to.equal(400);
+
+      const badRange = await getAppointments({ dateFrom: '2025-12-31', dateTo: '2025-01-01' });
+      expect(badRange.status).to.equal(400);
+      expect(badRange.body.errors).to.be.an('array').that.is.not.empty;
+    });
+
+    it('limit=1000 kırpılır', async () => {
+      const res = await getAppointments({ limit: 1000 });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.data.meta.limit).to.equal(100);
+    });
+  });
+
   describe('GET /admin/reviews', () => {
     it('yorumları müşteri ve salon bilgisiyle döndürür', async () => {
       const res = await request

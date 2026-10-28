@@ -17,6 +17,15 @@ const SALON_SORT_COLUMNS = {
   rating: 'ratingAvg',
 };
 
+// Paneldeki randevu durum sayaçları (meta.counts) — sıra sabit
+const APPOINTMENT_STATUS_VALUES = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
+
+// Sıralama parametresi -> Appointment kolonu
+const APPOINTMENT_SORT_COLUMNS = {
+  createdAt: 'createdAt',
+  date: 'date',
+};
+
 // GET /admin/dashboard
 const getDashboard = async (req, res, next) => {
   try {
@@ -225,23 +234,108 @@ const getAllSalons = async (req, res, next) => {
 const getAllAppointments = async (req, res, next) => {
   try {
     const { limit, offset, page } = paginate(req.query.page, req.query.limit);
-    const where = {};
-    if (req.query.status) where.status = req.query.status;
+    const {
+      search, status, salonId, staffId, dateFrom, dateTo,
+      sort = 'createdAt', order = 'desc',
+    } = req.query;
 
-    const { count, rows } = await Appointment.findAndCountAll({
-      where,
-      include: [
-        { model: User, as: 'customer', attributes: ['fullName', 'email'] },
-        { model: Salon, as: 'salon', attributes: ['name'] },
-        { model: Staff, as: 'staff', attributes: ['fullName'] },
-        { model: Service, as: 'service', attributes: ['name', 'price'] },
-      ],
-      order: [['createdAt', 'DESC']],
-      limit,
-      offset,
-    });
+    const conditions = [];
+    if (status) conditions.push({ status });
+    if (salonId) conditions.push({ salonId });
+    if (staffId) conditions.push({ staffId });
+    if (dateFrom || dateTo) {
+      // date DATEONLY: YYYY-MM-DD string karşılaştırması yeterli
+      const dateRange = {};
+      if (dateFrom) dateRange[Op.gte] = dateFrom;
+      if (dateTo) dateRange[Op.lte] = dateTo;
+      conditions.push({ date: dateRange });
+    }
+    if (search) {
+      // Arama ilişkili tablolarda: include.where count'u bozar (AP-007 R1).
+      // `$customer.fullName$` SQLite'ta alan adına çevrilmiyor → LOWER(kolon) LIKE ile açıkça yazılıyor.
+      const term = `%${String(search).toLowerCase()}%`;
+      const lowerLike = (column) => sequelize.where(
+        sequelize.fn('LOWER', sequelize.col(column)),
+        { [Op.like]: term },
+      );
+      conditions.push({
+        [Op.or]: [
+          lowerLike('customer.full_name'),
+          lowerLike('customer.email'),
+          lowerLike('salon.name'),
+          lowerLike('staff.full_name'),
+          lowerLike('service.name'),
+        ],
+      });
+    }
+    const where = conditions.length ? { [Op.and]: conditions } : {};
 
-    successResponse(res, paginatedResponse(rows, count, page, limit));
+    const orderColumn = APPOINTMENT_SORT_COLUMNS[sort] || 'createdAt';
+    const orderDirection = order === 'asc' ? 'ASC' : 'DESC';
+    // sort=date: aynı gün içinde saat sırası ikincil anahtar
+    const orderClause = sort === 'date'
+      ? [[orderColumn, orderDirection], ['startTime', 'ASC']]
+      : [[orderColumn, orderDirection]];
+
+    const [result, totalAppointments, statusRows, salonIdRows, staffIdRows] = await Promise.all([
+      Appointment.findAndCountAll({
+        where,
+        include: [
+          { model: User, as: 'customer', attributes: ['fullName', 'email'] },
+          { model: Salon, as: 'salon', attributes: ['name'] },
+          { model: Staff, as: 'staff', attributes: ['fullName'] },
+          { model: Service, as: 'service', attributes: ['name', 'price'] },
+        ],
+        order: orderClause,
+        limit,
+        offset,
+        distinct: true,
+        subQuery: false,
+      }),
+      Appointment.count(),
+      // counts filtrelerden bağımsız (global) — panel durum sekmeleri için
+      Appointment.findAll({
+        attributes: ['status', [sequelize.fn('COUNT', sequelize.col('id')), 'n']],
+        group: ['status'],
+        raw: true,
+      }),
+      // salon/staff select'leri de global: randevularda geçen küme
+      Appointment.findAll({ attributes: ['salonId'], group: ['salonId'], raw: true }),
+      Appointment.findAll({ attributes: ['staffId'], group: ['staffId'], raw: true }),
+    ]);
+
+    const salonIds = salonIdRows.map((row) => row.salonId).filter(Boolean);
+    const staffIds = staffIdRows.map((row) => row.staffId).filter(Boolean);
+
+    const [salons, staffMembers] = await Promise.all([
+      salonIds.length
+        ? Salon.findAll({
+          where: { id: { [Op.in]: salonIds } },
+          attributes: ['id', 'name'],
+          order: [['name', 'ASC']],
+          raw: true,
+        })
+        : [],
+      staffIds.length
+        ? Staff.findAll({
+          where: { id: { [Op.in]: staffIds } },
+          attributes: ['id', 'fullName'],
+          order: [['fullName', 'ASC']],
+          raw: true,
+        })
+        : [],
+    ]);
+
+    const counts = { 'tümü': totalAppointments };
+    APPOINTMENT_STATUS_VALUES.forEach((value) => { counts[value] = 0; });
+    statusRows.forEach((row) => { counts[row.status] = parseInt(row.n, 10); });
+
+    const payload = paginatedResponse(result.rows, result.count, page, limit);
+    payload.meta.counts = counts;
+    payload.meta.salons = salons.map((salon) => ({ id: salon.id, name: salon.name }));
+    payload.meta.staff = staffMembers.map((member) => ({ id: member.id, fullName: member.fullName }));
+
+    successResponse(res, payload);
   } catch (error) {
     next(error);
   }
