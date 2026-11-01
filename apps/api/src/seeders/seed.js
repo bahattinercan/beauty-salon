@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const {
   User,
   Salon,
@@ -59,13 +61,76 @@ const PASSWORDS = Object.fromEntries(
 );
 
 const CATEGORIES = [
-  { name: 'Saç', iconName: 'content_cut', sortOrder: 1 },
-  { name: 'Tırnak', iconName: 'brush', sortOrder: 2 },
-  { name: 'Cilt Bakımı', iconName: 'face', sortOrder: 3 },
-  { name: 'Makyaj', iconName: 'palette', sortOrder: 4 },
-  { name: 'Epilasyon', iconName: 'spa', sortOrder: 5 },
-  { name: 'SPA & Masaj', iconName: 'self_improvement', sortOrder: 6 },
+  {
+    name: 'Saç',
+    iconName: 'content_cut',
+    sortOrder: 1,
+    imageUrl: '/uploads/seed/category-hair.svg',
+    videoUrl: '/uploads/seed/category-hair.mp4',
+  },
+  {
+    name: 'Tırnak',
+    iconName: 'brush',
+    sortOrder: 2,
+    imageUrl: '/uploads/seed/category-nail.svg',
+    videoUrl: null,
+  },
+  {
+    name: 'Cilt Bakımı',
+    iconName: 'face',
+    sortOrder: 3,
+    imageUrl: '/uploads/seed/category-skin.svg',
+    videoUrl: null,
+  },
+  {
+    name: 'Makyaj',
+    iconName: 'palette',
+    sortOrder: 4,
+    imageUrl: '/uploads/seed/category-makeup.svg',
+    videoUrl: null,
+  },
+  {
+    name: 'Epilasyon',
+    iconName: 'spa',
+    sortOrder: 5,
+    imageUrl: '/uploads/seed/category-epilation.svg',
+    videoUrl: null,
+  },
+  {
+    name: 'SPA & Masaj',
+    iconName: 'self_improvement',
+    sortOrder: 6,
+    imageUrl: '/uploads/seed/category-spa.svg',
+    videoUrl: null,
+  },
 ];
+
+const SEED_MEDIA_FILES = {
+  'category-hair.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">\n  <rect width="80" height="80" rx="16" fill="#EDE9FE"/>\n  <circle cx="28" cy="52" r="8" fill="none" stroke="#6D28D9" stroke-width="4"/>\n  <circle cx="52" cy="52" r="8" fill="none" stroke="#6D28D9" stroke-width="4"/>\n  <path d="M34 46 L54 22 M46 46 L26 22" stroke="#6D28D9" stroke-width="4" stroke-linecap="round"/>\n</svg>\n',
+  'category-nail.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">\n  <rect width="80" height="80" rx="16" fill="#FCE7F3"/>\n  <path d="M40 18 C48 18 54 26 54 38 L54 56 C54 60 50 62 40 62 C30 62 26 60 26 56 L26 38 C26 26 32 18 40 18 Z" fill="#DB2777"/>\n</svg>\n',
+  'category-skin.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">\n  <rect width="80" height="80" rx="16" fill="#E0F2FE"/>\n  <circle cx="40" cy="40" r="20" fill="#0284C7" opacity="0.2"/>\n  <path d="M40 20 L44 34 L58 38 L44 42 L40 56 L36 42 L22 38 L36 34 Z" fill="#0284C7"/>\n</svg>\n',
+  'category-makeup.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">\n  <rect width="80" height="80" rx="16" fill="#FEF3C7"/>\n  <circle cx="40" cy="40" r="22" fill="#D97706" opacity="0.2"/>\n  <circle cx="32" cy="34" r="4" fill="#D97706"/>\n  <circle cx="46" cy="32" r="4" fill="#B45309"/>\n  <circle cx="48" cy="46" r="4" fill="#92400E"/>\n</svg>\n',
+  'category-epilation.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">\n  <rect width="80" height="80" rx="16" fill="#DCFCE7"/>\n  <path d="M40 20 C52 28 56 44 40 60 C24 44 28 28 40 20 Z" fill="#16A34A"/>\n</svg>\n',
+  'category-spa.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">\n  <rect width="80" height="80" rx="16" fill="#F3E8FF"/>\n  <circle cx="40" cy="30" r="7" fill="#7E22CE"/>\n  <path d="M24 56 C28 44 52 44 56 56 Z" fill="#7E22CE"/>\n</svg>\n',
+  'category-hair.mp4': 'placeholder-video-stream\n',
+};
+
+/*
+ * Kategori medyası için yer tutucu dosyalar. `uploads/` gitignore'lu olduğu
+ * için bu dosyalar repoda taşınmaz; seed onları eksikse üretir. Böylece
+ * `imageUrl`/`videoUrl` alanları her kurulumda gerçekten servis edilen bir
+ * yola işaret eder (404 veren kırık URL yazılmaz). Var olan dosya ezilmez.
+ */
+const ensureSeedMediaFiles = () => {
+  const seedDir = path.resolve(process.cwd(), process.env.UPLOAD_DEST || './uploads', 'seed');
+  fs.mkdirSync(seedDir, { recursive: true });
+  for (const [filename, content] of Object.entries(SEED_MEDIA_FILES)) {
+    const filePath = path.join(seedDir, filename);
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, content, 'utf8');
+    }
+  }
+};
 
 const SALONS = [
   {
@@ -259,12 +324,19 @@ const seed = async () => {
   }
 
   // ── Kategoriler ─────────────────────────────────────────────────────────────
+  // Test ortamında dosya sistemi yan etkisi bırakma; medya yalnızca dev seed'inde üretilir.
+  if (process.env.NODE_ENV !== 'test') ensureSeedMediaFiles();
   const categories = {};
   for (const c of CATEGORIES) {
     const cat = await findOrCreate(ServiceCategory, { name: c.name }, c);
     // eski kayıtlarda eksik kalabilen alanları tamamla
-    if (cat.iconName == null || cat.sortOrder == null) {
-      await cat.update({ iconName: c.iconName, sortOrder: c.sortOrder });
+    const patch = {};
+    if (cat.iconName == null) patch.iconName = c.iconName;
+    if (cat.sortOrder == null) patch.sortOrder = c.sortOrder;
+    if (!cat.imageUrl && c.imageUrl) patch.imageUrl = c.imageUrl;
+    if (!cat.videoUrl && c.videoUrl) patch.videoUrl = c.videoUrl;
+    if (Object.keys(patch).length > 0) {
+      await cat.update(patch);
     }
     categories[c.name] = cat;
   }
