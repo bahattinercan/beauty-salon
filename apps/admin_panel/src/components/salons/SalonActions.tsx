@@ -4,8 +4,10 @@ import { CheckCircle, Loader2, Pencil, Power, XCircle } from 'lucide-react';
 import { cx } from '@/lib/cx';
 import { useI18n } from '@/providers/LocaleProvider';
 import Button from '@/components/ui/Button';
+import type { SalonStatus } from '@/lib/enums';
 
-export type SalonActionStatus = 'onaylı' | 'bekliyor' | 'pasif';
+/** Kanonik değer listesi `src/lib/enums.ts`te; burada yalnız tip alias'ı durur. */
+export type SalonActionStatus = SalonStatus;
 
 /** Satırda uçuşta olan aksiyon: `verify` (Onayla) veya `toggle` (Pasife al / Etkinleştir). */
 export type SalonPendingAction = 'verify' | 'toggle' | null;

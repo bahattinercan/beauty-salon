@@ -4,13 +4,10 @@ import { CheckCheck, CheckCircle2, Eye, Loader2, UserX, XCircle } from 'lucide-r
 import { cx } from '@/lib/cx';
 import Button from '@/components/ui/Button';
 import { useI18n } from '@/providers/LocaleProvider';
+import type { AppointmentStatus } from '@/lib/enums';
 
-export type AppointmentActionStatus =
-  | 'PENDING'
-  | 'CONFIRMED'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | 'NO_SHOW';
+/** Kanonik değer listesi `src/lib/enums.ts`te; burada yalnız tip alias'ı durur. */
+export type AppointmentActionStatus = AppointmentStatus;
 
 /** Satırda uçuşta olan aksiyon; `null` = hiçbir istek beklemiyor. */
 export type AppointmentPendingAction = 'confirm' | 'complete' | 'noShow' | 'cancel' | null;

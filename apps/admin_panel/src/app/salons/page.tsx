@@ -21,6 +21,7 @@ import SalonActions, { type SalonPendingAction } from "@/components/salons/Salon
 import SalonEditDialog, { type SalonEditPayload } from "@/components/salons/SalonEditDialog";
 import useDebouncedValue from "@/lib/useDebouncedValue";
 import { useI18n } from "@/providers/LocaleProvider";
+import type { SalonStatus } from "@/lib/enums";
 import {
   DEFAULT_SALONS_QUERY,
   PAGE_SIZE_STORAGE_KEY,
@@ -38,7 +39,6 @@ import {
 } from "@/lib/salonsQuery";
 import type { WorkingHours } from "@/components/salons/WorkingHoursEditor";
 
-type SalonStatus = "onaylı" | "bekliyor" | "pasif";
 type View = "tablo" | "kartlar";
 
 interface ApiSalon {

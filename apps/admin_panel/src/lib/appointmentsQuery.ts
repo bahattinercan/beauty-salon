@@ -12,20 +12,19 @@
  * (temiz deep-link); okuma tarafı eksik/geçersiz değeri varsayılana çeker.
  */
 
+import { APPOINTMENT_STATUSES, type AppointmentStatus } from './enums.ts';
+
 /** API `limit` üst sınırı 100; panelde üç seçenek var. */
 export const APPOINTMENTS_PAGE_SIZES: number[] = [20, 50, 100];
 export const DEFAULT_PAGE_SIZE = 20;
 /** Sayfa boyutu tercihi sayfalar arasında hatırlanır (localStorage — sayfa tarafı). */
 export const PAGE_SIZE_STORAGE_KEY = 'appointments_page_size';
 
-/** `tümü` yalnız panelde var: API'ye gönderilmez (API beş enum değeri kabul eder). */
-export type AppointmentStatusFilter =
-  | 'tümü'
-  | 'PENDING'
-  | 'CONFIRMED'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | 'NO_SHOW';
+/**
+ * `tümü` yalnız panelde var: API'ye gönderilmez (API beş enum değeri kabul eder).
+ * Enum değerleri `src/lib/enums.ts`ten gelir — burada ikinci kez yazılmaz.
+ */
+export type AppointmentStatusFilter = 'tümü' | AppointmentStatus;
 export type AppointmentSort = 'createdAt' | 'date';
 export type SortOrder = 'asc' | 'desc';
 export type DatePreset = 'tümü' | 'bugün' | 'yarın' | 'bu-hafta' | 'bu-ay' | 'geçmiş' | 'gelecek';
@@ -56,11 +55,7 @@ export const DEFAULT_APPOINTMENTS_QUERY: AppointmentsQueryState = {
 
 export const APPOINTMENT_STATUS_FILTERS: AppointmentStatusFilter[] = [
   'tümü',
-  'PENDING',
-  'CONFIRMED',
-  'COMPLETED',
-  'CANCELLED',
-  'NO_SHOW',
+  ...APPOINTMENT_STATUSES,
 ];
 
 /**

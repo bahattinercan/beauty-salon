@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import Dialog from '@/components/ui/Dialog';
 import Button from '@/components/ui/Button';
-import { StatusBadge, APPOINTMENT_STATUS } from '@/components/ui/Badge';
+import { StatusBadge, APPOINTMENT_STATUS, localizeStatusMap } from '@/components/ui/Badge';
 import type { Locale } from '@/lib/i18n';
 import { useI18n } from '@/providers/LocaleProvider';
 
@@ -12,8 +12,10 @@ import { useI18n } from '@/providers/LocaleProvider';
  * Veri zaten tablo satırından gelir (`GET /admin/appointments` satırı), bu yüzden
  * diyalog kendi fetch'ini yapmaz.
  *
- * Etiketler `appointments.detail.*`, durum rozeti `appointments.status.*`
- * anahtarlarından çevrilir; renk tonu paylaşılan `APPOINTMENT_STATUS` map'inde kalır.
+ * Etiketler `appointments.detail.*`, durum rozeti `ui.badge.appointment.*`
+ * anahtarlarından çevrilir; renk tonu paylaşılan `APPOINTMENT_STATUS` haritasında kalır.
+ * Harita `localizeStatusMap` ile üretilir: değer başına elle girdi yok, bilinmeyen
+ * değer `resolveStatusLabel` üzerinden görünür fallback'e düşer.
  */
 export interface AppointmentDetail {
   id: string;
@@ -72,17 +74,8 @@ export default function AppointmentDetailDialog({
   onClose: () => void;
 }) {
   const { locale, t } = useI18n();
-  // Rozet etiketi aktif dile çevrilir, ton paylaşılan map'ten gelir (Badge değişmez).
-  const statusMap = useMemo(
-    () => ({
-      PENDING: { ...APPOINTMENT_STATUS.PENDING, label: t('appointments.status.PENDING') },
-      CONFIRMED: { ...APPOINTMENT_STATUS.CONFIRMED, label: t('appointments.status.CONFIRMED') },
-      COMPLETED: { ...APPOINTMENT_STATUS.COMPLETED, label: t('appointments.status.COMPLETED') },
-      CANCELLED: { ...APPOINTMENT_STATUS.CANCELLED, label: t('appointments.status.CANCELLED') },
-      NO_SHOW: { ...APPOINTMENT_STATUS.NO_SHOW, label: t('appointments.status.NO_SHOW') },
-    }),
-    [t]
-  );
+  // Rozet etiketi aktif dile çevrilir, ton paylaşılan haritadan gelir (Badge değişmez).
+  const statusMap = useMemo(() => localizeStatusMap(APPOINTMENT_STATUS, t), [t]);
 
   return (
     <Dialog

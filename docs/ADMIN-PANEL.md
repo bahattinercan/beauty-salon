@@ -410,10 +410,10 @@ Kanıt görselleri: `screenshots/admin-reviews-filters-{1440,1280,390}.png`.
 |---|---|---|
 | Tip kontrolü | `npm run typecheck` | hatasız (`tsc --noEmit`) |
 | Lint | `npm run lint` | hatasız (`eslint`) |
-| Test | `npm test` | **370 test** yeşil (110 `node:test` + 260 vitest) |
+| Test | `npm test` | **511 test** yeşil (196 `node:test` + 315 vitest) |
 | Build | `npm run build` | T1 ölçümü: 11 statik route, build **exit 0** |
 
-`npm test` sırasıyla `npm run test:node` (`node --test`, 110 test) ve `npm run test:unit` (vitest, 260 test) çalıştırır; toplam **370 test**.
+`npm test` sırasıyla `npm run test:node` (`node --test`, 196 test) ve `npm run test:unit` (vitest, 315 test) çalıştırır; toplam **511 test**.
 
 ---
 
@@ -434,9 +434,28 @@ Panel iki dilde çalışır: **`tr`** ve **`en`**. Dış bir i18n paketi (next-i
 
 - Dil modu üç değerli: **`system` (varsayılan) / `tr` / `en`**; `system` tarayıcı dilini izler (`tr` veya `tr-*` → `tr`, diğer/boş → `en`).
 - Öncelik sırası: **`localStorage['app_locale_mode']` > sunucu `language` (yalnız yerel tercih yokken) > sistem dili.** Mod değişimi anında etkilidir, sayfa yenileme gerektirmez.
-- Sayfalar `t('ns.anahtar')` ile basar; filtre/etiket üreten saf modüller (`src/lib/*Query.ts`, `src/lib/nav.ts`, `components/ui/Badge.tsx`) çeviri **anahtarı** taşır, metni sayfa çözer.
+- Sayfalar `t('ns.anahtar')` ile basar; filtre/etiket üreten saf modüller (`src/lib/*Query.ts`, `src/lib/nav.ts`, `components/ui/Badge.tsx`) çeviri **anahtarı** taşır, metni sayfa çözer. Enum değerlerinin kanonik listesi `src/lib/enums.ts`te, haritaları `components/ui/Badge.tsx`te — yeni değer ekleme sırası: [Yeni enum değeri eklemek](#yeni-enum-değeri-eklemek-rol--durum).
 - Paylaşılan taşıyıcı bileşen `components/salons/ImageField.tsx` hem salon hem kategori diyaloğunda kullanıldığı için metinleri `salons.*` namespace'inden gelir.
 
 **Ayarlar > Dil kartı:** `settings.sections.language` kartındaki `Select` (`system` / `tr` / `en`) seçimi anında uygulanır ve kaydetmede `PUT /settings` gövdesine `language` olarak yazılır. API tarafı `apps/api/src/controllers/settings.controller.js`: `language` varsayılanı `system`, izinli değerler `tr` / `en` / `system`, geçersiz değer `400` döner ve hiçbir ayar yazılmaz (`apps/api/tests/settings.test.js`).
 
-**Bilinen sınırlar:** `Intl` / `toLocaleDateString` çağrıları hâlâ `tr-TR` sabittir (tarih/para `en` modunda da Türkçe biçimlenir); ilk boyama cookie okumadığı için `system` + `en` tarayıcıda dil ikinci render'da oturur; API'den gelen rol/durum enum adları sayfa içi haritalarla lokalize edilir (yeni enum eklenince harita güncellenmeli).
+**Bilinen sınırlar:** `Intl` / `toLocaleDateString` çağrıları hâlâ `tr-TR` sabittir (tarih/para `en` modunda da Türkçe biçimlenir); ilk boyama cookie okumadığı için `system` + `en` tarayıcıda dil ikinci render'da oturur.
+
+### Yeni enum değeri eklemek (rol / durum)
+
+Rol ve durum adları artık sayfa içi haritalarla değil, **tek kaynaktan** lokalize edilir:
+`src/lib/enums.ts` (değerler) + `components/ui/Badge.tsx` (`labelKey` + ton haritaları).
+Yeni bir API enum değeri eklerken sıra şudur — biri atlanırsa kapı kırılır:
+
+| Adım | Yer | Atlanırsa ne olur |
+|---|---|---|
+| 1. Değeri kanonik listeye ekle | `src/lib/enums.ts` → `APPOINTMENT_STATUSES` / `USER_ROLES` / `SALON_STATUSES` (`as const` dizi; tip diziden türetilir) | Değer `AppointmentStatus` (vb.) tipine girmez, haritada anahtar olarak kullanılamaz |
+| 2. Harita girdisini ekle | `src/components/ui/Badge.tsx` → `APPOINTMENT_STATUS` / `USER_ROLE` / `SALON_STATUS` (`satisfies Record<...>`) | **Derleme kırılır** (`npm run typecheck`): eksik girdi `satisfies` ihlali |
+| 3. Sözlük anahtarını iki dile ekle | `src/lib/i18n/messages/ui.ts` → `badge.appointment.*` / `badge.role.*` / `badge.salon.*` (+ kullanıcılar sayfası için `pages.users.roles.*`) | **Vitest kırılır**: `tests/unit/components/StatusMaps.test.tsx` anahtarın tr **ve** en'de çözümlendiğini doğrular |
+| 4. Filtre/sıralama sözlüğü (varsa) | `src/lib/appointmentsQuery.ts` (`STATUS_LABEL_KEYS`), `src/lib/salonsQuery.ts` (filtre/chip anahtarları) | **Node testi kırılır**: `tests/lib/enums.test.ts` sözlük kapsamını ve `labelKeys` çözümlemesini doğrular |
+
+Kurallar:
+
+- **Kopya liste yok.** `type X = 'A' | 'B' | 'C'` biçiminde ikinci bir enum listesi yazılmaz; tip alias'ı kanonik tipten türetilir (`export type AppointmentActionStatus = AppointmentStatus`). `tests/lib/enums.test.ts` `src` altında 2+ kanonik değer içeren birleşim arar ve bulursa kırılır.
+- **Ham değer gösterilmez.** Etiket basan her yer `resolveStatusLabel(map, value, t)` kullanır: haritada (ya da sözlükte) karşılığı olmayan değer `ui.badge.unknown` + parantez içinde ham değer olarak görünür — `Bilinmiyor (REFUNDED)`. `StatusBadge` bu yardımcıyı kullanır; sayfalar `localizeStatusMap(map, t, labelKeys?)` ile haritayı bir kez üretir.
+- **Davranış sabit:** bilinen değerlerin etiketleri/tonları değişmez; fallback yalnızca haritada olmayan değer için devreye girer.

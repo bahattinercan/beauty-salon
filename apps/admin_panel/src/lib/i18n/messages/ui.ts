@@ -30,6 +30,7 @@ export const tr = {
     count: '{count} filtre etkin',
   },
   badge: {
+    unknown: 'Bilinmiyor',
     salon: {
       approved: 'Onaylı',
       pending: 'Bekliyor',
@@ -79,6 +80,7 @@ export const en: typeof tr = {
     count: '{count} filters active',
   },
   badge: {
+    unknown: 'Unknown',
     salon: {
       approved: 'Approved',
       pending: 'Pending',

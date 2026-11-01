@@ -7,14 +7,18 @@ import PageHeader from '@/components/shell/PageHeader';
 import Button from '@/components/ui/Button';
 import DataTable, { type Column } from '@/components/ui/DataTable';
 import Pagination from '@/components/ui/Pagination';
-import Badge, { StatusBadge, USER_ROLE } from '@/components/ui/Badge';
+import Badge, {
+  StatusBadge,
+  USER_ROLE,
+  ROLE_LABEL_KEYS,
+  localizeStatusMap,
+} from '@/components/ui/Badge';
 import Tabs from '@/components/ui/Tabs';
 import { Input } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/States';
 import type { Locale } from '@/lib/i18n';
+import type { UserRole } from '@/lib/enums';
 import { useI18n } from '@/providers/LocaleProvider';
-
-type UserRole = 'CUSTOMER' | 'SALON_OWNER' | 'ADMIN';
 
 interface ApiUser {
   id: string;
@@ -50,26 +54,14 @@ function formatDate(dateString: string, locale: Locale = 'tr'): string {
   });
 }
 
-const ROLE_LABEL_KEYS: Record<UserRole, string> = {
-  ADMIN: 'pages.users.roles.admin',
-  SALON_OWNER: 'pages.users.roles.salonOwner',
-  CUSTOMER: 'pages.users.roles.customer',
-};
-
-type Filter = 'ALL' | 'CUSTOMER' | 'SALON_OWNER';
+type Filter = 'ALL' | Exclude<UserRole, 'ADMIN'>;
 
 export default function UsersPage() {
   const { locale, t } = useI18n();
-  // Rol etiketleri paylaşılan `USER_ROLE` map'inden gelir; renk tonu orada
-  // kalır, yalnız etiket aktif dile çevrilir (Badge bileşeni değişmez).
-  const roleMap = useMemo(
-    () => ({
-      ADMIN: { ...USER_ROLE.ADMIN, label: t(ROLE_LABEL_KEYS.ADMIN) },
-      SALON_OWNER: { ...USER_ROLE.SALON_OWNER, label: t(ROLE_LABEL_KEYS.SALON_OWNER) },
-      CUSTOMER: { ...USER_ROLE.CUSTOMER, label: t(ROLE_LABEL_KEYS.CUSTOMER) },
-    }),
-    [t]
-  );
+  // Rol etiketleri paylaşılan `USER_ROLE` haritasından; ton orada kalır, etiket
+  // `pages.users.roles.*` sözlüğünden aktif dile çevrilir. Anahtar başına elle girdi
+  // yok: yeni rol eklenirse `src/lib/enums.ts` ve `ROLE_LABEL_KEYS` derlemeyi kırar.
+  const roleMap = useMemo(() => localizeStatusMap(USER_ROLE, t, ROLE_LABEL_KEYS), [t]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('ALL');
   const [currentPage, setCurrentPage] = useState(1);

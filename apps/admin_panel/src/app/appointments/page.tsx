@@ -9,7 +9,7 @@ import Button from "@/components/ui/Button";
 import DataTable, { type Column } from "@/components/ui/DataTable";
 import Dialog from "@/components/ui/Dialog";
 import Pagination from "@/components/ui/Pagination";
-import { StatusBadge, APPOINTMENT_STATUS } from "@/components/ui/Badge";
+import { StatusBadge, APPOINTMENT_STATUS, localizeStatusMap } from "@/components/ui/Badge";
 import { Input, Select } from "@/components/ui/Field";
 import { ErrorState } from "@/components/ui/States";
 import FilterBar from "@/components/ui/FilterBar";
@@ -21,6 +21,7 @@ import AppointmentDetailDialog from "@/components/appointments/AppointmentDetail
 import useDebouncedValue from "@/lib/useDebouncedValue";
 import type { Locale } from "@/lib/i18n";
 import { useI18n } from "@/providers/LocaleProvider";
+import type { AppointmentStatus } from "@/lib/enums";
 import {
   APPOINTMENT_SORT_OPTIONS,
   APPOINTMENT_STATUS_FILTERS,
@@ -37,8 +38,6 @@ import {
   type AppointmentStatusFilter,
   type AppointmentsQueryState,
 } from "@/lib/appointmentsQuery";
-
-type AppointmentStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
 
 interface ApiAppointment {
   id: string;
@@ -144,16 +143,11 @@ export default function AppointmentsPage() {
   const { locale, t } = useI18n();
   const router = useRouter();
 
-  // Durum adları paylaşılan `APPOINTMENT_STATUS` map'inden gelir; renk tonu orada
-  // kalır, yalnız etiket aktif dile çevrilir (Badge bileşeni değişmez).
+  // Durum adları paylaşılan `APPOINTMENT_STATUS` haritasından; ton orada kalır,
+  // etiket `appointments.status.*` sözlüğünden aktif dile çevrilir. Değer başına
+  // elle `{ ...MAP.X, label: t(...) }` yazılmaz — yeni enum değeri derlemeyi kırar.
   const statusMap = useMemo(
-    () => ({
-      PENDING: { ...APPOINTMENT_STATUS.PENDING, label: t("appointments.status.PENDING") },
-      CONFIRMED: { ...APPOINTMENT_STATUS.CONFIRMED, label: t("appointments.status.CONFIRMED") },
-      COMPLETED: { ...APPOINTMENT_STATUS.COMPLETED, label: t("appointments.status.COMPLETED") },
-      CANCELLED: { ...APPOINTMENT_STATUS.CANCELLED, label: t("appointments.status.CANCELLED") },
-      NO_SHOW: { ...APPOINTMENT_STATUS.NO_SHOW, label: t("appointments.status.NO_SHOW") },
-    }),
+    () => localizeStatusMap(APPOINTMENT_STATUS, t, STATUS_LABEL_KEYS),
     [t]
   );
 

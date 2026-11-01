@@ -14,13 +14,16 @@
  * ve dilsiz kalır, `node:test` altında ağsız/DOM'suz sınanabilir.
  */
 
+import { SALON_STATUSES, type SalonStatus } from './enums.ts';
+
 /** API `limit` üst sınırı 100 (plan H3); panelde üç seçenek var. */
 export const SALONS_PAGE_SIZES: number[] = [20, 50, 100];
 export const DEFAULT_PAGE_SIZE = 20;
 /** Sayfa boyutu tercihi sayfalar arasında hatırlanır (localStorage). */
 export const PAGE_SIZE_STORAGE_KEY = 'salons_page_size';
 
-export type SalonStatusFilter = 'tümü' | 'onaylı' | 'bekliyor' | 'pasif';
+/** `SALON_STATUSES` `src/lib/enums.ts`ten gelir; burada ikinci kez yazılmaz. */
+export type SalonStatusFilter = 'tümü' | SalonStatus;
 export type SalonSort = 'createdAt' | 'name' | 'rating';
 export type SalonSortOrder = 'asc' | 'desc';
 export type SalonView = 'tablo' | 'kartlar';
@@ -49,7 +52,7 @@ export const DEFAULT_SALONS_QUERY: SalonsQueryState = {
   view: 'tablo',
 };
 
-export const SALON_STATUS_FILTERS: SalonStatusFilter[] = ['tümü', 'onaylı', 'bekliyor', 'pasif'];
+export const SALON_STATUS_FILTERS: SalonStatusFilter[] = ['tümü', ...SALON_STATUSES];
 
 /**
  * `sirala` parametresinin tek kaynağı: UI select seçenekleri de buradan üretilir.

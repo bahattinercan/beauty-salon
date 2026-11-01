@@ -106,15 +106,17 @@ describe('StatusBadge + durum sözlükleri', () => {
     expect(el.className).toContain('badge-info');
   });
 
-  test('bilinmeyen değerde fallbackLabel kullanılır (ham enum sızmaz)', () => {
+  test('bilinmeyen değerde fallbackLabel + ham değer parantez içinde gösterilir', () => {
     renderTr(<StatusBadge map={SALON_STATUS} value="arsivlenmis" fallbackLabel="Bilinmiyor" />);
-    expect(screen.getByText('Bilinmiyor')).toBeTruthy();
+    expect(screen.getByText('Bilinmiyor (arsivlenmis)')).toBeTruthy();
     expect(screen.queryByText('arsivlenmis')).toBeNull();
   });
 
-  test('bilinmeyen değer ve fallback yoksa ham değer neutral tonla gösterilir', () => {
+  test('bilinmeyen değer ham enum olarak DEĞİL, ui.badge.unknown + değer olarak gösterilir', () => {
     renderTr(<StatusBadge map={SALON_STATUS} value="arsivlenmis" />);
-    const el = screen.getByText('arsivlenmis');
+    const el = screen.getByText('Bilinmiyor (arsivlenmis)');
     expect(el.className).toContain('badge-neutral');
+    // Ham değer tek başına hiçbir düğümde basılmaz (AP-011 K3).
+    expect(screen.queryByText('arsivlenmis')).toBeNull();
   });
 });
