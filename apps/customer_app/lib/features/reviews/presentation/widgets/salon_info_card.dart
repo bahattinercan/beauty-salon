@@ -15,7 +15,7 @@ class SalonInfoCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(4),
         boxShadow: [
           BoxShadow(
             color: colors.shadowCard,
@@ -31,7 +31,7 @@ class SalonInfoCard extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               color: colors.secondary,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(4),
             ),
             child: Icon(Icons.spa, color: colors.primary),
           ),

@@ -38,7 +38,7 @@ class SubmitBar extends StatelessWidget {
             backgroundColor: colors.primary,
             disabledBackgroundColor: colors.primaryLight.withValues(alpha: 0.5),
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
           ),
           child: isLoading
               ? const SizedBox(

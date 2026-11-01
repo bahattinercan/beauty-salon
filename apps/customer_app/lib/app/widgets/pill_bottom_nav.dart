@@ -56,7 +56,7 @@ class PillBottomNav extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
           color: colors.navPill,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
               color: colors.shadowPill,
@@ -116,7 +116,7 @@ class _NavSlot extends StatelessWidget {
               decoration: BoxDecoration(
                 // Aktif öğe: koyu pill üzerinde açık daire; ikon lime.
                 color: active ? colors.onNavPill : Colors.transparent,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(999),
               ),
               child: Icon(
                 active ? item.activeIcon : item.icon,

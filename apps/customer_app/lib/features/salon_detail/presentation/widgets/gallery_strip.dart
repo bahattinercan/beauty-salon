@@ -19,7 +19,7 @@ class GalleryStrip extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           return ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(4),
             child: Image.network(
               resolveMediaUrl(images[index]),
               width: 90,

@@ -19,7 +19,7 @@ class ServiceBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: colors.primary,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
         children: [
@@ -70,7 +70,7 @@ class ServiceStep extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isSelected ? colors.primary.withValues(alpha: 0.06) : colors.surface,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(4),
                 border: Border.all(
                   color: isSelected ? colors.primary : Colors.transparent,
                   width: 2,
@@ -90,7 +90,7 @@ class ServiceStep extends StatelessWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       color: isSelected ? colors.primary : colors.secondary,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Icon(
                       categoryIcon(service.categoryName ?? ''),

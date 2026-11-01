@@ -73,7 +73,7 @@ class _ReviewCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(4),
             boxShadow: [
               BoxShadow(color: colors.shadowRaised, blurRadius: 10, offset: const Offset(0, 2)),
             ],
@@ -86,10 +86,10 @@ class _ReviewCard extends StatelessWidget {
                   Container(
                     width: 42,
                     height: 42,
-                    decoration: BoxDecoration(color: colors.secondary, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: colors.secondary, borderRadius: BorderRadius.circular(4)),
                     child: review.salonLogoUrl != null
                         ? ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(4),
                             child: Image.network(
                               resolveMediaUrl(review.salonLogoUrl),
                               fit: BoxFit.cover,
@@ -130,7 +130,7 @@ class _ReviewCard extends StatelessWidget {
                     children: review.images.map((url) => Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(4),
                         child: Image.network(
                           resolveMediaUrl(url),
                           width: 88,
@@ -154,7 +154,7 @@ class _ReviewCard extends StatelessWidget {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: colors.secondary.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

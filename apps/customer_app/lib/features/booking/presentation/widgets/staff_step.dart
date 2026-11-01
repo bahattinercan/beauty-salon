@@ -33,7 +33,7 @@ class StaffOption extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(4),
             border: Border.all(
               color: isSelected ? colors.primary : Colors.transparent,
               width: 2,

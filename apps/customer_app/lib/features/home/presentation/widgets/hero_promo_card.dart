@@ -26,7 +26,7 @@ class HeroPromoCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
           decoration: BoxDecoration(
             color: colors.heroSurface,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(2),
             border: Border.all(color: colors.primary.withValues(alpha: 0.10)),
           ),
           child: Column(
@@ -83,7 +83,7 @@ class HeroPromoCard extends StatelessWidget {
                     height: 64,
                     decoration: BoxDecoration(
                       gradient: colors.ctaGradient,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                     child: Icon(
                       Icons.local_offer_rounded,

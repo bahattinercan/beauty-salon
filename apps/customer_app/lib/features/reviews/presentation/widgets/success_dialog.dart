@@ -13,7 +13,7 @@ class ReviewSuccessDialog extends StatelessWidget {
     final s = S.of(context);
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -40,7 +40,7 @@ class ReviewSuccessDialog extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 ),
                 child: Text(s.ok,
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),

@@ -10,7 +10,7 @@ class SalonCard extends StatelessWidget {
   /// Eskiden şeritte sabit `260` tahmini kullanılıyordu; gövde ~90px tutunca
   /// kartın içinde (özellikle rating satırının altında) boşluk kalıyordu.
   static const double mediaHeight = 140;
-  static const double contentHeight = 96; // ölçülen gövde: 93
+  static const double contentHeight = 100; // ölçülen gövde: 93
   static double get preferredHeight => mediaHeight + contentHeight;
 
   final String id;
@@ -53,7 +53,7 @@ class SalonCard extends StatelessWidget {
         width: 260,
         decoration: BoxDecoration(
           color: colors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(2),
           boxShadow: [
             BoxShadow(
               color: colors.shadowRaised,

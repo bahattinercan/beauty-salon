@@ -35,7 +35,7 @@ class _ChangePasswordSheetState extends State<ChangePasswordSheet> {
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       child: Form(
@@ -108,7 +108,7 @@ class _ChangePasswordSheetState extends State<ChangePasswordSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 ),
                 child: Text(s.updatePassword,
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),

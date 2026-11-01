@@ -32,7 +32,7 @@ class FavoriteSalonCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(2),
             boxShadow: [
               BoxShadow(color: colors.shadowRaised, blurRadius: 16, offset: const Offset(0, 4)),
             ],
@@ -40,7 +40,7 @@ class FavoriteSalonCard extends StatelessWidget {
           child: Row(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(2)),
                 child: imageUrl != null && imageUrl!.isNotEmpty
                     ? Image.network(
                         resolveMediaUrl(imageUrl),

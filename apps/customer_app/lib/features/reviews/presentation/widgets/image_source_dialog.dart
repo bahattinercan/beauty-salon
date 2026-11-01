@@ -10,7 +10,7 @@ Future<ImageSource?> showImageSourceDialog(BuildContext context) {
   return showDialog<ImageSource>(
     context: context,
     builder: (ctx) => SimpleDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
       children: [
         SimpleDialogOption(
           onPressed: () => Navigator.pop(ctx, ImageSource.camera),

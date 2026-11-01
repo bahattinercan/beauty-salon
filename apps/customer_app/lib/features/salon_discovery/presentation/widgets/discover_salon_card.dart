@@ -24,7 +24,7 @@ class DiscoverSalonCard extends ConsumerWidget {
 
   /// Grid hücresinin yüksekliğini hesaplamak için: medya oranı + gövde.
   static const double mediaAspectRatio = 4 / 5;
-  static const double contentHeight = 96;
+  static const double contentHeight = 100;
 
   static double extentFor(double cardWidth) =>
       cardWidth / mediaAspectRatio + contentHeight;
@@ -44,7 +44,7 @@ class DiscoverSalonCard extends ConsumerWidget {
       child: Container(
         decoration: BoxDecoration(
           color: colors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(2),
           boxShadow: [
             BoxShadow(
               color: colors.shadowRaised,

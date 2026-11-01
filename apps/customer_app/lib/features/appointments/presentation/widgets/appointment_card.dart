@@ -38,7 +38,7 @@ class AppointmentCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(2),
             boxShadow: [
               BoxShadow(
                 color: colors.shadowRaised,
@@ -57,7 +57,7 @@ class AppointmentCard extends StatelessWidget {
                     height: 44,
                     decoration: BoxDecoration(
                       color: colors.secondary,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Icon(Icons.spa, color: colors.primary),
                   ),
@@ -156,7 +156,7 @@ class AppointmentCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(6)),
       child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textColor)),
     );
   }

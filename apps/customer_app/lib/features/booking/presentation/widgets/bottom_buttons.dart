@@ -42,7 +42,7 @@ class BottomButtons extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     side: BorderSide(color: colors.primary),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                   ),
                   child: Text(s.back, style: TextStyle(color: colors.primary)),
                 ),
@@ -57,7 +57,7 @@ class BottomButtons extends StatelessWidget {
                   backgroundColor: colors.primary,
                   disabledBackgroundColor: colors.primaryLight.withValues(alpha: 0.5),
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 ),
                 child: state.submitting
                     ? const SizedBox(

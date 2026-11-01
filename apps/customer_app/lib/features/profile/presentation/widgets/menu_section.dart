@@ -28,7 +28,7 @@ class MenuSection extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(2),
         boxShadow: [
           BoxShadow(
             color: colors.shadowCard,
@@ -49,7 +49,7 @@ class MenuSection extends StatelessWidget {
                   height: 38,
                   decoration: BoxDecoration(
                     color: colors.secondary,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Icon(item.icon, color: colors.primary, size: 20),
                 ),
@@ -134,7 +134,7 @@ class ProfileHeader extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               s.profileMember,
@@ -172,7 +172,7 @@ class StatsRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(2),
         boxShadow: [
           BoxShadow(
             color: colors.primary.withValues(alpha: 0.08),

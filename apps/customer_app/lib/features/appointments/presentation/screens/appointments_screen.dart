@@ -142,7 +142,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
         title: Text(s.appointmentsCancelTitle),
         content: Text('${a.salon.name} ${s.appointmentsCancelContent}'),
         actions: [

@@ -17,7 +17,7 @@ Future<void> showLanguagePicker(
   return showModalBottomSheet(
     context: context,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(2)),
     ),
     builder: (ctx) => SafeArea(
       child: Padding(
@@ -72,7 +72,7 @@ Future<void> showLogoutDialog(
   return showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
       title: Text(s.logoutTitle, style: const TextStyle(fontWeight: FontWeight.w700)),
       content: Text(s.logoutContent),
       actions: [
@@ -85,7 +85,7 @@ Future<void> showLogoutDialog(
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: colors.primary,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
           ),
           child: Text(s.logoutConfirm),
         ),

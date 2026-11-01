@@ -123,7 +123,7 @@ class _SalonDetailScreenState extends ConsumerState<SalonDetailScreen>
             style: ElevatedButton.styleFrom(
               backgroundColor: colors.primary,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
             ),
             child: Text(
               s.appointmentsBook,

@@ -29,7 +29,7 @@ class StaffListWidget extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: colors.surface,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(4),
               boxShadow: [
                 BoxShadow(
                   color: colors.shadowCard,
@@ -45,7 +45,7 @@ class StaffListWidget extends StatelessWidget {
                   height: 56,
                   decoration: BoxDecoration(
                     gradient: colors.primaryGradient,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Center(
                     child: Text(
@@ -83,7 +83,7 @@ class StaffListWidget extends StatelessWidget {
                                   horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
                                 color: colors.secondary,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(s,
                                   style: TextStyle(

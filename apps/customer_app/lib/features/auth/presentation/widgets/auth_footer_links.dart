@@ -16,7 +16,7 @@ class AuthLogo extends StatelessWidget {
           height: 80,
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(2),
           ),
           child: const Icon(Icons.spa_rounded, color: Colors.white, size: 42),
         ),

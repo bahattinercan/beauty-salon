@@ -96,7 +96,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               width: 64, height: 64,
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(18),
+                                borderRadius: BorderRadius.circular(2),
                               ),
                               child: const Icon(Icons.spa_rounded, color: Colors.white, size: 36),
                             ),

@@ -41,7 +41,7 @@ class PhotoPickerRow extends StatelessWidget {
                 height: 80,
                 decoration: BoxDecoration(
                   color: colors.surface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(4),
                   border: Border.all(color: colors.secondaryDark),
                 ),
                 child: Column(
@@ -62,7 +62,7 @@ class PhotoPickerRow extends StatelessWidget {
                 child: Stack(
                   children: [
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(4),
                       child: Image.file(
                         images[index],
                         width: 80,

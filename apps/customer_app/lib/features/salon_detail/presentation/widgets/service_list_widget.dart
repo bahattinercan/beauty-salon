@@ -46,7 +46,7 @@ class ServiceListWidget extends StatelessWidget {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: colors.surface,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: colors.surfaceVariant),
                     ),
                     child: Row(
@@ -56,7 +56,7 @@ class ServiceListWidget extends StatelessWidget {
                           height: 42,
                           decoration: BoxDecoration(
                             color: colors.secondary,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           child: Icon(_categoryIcon(entry.key), color: colors.primary, size: 20),
                         ),

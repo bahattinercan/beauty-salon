@@ -51,7 +51,7 @@ class RatingSummary extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(2),
         boxShadow: [
           BoxShadow(
             color: colors.shadowCard,

@@ -14,7 +14,7 @@ class ChangePasswordTile extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(4),
         boxShadow: [
           BoxShadow(
             color: colors.shadowCard,
@@ -29,14 +29,14 @@ class ChangePasswordTile extends StatelessWidget {
           height: 38,
           decoration: BoxDecoration(
             color: colors.secondary,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(4),
           ),
           child: Icon(Icons.lock_outline, color: colors.primary, size: 20),
         ),
         title: Text(s.changePassword,
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
         trailing: Icon(Icons.chevron_right, color: colors.textHint),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         onTap: () => showModalBottomSheet(
           context: context,
           isScrollControlled: true,

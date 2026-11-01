@@ -165,7 +165,7 @@ class _ActionButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: colors.primary,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         ),
         child: busy
             ? SizedBox(
@@ -184,7 +184,7 @@ class _ActionButton extends StatelessWidget {
         foregroundColor: colors.primary,
         padding: const EdgeInsets.symmetric(vertical: 14),
         side: BorderSide(color: colors.primary, width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
       child: busy
           ? SizedBox(

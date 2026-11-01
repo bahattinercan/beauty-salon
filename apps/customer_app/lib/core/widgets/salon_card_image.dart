@@ -24,7 +24,7 @@ class CardBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         text,
@@ -82,7 +82,7 @@ class SalonCardImage extends StatelessWidget {
 
   static const double imageHeight = 140;
   static const BorderRadius topRadius =
-      BorderRadius.vertical(top: Radius.circular(16));
+      BorderRadius.vertical(top: Radius.circular(2));
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +178,7 @@ class SalonCardImage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
               decoration: BoxDecoration(
                 color: colors.navPill,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,

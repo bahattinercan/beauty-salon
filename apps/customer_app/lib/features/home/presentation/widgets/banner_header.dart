@@ -21,7 +21,7 @@ class BannerHeader extends StatelessWidget {
              child: Container(
                   decoration: BoxDecoration(
                     gradient: colors.bannerGradient,
-                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
                   ),
                   // Eskiden sabit `top: 52` idi; `home_screen` içeriği zaten `SafeArea`
                   // ile sarmaladığı için çentikli cihazda üstte ~24px fazladan boşluk

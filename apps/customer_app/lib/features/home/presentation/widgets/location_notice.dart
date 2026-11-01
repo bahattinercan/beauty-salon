@@ -20,7 +20,7 @@ class LocationNotice extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
       decoration: BoxDecoration(
         color: colors.warning.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: colors.warning.withValues(alpha: 0.4)),
       ),
       child: Row(

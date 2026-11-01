@@ -51,7 +51,7 @@ class ConfirmStep extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(2),
             boxShadow: [
               BoxShadow(
                 color: colors.shadowRaised,
@@ -111,7 +111,7 @@ class ConfirmStep extends StatelessWidget {
             filled: true,
             fillColor: colors.surface,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(4),
               borderSide: BorderSide.none,
             ),
           ),

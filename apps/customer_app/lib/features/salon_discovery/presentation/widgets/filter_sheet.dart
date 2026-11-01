@@ -40,7 +40,7 @@ class _FilterSheetState extends State<FilterSheet> {
       height: MediaQuery.of(context).size.height * 0.75,
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
       ),
       child: Column(
         children: [
@@ -157,7 +157,7 @@ class _FilterSheetState extends State<FilterSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 ),
                 child: Text(
                   '${s.discoverApply} ($_activeCount ${s.discoverFiltersCount})',

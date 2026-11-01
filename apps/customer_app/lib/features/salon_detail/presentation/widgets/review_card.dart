@@ -19,7 +19,7 @@ class ReviewCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: colors.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(4),
           boxShadow: [
             BoxShadow(
               color: colors.shadowCard,
@@ -80,7 +80,7 @@ class ReviewCard extends StatelessWidget {
                   children: review.images.map((url) => Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(4),
                       child: Image.network(
                         resolveMediaUrl(url),
                         width: 92,
@@ -104,7 +104,7 @@ class ReviewCard extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: colors.secondary.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

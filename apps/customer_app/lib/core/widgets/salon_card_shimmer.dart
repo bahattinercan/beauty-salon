@@ -31,7 +31,7 @@ class SalonCardShimmer extends StatelessWidget {
         height: SalonCard.preferredHeight,
         decoration: BoxDecoration(
           color: colors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(2),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,7 +40,7 @@ class SalonCardShimmer extends StatelessWidget {
               height: SalonCard.mediaHeight,
               decoration: BoxDecoration(
                 color: colors.secondary,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
               ),
             ),
             Padding(

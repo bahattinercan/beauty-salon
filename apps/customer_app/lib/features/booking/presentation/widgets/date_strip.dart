@@ -33,7 +33,7 @@ class DateStrip extends StatelessWidget {
                 width: 56,
                 decoration: BoxDecoration(
                   color: isSelected ? colors.primary : colors.surface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(4),
                   border: Border.all(color: isSelected ? colors.primary : colors.secondaryDark),
                 ),
                 child: Column(
@@ -114,7 +114,7 @@ class SlotGrid extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
                 color: bg,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(4),
                 border: Border.all(color: border),
               ),
               child: available

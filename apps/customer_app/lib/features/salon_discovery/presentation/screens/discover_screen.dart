@@ -94,7 +94,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: state.filter.hasActiveFilters ? colors.primary : colors.surface,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color: state.filter.hasActiveFilters ? colors.primary : colors.secondaryDark,
                         ),
