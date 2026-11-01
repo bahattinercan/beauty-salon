@@ -51,6 +51,26 @@ npm run migrate:status
 npm run migrate:undo:all
 ```
 
+### Lokal veritabanı: Mint docker (tünel 5433)
+
+Yerel geliştirme Postgres örneği Windows'ta Docker Desktop yerine Mint düğümünde (`mint`) koşar ve SSH tüneli ile `localhost:5433` portuna yönlendirilir:
+
+- **Compose yolu (Mint):** `~/beauty-infra/docker-compose.yml` (`cd ~/beauty-infra && docker compose up -d`)
+- **Container / Volume:** `beauty_postgres` (`postgres:16-alpine`) · `beauty_postgres_data`
+- **Port ve DB:** `127.0.0.1:5433:5432` · `beauty_salon` (dev) ve `beauty_salon_test` (test) · kullanıcı `beauty_user`
+- **Tünel komutu (Windows):**
+  ```powershell
+  powershell -ExecutionPolicy Bypass -NoProfile -File ~/.pi/agent/bin/mint-tunnel.ps1 status
+  powershell -ExecutionPolicy Bypass -NoProfile -File ~/.pi/agent/bin/mint-tunnel.ps1 restart
+  ```
+- **Migrate ve seed komutları:**
+  ```bash
+  cd apps/api
+  npm run migrate
+  npm run migrate:status
+  npm run seed
+  ```
+
 Runtime `src/config/database.js` ile **SQLite** kullanır. Sonuçlar:
 
 - `npm run migrate` Postgres'e gider, runtime DB'yi etkilemez.
