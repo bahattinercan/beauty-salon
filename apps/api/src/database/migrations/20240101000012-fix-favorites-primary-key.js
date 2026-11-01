@@ -1,5 +1,7 @@
 'use strict';
 
+const crypto = require('crypto');
+
 /**
  * favorites tablosunda "her kolon ayrı primaryKey" hatası düzeltiliyor.
  * Eski şema: user_id PRIMARY KEY, salon_id PRIMARY KEY
@@ -10,10 +12,12 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const table = await queryInterface.getTable('favorites');
-    if (!table) return;
-
-    const cols = await queryInterface.describeTable('favorites');
+    let cols;
+    try {
+      cols = await queryInterface.describeTable('favorites');
+    } catch {
+      return;
+    }
     if (cols.id) return; // zaten düzeltilmiş
 
     await queryInterface.createTable('favorites_new', {
@@ -21,6 +25,7 @@ module.exports = {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
+        allowNull: false,
       },
       user_id: {
         type: Sequelize.UUID,
@@ -39,7 +44,6 @@ module.exports = {
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.now ? Sequelize.now() : new Date(),
       },
     });
 
@@ -48,17 +52,33 @@ module.exports = {
       name: 'favorites_user_id_salon_id_unique',
     });
 
-    await queryInterface.execute(
-      'INSERT INTO favorites_new (id, user_id, salon_id, created_at) ' +
-      'SELECT (SELECT hex(randomblob(16))), user_id, salon_id, created_at FROM favorites'
+    const [rows] = await queryInterface.sequelize.query(
+      'SELECT user_id, salon_id, created_at FROM favorites'
     );
+
+    if (rows.length > 0) {
+      await queryInterface.bulkInsert(
+        'favorites_new',
+        rows.map((row) => ({
+          id: crypto.randomUUID(),
+          user_id: row.user_id,
+          salon_id: row.salon_id,
+          created_at: row.created_at || new Date(),
+        }))
+      );
+    }
 
     await queryInterface.dropTable('favorites');
     await queryInterface.renameTable('favorites_new', 'favorites');
   },
 
   async down(queryInterface, Sequelize) {
-    const cols = await queryInterface.describeTable('favorites');
+    let cols;
+    try {
+      cols = await queryInterface.describeTable('favorites');
+    } catch {
+      return;
+    }
     if (!cols.id) return;
 
     await queryInterface.createTable('favorites_old', {
@@ -84,10 +104,20 @@ module.exports = {
       },
     });
 
-    await queryInterface.execute(
-      'INSERT INTO favorites_old (user_id, salon_id, created_at) ' +
+    const [rows] = await queryInterface.sequelize.query(
       'SELECT user_id, salon_id, created_at FROM favorites'
     );
+
+    if (rows.length > 0) {
+      await queryInterface.bulkInsert(
+        'favorites_old',
+        rows.map((row) => ({
+          user_id: row.user_id,
+          salon_id: row.salon_id,
+          created_at: row.created_at || new Date(),
+        }))
+      );
+    }
 
     await queryInterface.dropTable('favorites');
     await queryInterface.renameTable('favorites_old', 'favorites');
