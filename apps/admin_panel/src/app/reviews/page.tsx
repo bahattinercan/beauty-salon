@@ -27,6 +27,7 @@ import {
   PAGE_SIZE_STORAGE_KEY,
   REPLY_LABEL_KEYS,
   REVIEWS_PAGE_SIZES,
+  REVIEW_SORT_OPTIONS,
   VISIBILITY_LABEL_KEYS,
   activeChips,
   buildReviewsQuery,
@@ -371,10 +372,15 @@ export default function ReviewsPage() {
 
       <div className="mb-4 flex flex-col gap-2">
         <FilterBar
+          // AP-010 sıralama Select'i 7. kontrolu ekledi: 1280px'te 7 kontrol tek satıra
+          // sığmıyordu (ölçüm: 79px yatay taşma). Arama yuvası bu sayfada 7.5rem'e
+          // iner, kalan alan altı Select'e kalır (1280'de 132px each, metin kırpılmaz).
+          // FilterBar'ın kendi sözleşmesi (12rem taban) değişmez; override sayfa kapsamlı.
+          className="[&>div:first-child]:!min-w-[7.5rem]"
           leading={
             // Ölçü sarmalayıcıda: kontrolün taban sınıfı `w-full` olduğu için
             // genişlik/daralma sınıfları doğrudan kontrole verilince eziliyor (AP-007).
-            <div className="min-w-[10rem] flex-1 overflow-hidden">
+            <div className="min-w-[7.5rem] flex-1 overflow-hidden">
               <Input
                 icon={Search}
                 value={query.q}
@@ -385,7 +391,7 @@ export default function ReviewsPage() {
             </div>
           }
         >
-          <div className="!min-w-[8.5rem] max-w-48 flex-1">
+          <div className="!min-w-[7rem] max-w-48 flex-1">
             <Select
               aria-label={t('reviews.page.visibilityFilter')}
               value={query.visibility}
@@ -404,7 +410,7 @@ export default function ReviewsPage() {
               </option>
             </Select>
           </div>
-          <div className="!min-w-[8.5rem] max-w-48 flex-1">
+          <div className="!min-w-[7rem] max-w-48 flex-1">
             <Select
               aria-label={t('reviews.page.ratingFilter')}
               value={String(query.rating)}
@@ -424,7 +430,7 @@ export default function ReviewsPage() {
               ))}
             </Select>
           </div>
-          <div className="!min-w-[8.5rem] max-w-48 flex-1">
+          <div className="!min-w-[7rem] max-w-48 flex-1">
             <Select
               aria-label={t('reviews.page.replyFilter')}
               value={query.reply}
@@ -439,7 +445,7 @@ export default function ReviewsPage() {
               </option>
             </Select>
           </div>
-          <div className="!min-w-[8.5rem] max-w-48 flex-1">
+          <div className="!min-w-[7rem] max-w-48 flex-1">
             <Select
               aria-label={t('reviews.page.salonFilter')}
               value={query.salonId}
@@ -453,7 +459,7 @@ export default function ReviewsPage() {
               ))}
             </Select>
           </div>
-          <div className="!min-w-[8.5rem] max-w-48 flex-1">
+          <div className="!min-w-[7rem] max-w-48 flex-1">
             <Select
               aria-label={t('reviews.page.dateFilter')}
               value={query.date}
@@ -462,6 +468,23 @@ export default function ReviewsPage() {
               }
             >
               {DATE_PRESET_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {t(option.labelKey)}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="!min-w-[7rem] max-w-48 flex-1">
+            <Select
+              aria-label={t('reviews.page.sortFilter')}
+              value={`${query.sort}:${query.order}`}
+              onChange={(e) => {
+                // Seçenek listesi tek kaynak: URL biçimi → (sort, order) ikilisi.
+                const option = REVIEW_SORT_OPTIONS.find((item) => item.value === e.target.value);
+                if (option) updateFilter({ sort: option.sort, order: option.order });
+              }}
+            >
+              {REVIEW_SORT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {t(option.labelKey)}
                 </option>

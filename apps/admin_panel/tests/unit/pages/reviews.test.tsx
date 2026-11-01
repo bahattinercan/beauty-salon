@@ -274,6 +274,61 @@ describe('ReviewsPage', () => {
     await waitFor(() => expect(replacedUrls().at(-1)).toBe('/reviews'));
   });
 
+  test('Sıralama Selecti dört seçenekle basılır ve varsayılan En yeni seçilidir', async () => {
+    renderPage();
+    await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
+
+    const sort = screen.getByLabelText('Sıralama') as HTMLSelectElement;
+    expect(sort.tagName).toBe('SELECT');
+    expect(
+      within(sort)
+        .getAllByRole('option')
+        .map((option) => option.textContent)
+    ).toEqual(['En yeni', 'En eski', 'Yüksek puan', 'Düşük puan']);
+    expect(sort.value).toBe('createdAt:desc');
+    // Sıralama bir filtre değil: chip üretmez.
+    expect(screen.queryByText('Sıralama: En yeni')).toBeNull();
+  });
+
+  test('Sıralama seçimi isteği sort/order ile gönderir, URL sirala taşır, Temizle varsayılana döner', async () => {
+    renderPage();
+    await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
+
+    await userEvent.selectOptions(screen.getByLabelText('Sıralama'), 'rating:desc');
+    await waitFor(() => expect(lastParams().get('sort')).toBe('rating'));
+    expect(lastParams().get('order')).toBe('desc');
+    // Filtre sayfası 1'e döner.
+    expect(lastParams().get('page')).toBe('1');
+    await waitFor(() => expect(replacedUrls().at(-1)).toBe('/reviews?sirala=rating%3Adesc'));
+    // Sıralama chip'lerde GÖRÜNMEZ (randevu sayfasıyla aynı davranış).
+    expect(screen.queryByRole('button', { name: /Sıralama/ })).toBeNull();
+
+    await userEvent.selectOptions(screen.getByLabelText('Sıralama'), 'createdAt:asc');
+    await waitFor(() => expect(lastParams().get('sort')).toBe('createdAt'));
+    expect(lastParams().get('order')).toBe('asc');
+    await waitFor(() => expect(replacedUrls().at(-1)).toBe('/reviews?sirala=createdAt%3Aasc'));
+
+    // Temizle varsayılana (En yeni) döndürür ve URL'den sirala düşer.
+    await userEvent.selectOptions(screen.getByLabelText('Puan'), '4');
+    await waitFor(() => expect(lastParams().get('rating')).toBe('4'));
+    await userEvent.click(screen.getByRole('button', { name: 'Temizle' }));
+    await waitFor(() => expect(lastParams().get('sort')).toBe('createdAt'));
+    expect(lastParams().get('order')).toBe('desc');
+    expect(lastParams().has('rating')).toBe(false);
+    await waitFor(() => expect(replacedUrls().at(-1)).toBe('/reviews'));
+    expect((screen.getByLabelText('Sıralama') as HTMLSelectElement).value).toBe('createdAt:desc');
+  });
+
+  test('sıralama derin bağlantısı (sirala) yenilemede korunur ve ilk istekte uygulanır', async () => {
+    window.history.replaceState({}, '', '/reviews?sirala=rating%3Aasc');
+    renderPage();
+
+    await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
+    expect(lastParams().get('sort')).toBe('rating');
+    expect(lastParams().get('order')).toBe('asc');
+    expect((screen.getByLabelText('Sıralama') as HTMLSelectElement).value).toBe('rating:asc');
+  });
+
   test('sayfa boyutu limit olarak gider ve localStoragea yazılır', async () => {
     renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));

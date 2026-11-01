@@ -76,7 +76,7 @@ test('sabitler: sayfa boyutları, depolama anahtarı ve seçenekler', () => {
   assert.deepEqual(REVIEW_REPLY_FILTERS, ['tümü', 'yanıtlı', 'yanıtsız']);
   assert.deepEqual(
     REVIEW_SORT_OPTIONS.map((option) => option.value),
-    ['createdAt:desc', 'rating:desc', 'rating:asc']
+    ['createdAt:desc', 'createdAt:asc', 'rating:desc', 'rating:asc']
   );
   assert.deepEqual(
     DATE_PRESET_OPTIONS.map((option) => option.value),
@@ -85,8 +85,11 @@ test('sabitler: sayfa boyutları, depolama anahtarı ve seçenekler', () => {
   // Etiketler metin değil i18n anahtarı taşır; bugünkü tr kopyası birebir korunur.
   assert.deepEqual(
     REVIEW_SORT_OPTIONS.map((option) => translate('tr', option.labelKey)),
-    ['En yeni', 'En yüksek puan', 'En düşük puan']
+    ['En yeni', 'En eski', 'Yüksek puan', 'Düşük puan']
   );
+  // Select aria-label'i de sözlükte var (eksik anahtar anahtarın kendisini basar).
+  assert.equal(translate('tr', 'reviews.page.sortFilter'), 'Sıralama');
+  assert.equal(translate('en', 'reviews.page.sortFilter'), 'Sort');
   assert.deepEqual(
     DATE_PRESET_OPTIONS.map((option) => translate('tr', option.labelKey)),
     ['Tüm tarihler', 'Bugün', 'Yarın', 'Bu hafta', 'Bu ay', 'Geçmiş', 'Gelecek']
@@ -157,6 +160,25 @@ test('parseReviewsQuery: plan parametre adları çözülür', () => {
   assert.equal(parsed.order, 'asc');
 });
 
+test('parseReviewsQuery: dört sıralama seçeneği de (sort, order) ikilisine çözülür', () => {
+  const expected: [string, string, string][] = [
+    ['createdAt:desc', 'createdAt', 'desc'],
+    ['createdAt:asc', 'createdAt', 'asc'],
+    ['rating:desc', 'rating', 'desc'],
+    ['rating:asc', 'rating', 'asc'],
+  ];
+  for (const [value, sort, order] of expected) {
+    const parsed = parseReviewsQuery(`?sirala=${value}`);
+    assert.equal(parsed.sort, sort, value);
+    assert.equal(parsed.order, order, value);
+  }
+  // URL biçimi select seçenekleriyle aynı kaynaktan gelmeli (yazım sapması olmasın).
+  assert.deepEqual(
+    REVIEW_SORT_OPTIONS.map((option) => option.value),
+    expected.map(([value]) => value)
+  );
+});
+
 test('parseReviewsQuery: eski ?filter=visible|hidden derin bağlantısı gorunum olur', () => {
   assert.equal(parseReviewsQuery('?filter=visible').visibility, 'görünür');
   assert.equal(parseReviewsQuery('?filter=hidden').visibility, 'gizli');
@@ -191,9 +213,9 @@ test('parseReviewsQuery: geçersiz sayfa/limit/tarih/sirala varsayılana döner'
   const half = parseReviewsQuery('?sirala=rating');
   assert.equal(half.sort, 'createdAt');
   assert.equal(half.order, 'desc');
-  // Listedeki olmayan kombinasyon (createdAt:asc) de varsayılana döner.
-  assert.equal(parseReviewsQuery('?sirala=createdAt:asc').sort, 'createdAt');
-  assert.equal(parseReviewsQuery('?sirala=createdAt:asc').order, 'desc');
+  // Listedeki olmayan kombinasyon (order eksik) de varsayılana döner.
+  assert.equal(parseReviewsQuery('?sirala=createdAt').sort, 'createdAt');
+  assert.equal(parseReviewsQuery('?sirala=createdAt').order, 'desc');
   // Sayı olmayan sayfa da varsayılana döner.
   assert.equal(parseReviewsQuery('?sayfa=abc').page, 1);
 });
@@ -229,6 +251,28 @@ test('buildReviewsQuery: dolu durum tüm parametreleri plan adlarıyla yazar', (
   assert.equal(params.get('sirala'), 'rating:asc');
   // `?` öneki yok.
   assert.equal(qs.startsWith('?'), false);
+});
+
+test('buildReviewsQuery: varsayılandan farklı sıralama sirala=<alan>:<yon> olarak yazılır', () => {
+  // Varsayılan (createdAt:desc) yazılmaz; diğer üçü yazılır ve geri okunur.
+  for (const option of REVIEW_SORT_OPTIONS) {
+    const qs = buildReviewsQuery({
+      ...DEFAULT_REVIEWS_QUERY,
+      sort: option.sort,
+      order: option.order,
+    });
+    const isDefault =
+      option.sort === DEFAULT_REVIEWS_QUERY.sort && option.order === DEFAULT_REVIEWS_QUERY.order;
+    assert.equal(new URLSearchParams(qs).has('sirala'), !isDefault, option.value);
+    if (!isDefault) {
+      assert.equal(new URLSearchParams(qs).get('sirala'), option.value);
+      assert.deepEqual(parseReviewsQuery(qs), {
+        ...DEFAULT_REVIEWS_QUERY,
+        sort: option.sort,
+        order: option.order,
+      });
+    }
+  }
 });
 
 test('buildReviewsQuery: varsayılan değerler URL sorgusuna yazılmaz', () => {
@@ -374,6 +418,19 @@ test('toApiSearchParams: sayfalama ve siralama her zaman yazilir, araliksiz tari
   assert.equal(params.has('dateTo'), false);
 });
 
+test('toApiSearchParams: seçilen her sıralama sort/order ikilisi olarak APIye gider', () => {
+  for (const option of REVIEW_SORT_OPTIONS) {
+    const params = new URLSearchParams(
+      toApiSearchParams(
+        { ...DEFAULT_REVIEWS_QUERY, sort: option.sort, order: option.order },
+        TODAY
+      )
+    );
+    assert.equal(params.get('sort'), option.sort, option.value);
+    assert.equal(params.get('order'), option.order, option.value);
+  }
+});
+
 test('toApiSearchParams: bugün önceli dateFrom=dateTo=bugün yapar', () => {
   const params = new URLSearchParams(
     toApiSearchParams({ ...DEFAULT_REVIEWS_QUERY, date: 'bugün' }, TODAY)
@@ -394,6 +451,27 @@ test('activeChips: filtre yoksa chip üretmez', () => {
   assert.deepEqual(
     activeChips({ ...DEFAULT_REVIEWS_QUERY, sort: 'rating', order: 'asc', page: 3, limit: 100 }),
     []
+  );
+});
+
+test('activeChips: sıralama hiçbir seçimde chip üretmez (randevu sayfasıyla aynı)', () => {
+  for (const option of REVIEW_SORT_OPTIONS) {
+    assert.deepEqual(
+      activeChips({ ...DEFAULT_REVIEWS_QUERY, sort: option.sort, order: option.order }),
+      [],
+      option.value
+    );
+  }
+  // Sıralama tek başına etkinken de yalnız gerçek filtreler chip üretir.
+  const chips = activeChips({
+    ...DEFAULT_REVIEWS_QUERY,
+    rating: 5,
+    sort: 'createdAt',
+    order: 'asc',
+  });
+  assert.deepEqual(
+    chips.map((chip) => chip.key),
+    ['rating']
   );
 });
 

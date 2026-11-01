@@ -9,7 +9,7 @@
  *
  * Parametre adları: `q`, `gorunum`, `puan`, `yanit`, `salon`, `tarih`, `sayfa`,
  * `limit`, `sirala`. Sıralama tek parametrede taşınır: `sirala=<sort>:<order>`
- * (`createdAt:desc`, `rating:desc`, `rating:asc`). Varsayılanlar URL'e **yazılmaz**
+ * (`createdAt:desc`, `createdAt:asc`, `rating:desc`, `rating:asc`). Varsayılanlar URL'e **yazılmaz**
  * (temiz deep-link); okuma tarafı eksik/geçersiz değeri varsayılana çeker.
  *
  * Çeviri: modül SAF kalır — görünen metin yerine `labelKey`/`valueKey`/`vars`
@@ -73,6 +73,7 @@ export const REVIEW_SORT_OPTIONS: {
   order: SortOrder;
 }[] = [
   { value: 'createdAt:desc', labelKey: 'reviews.sort.newest', sort: 'createdAt', order: 'desc' },
+  { value: 'createdAt:asc', labelKey: 'reviews.sort.oldest', sort: 'createdAt', order: 'asc' },
   {
     value: 'rating:desc',
     labelKey: 'reviews.sort.highestRating',

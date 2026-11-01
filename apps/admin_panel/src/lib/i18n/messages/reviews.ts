@@ -30,6 +30,7 @@ export const tr = {
     replyFilter: 'Yanıt',
     salonFilter: 'Salon',
     dateFilter: 'Tarih',
+    sortFilter: 'Sıralama',
     allSalons: 'Tüm salonlar',
     allRatings: 'Tüm puanlar',
   },
@@ -52,8 +53,9 @@ export const tr = {
   option: '{label} ({count})',
   sort: {
     newest: 'En yeni',
-    highestRating: 'En yüksek puan',
-    lowestRating: 'En düşük puan',
+    oldest: 'En eski',
+    highestRating: 'Yüksek puan',
+    lowestRating: 'Düşük puan',
   },
   datePreset: {
     all: 'Tüm tarihler',
@@ -142,6 +144,7 @@ export const en: typeof tr = {
     replyFilter: 'Reply',
     salonFilter: 'Salon',
     dateFilter: 'Date',
+    sortFilter: 'Sort',
     allSalons: 'All salons',
     allRatings: 'All ratings',
   },
@@ -161,8 +164,9 @@ export const en: typeof tr = {
   option: '{label} ({count})',
   sort: {
     newest: 'Newest',
-    highestRating: 'Highest rating',
-    lowestRating: 'Lowest rating',
+    oldest: 'Oldest',
+    highestRating: 'High rating',
+    lowestRating: 'Low rating',
   },
   datePreset: {
     all: 'All dates',
