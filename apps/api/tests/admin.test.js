@@ -620,10 +620,16 @@ describe('Admin API', () => {
       .query(query)
       .set('Authorization', `Bearer ${adminToken}`);
 
+    // YYYY-MM-DD YEREL takvimden üretilir: controller gün sınırını yerel güne göre
+    // kuruyor (bkz. admin.controller getAllReviews). `toISOString()` UTC günü verdiği
+    // için UTC+3'te günün ilk saatlerinde bir gün geriye kayıp testi TZ'e bağımlı
+    // kılıyordu.
     const addDays = (days) => {
       const date = new Date();
       date.setDate(date.getDate() + days);
-      return date.toISOString().split('T')[0];
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${date.getFullYear()}-${month}-${day}`;
     };
 
     before(async () => {
