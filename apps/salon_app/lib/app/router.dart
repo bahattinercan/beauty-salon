@@ -11,6 +11,7 @@ import '../features/staff/presentation/screens/staff_management_screen.dart';
 import '../features/services/presentation/screens/service_management_screen.dart';
 import '../features/reviews/presentation/screens/salon_reviews_screen.dart';
 import '../features/profile/presentation/screens/salon_profile_screen.dart';
+import '../features/notifications/presentation/screens/notifications_screen.dart';
 import '../shared/widgets/salon_main_scaffold.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -62,6 +63,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      // Bildirimler alt gezinmede değil: kabuk dışında tam ekran açılır.
+      // Oturum kapısı global redirect içinde (giriş yoksa /login).
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,

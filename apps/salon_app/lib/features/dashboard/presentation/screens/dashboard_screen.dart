@@ -6,6 +6,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../salon/data/salon_provider.dart';
 import '../../../dashboard/data/dashboard_provider.dart';
+import '../../../notifications/presentation/screens/notifications_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -195,12 +196,12 @@ class _GradientHeader extends StatelessWidget {
               ),
             ),
             Container(
-              width: 44, height: 44,
               decoration: BoxDecoration(
                 color: c.onBanner.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: Icon(Icons.notifications_outlined, color: c.onPrimary, size: 22),
+              // Okunmamış bildirim sayacı rozeti + /notifications girişi.
+              child: const NotificationBellButton(),
             ),
           ],
         ),
