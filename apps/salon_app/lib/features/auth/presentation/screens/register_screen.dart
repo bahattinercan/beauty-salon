@@ -47,7 +47,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             content: Text(next.error.toString()),
             backgroundColor: c.error,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
           ),
         );
       }
@@ -63,7 +63,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           Container(
             decoration: BoxDecoration(
               gradient: c.headerGradient,
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(36)),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
             ),
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 48,
@@ -77,7 +77,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   width: 76, height: 76,
                   decoration: BoxDecoration(
                     color: c.onBanner.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                   child: Icon(Icons.person_add_rounded, size: 40, color: c.onPrimary),
                 ),
@@ -168,7 +168,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                         ),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(4),
                         boxShadow: [
                           BoxShadow(
                             color: c.primary.withValues(alpha: 0.35),
@@ -183,7 +183,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
                           minimumSize: const Size(double.infinity, 52),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                         ),
                         child: isLoading
                             ? SizedBox(

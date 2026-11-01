@@ -10,8 +10,9 @@ import 'package:flutter/material.dart';
 /// 2. Her **dolgunun** bir `on*` eşi vardır (`onPrimary`, `onAccentLime`, `onNavPill`,
 ///    `onBanner`). Dark temada marka **açılıyor**; bu yüzden dolgu üstüne beyaz yazmak
 ///    kontrastı AA altına düşürüyor. Dolgu üstündeki metin/ikon daima `on*` token'ından gelir.
-/// 3. `accentLime` **yalnızca dolgudur** (CTA, "Yeni" rozeti, aktif gezinme). Beyaz üstünde
-///    1.3:1 olduğu için metin/ikon olarak kullanılamaz; daima `onAccentLime` ile çift halinde.
+/// 3. `accentLime` artık şampanya altınıdır (`#C6A664` / `#D8B872`) ve **yalnızca dolgudur**
+///    (CTA, "Yeni" rozeti, aktif gezinme). Açık yüzeyde metin olarak 2.29:1'de kaldığı için
+///    metin/ikon olarak kullanılamaz; daima `onAccentLime` ile çift halinde.
 /// 4. Durum renkleri (`success/error/warning/info`) **metin olarak** WCAG AA geçer,
 ///    süs rengi değildir (`info`'nun eski değeri #5B8DEF yüzey üstünde 3.9:1'de kalıyordu).
 /// 5. Gradyanların üstüne yazılacak renk `onBanner`/`ctaGradient` ucundan türür; sabit beyaz yazılmaz.
@@ -133,150 +134,150 @@ class AppColors {
   });
 
   static const AppColors light = AppColors._(
-    primary: Color(0xFF7C5CBF),
-    primaryDark: Color(0xFF5A42A0),
-    primaryLight: Color(0xFF9D82D4),
-    background: Color(0xFFFAFAFC),
-    surface: Color(0xFFFFFFFF),
-    surfaceVariant: Color(0xFFF5F3FA),
-    secondary: Color(0xFFF0EBF8),
-    secondaryDark: Color(0xFFD9CEEE),
-    divider: Color(0xFFEEEBF8),
-    accent: Color(0xFF5B8DEF),
-    accentLight: Color(0xFF93B8F7),
-    textPrimary: Color(0xFF1E1B2E),
-    textSecondary: Color(0xFF5A5370),
-    textHint: Color(0xFF6E6785),
-    success: Color(0xFF2F7D57),
-    error: Color(0xFFB32B38),
-    warning: Color(0xFF8A5A00),
-    info: Color(0xFF1F5FA8),
-    starFilled: Color(0xFFBF7B00), // yuzey ustunde 3.15:1 (ikon esigi 3:1),
-    starEmpty: Color(0xFFE0E0E0),
+    primary: Color(0xFF4E3893),
+    primaryDark: Color(0xFF43307F),
+    primaryLight: Color(0xFF6B4FB8),
+    background: Color(0xFFF4EEE3),
+    surface: Color(0xFFFFFDF8),
+    surfaceVariant: Color(0xFFF1E9DC),
+    secondary: Color(0xFFEFE6D8),
+    secondaryDark: Color(0xFFE0D3BE),
+    divider: Color(0xFFE3D9C7),
+    accent: Color(0xFF7C5CBF),
+    accentLight: Color(0xFFA98FD8),
+    textPrimary: Color(0xFF1A1815),
+    textSecondary: Color(0xFF5C5449),
+    textHint: Color(0xFF736959),
+    success: Color(0xFF2F6B4F),
+    error: Color(0xFFA8323C),
+    warning: Color(0xFF7A5200),
+    info: Color(0xFF2A5A8C),
+    starFilled: Color(0xFFA87B1F), // yuzey ustunde 3.74:1 (ikon esigi 3:1),
+    starEmpty: Color(0xFFDDD3C2),
     onPrimary: Color(0xFFFFFFFF),
-    accentLime: Color(0xFFC9F04F),
-    onAccentLime: Color(0xFF12131F),
-    navPill: Color(0xFF12131F),
-    onNavPill: Color(0xFFFFFFFF),
-    onNavPillMuted: Color(0xFFA9A3B8),
-    heroSurface: Color(0xFFE8E5FA),
+    accentLime: Color(0xFFC6A664), // sampanya altini (LX-001) — yalnizca dolgu
+    onAccentLime: Color(0xFF1A1815),
+    navPill: Color(0xFF1A1815),
+    onNavPill: Color(0xFFF4EEE3),
+    onNavPillMuted: Color(0xFFB7AC99), // koyu hap ustunde 7.91:1
+    heroSurface: Color(0xFFEFE6D8),
     onBanner: Color(0xFFFFFFFF),
     // Gradyan durakları rastgele değil: üstüne yazılacak metnin (onBanner / onPrimary)
     // HER iki uçta da AA vermesi şart. Eski açık uç #9B7FE0 beyaz üstünde 3.23:1,
-    // #8B6DD1 ise 4.03:1'de kalıyordu.
+    // #8B6DD1 ise 4.03:1'de kalıyordu. LX-001 sonrası en zayıf uç 6.11:1 (primaryGradient).
     primaryGradient: LinearGradient(
-      colors: [Color(0xFF7C5CBF), Color(0xFF6644B8)],
+      colors: [Color(0xFF6B4FB8), Color(0xFF4E3893)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     headerGradient: LinearGradient(
-      colors: [Color(0xFF7C5CBF), Color(0xFF5A42A0)],
+      colors: [Color(0xFF4E3893), Color(0xFF2A1F52)],
       begin: Alignment.topLeft,
       end: Alignment.bottomCenter,
     ),
     bannerGradient: LinearGradient(
-      colors: [Color(0xFF7C5CBF), Color(0xFF4A3298)],
+      colors: [Color(0xFF4E3893), Color(0xFF2A1F52)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     softGradient: LinearGradient(
-      colors: [Color(0xFFF0EBF8), Color(0xFFFAFAFC)],
+      colors: [Color(0xFFF1E9DC), Color(0xFFF4EEE3)],
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
     ),
     ctaGradient: LinearGradient(
-      colors: [Color(0xFF7C5CBF), Color(0xFF5A42A0)],
+      colors: [Color(0xFF4E3893), Color(0xFF43307F)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     infoGradient: LinearGradient(
-      colors: [Color(0xFF3D6FD4), Color(0xFF1F5FA8)],
+      colors: [Color(0xFF3A6EA5), Color(0xFF2A5A8C)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     successGradient: LinearGradient(
-      colors: [Color(0xFF2F7D57), Color(0xFF1F6B44)],
+      colors: [Color(0xFF2F6B4F), Color(0xFF24573E)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     warningGradient: LinearGradient(
-      colors: [Color(0xFF996100), Color(0xFF7F5000)],
+      colors: [Color(0xFF7A5200), Color(0xFF5E3F00)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
-    shadowCard: Color(0x0A000000),   // %4 siyah
-    shadowRaised: Color(0x0F000000),  // %6 siyah
+    shadowCard: Color(0x0D1A1815),   // %5 isi siyah
+    shadowRaised: Color(0x121A1815),  // %7 isi siyah
   );
 
   static const AppColors dark = AppColors._(
     // Dark'ta marka AÇILIR; üstündeki metin `onPrimary` koyu kalmazsa okunmaz (madde 2).
-    primary: Color(0xFF9D82D4),
-    primaryDark: Color(0xFF7C5CBF),
-    primaryLight: Color(0xFFBBA8E5),
-    background: Color(0xFF0F0D17),
-    surface: Color(0xFF1C1828),
-    surfaceVariant: Color(0xFF2A2440),
-    secondary: Color(0xFF241D38),
-    secondaryDark: Color(0xFF3D3360),
-    divider: Color(0xFF2D2B47),
-    accent: Color(0xFF7AAEF5),
-    accentLight: Color(0xFFA3C4FA),
-    textPrimary: Color(0xFFF0ECFF),
-    textSecondary: Color(0xFF9E97B4),
-    textHint: Color(0xFF8B84A8),
-    success: Color(0xFF5CC98A),
-    error: Color(0xFFF07080),
-    warning: Color(0xFFFFBF5A),
-    info: Color(0xFF7AAEF5),
-    starFilled: Color(0xFFFFBF5A),
-    starEmpty: Color(0xFF3D3360),
-    onPrimary: Color(0xFF1C1828),
-    accentLime: Color(0xFFC9F04F),
-    onAccentLime: Color(0xFF12131F),
-    navPill: Color(0xFF1C1828),
-    onNavPill: Color(0xFFF0ECFF),
-    onNavPillMuted: Color(0xFFA9A3B8),
-    heroSurface: Color(0xFF2A2440),
-    onBanner: Color(0xFFF0ECFF),
-    // Dark'ta gradyan açılır ama üstündeki metin koyu (`onPrimary`) — beyaz yazmak
-    // #7C5CBF üzerinde 4.38:1'e düşüyordu.
+    primary: Color(0xFF9C82DC),
+    primaryDark: Color(0xFF8F72D8),
+    primaryLight: Color(0xFFB29AE8),
+    background: Color(0xFF14110D),
+    surface: Color(0xFF221C16),
+    surfaceVariant: Color(0xFF2C241C),
+    secondary: Color(0xFF2C241C),
+    secondaryDark: Color(0xFF3D3327),
+    divider: Color(0xFF332B22),
+    accent: Color(0xFFB29AE8),
+    accentLight: Color(0xFFC9B6F0),
+    textPrimary: Color(0xFFF4EDE1),
+    textSecondary: Color(0xFFBDB2A0),
+    textHint: Color(0xFF9A8F7C),
+    success: Color(0xFF6FC08F),
+    error: Color(0xFFF08A8A),
+    warning: Color(0xFFE0B060),
+    info: Color(0xFF8AB4E8),
+    starFilled: Color(0xFFD8B872),
+    starEmpty: Color(0xFF3D3327),
+    onPrimary: Color(0xFF14110D),
+    accentLime: Color(0xFFD8B872), // sampanya altini (LX-001) — yalnizca dolgu
+    onAccentLime: Color(0xFF14110D),
+    navPill: Color(0xFF0E0B08),
+    onNavPill: Color(0xFFF4EDE1),
+    onNavPillMuted: Color(0xFFA79C88), // koyu hap ustunde 7.25:1
+    heroSurface: Color(0xFF2C241C),
+    onBanner: Color(0xFFFFFFFF),
+    // Dark'ta gradyan AÇILIR (primary/cta) ve üstündeki metin koyu (`onPrimary`) kalır;
+    // banner/header ise koyu kalır, üstüne beyaz (`onBanner`) yazar — en zayıf uç 4.99:1.
     primaryGradient: LinearGradient(
-      colors: [Color(0xFFBBA8E5), Color(0xFF9D82D4)],
+      colors: [Color(0xFFB29AE8), Color(0xFF8F72D8)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     headerGradient: LinearGradient(
-      colors: [Color(0xFF5A3FA8), Color(0xFF6A4CB4)],
+      colors: [Color(0xFF3A2A6E), Color(0xFF1E1440)],
       begin: Alignment.topLeft,
       end: Alignment.bottomCenter,
     ),
     bannerGradient: LinearGradient(
-      colors: [Color(0xFF5A3FA8), Color(0xFF6A4CB4)],
+      colors: [Color(0xFF3A2A6E), Color(0xFF1E1440)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     softGradient: LinearGradient(
-      colors: [Color(0xFF2A2440), Color(0xFF0F0D17)],
+      colors: [Color(0xFF2C241C), Color(0xFF14110D)],
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
     ),
     ctaGradient: LinearGradient(
-      colors: [Color(0xFFBBA8E5), Color(0xFF9D82D4)],
+      colors: [Color(0xFF8F72D8), Color(0xFF9C82DC)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     infoGradient: LinearGradient(
-      colors: [Color(0xFF7AAEF5), Color(0xFF4C86DE)],
+      colors: [Color(0xFF8AB4E8), Color(0xFF6E9BD8)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     successGradient: LinearGradient(
-      colors: [Color(0xFF5CC98A), Color(0xFF3FA96F)],
+      colors: [Color(0xFF6FC08F), Color(0xFF55A876)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     warningGradient: LinearGradient(
-      colors: [Color(0xFFFFBF5A), Color(0xFFE39414)],
+      colors: [Color(0xFFE0B060), Color(0xFFC0913F)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),

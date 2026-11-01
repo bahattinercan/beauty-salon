@@ -54,7 +54,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           Container(
             decoration: BoxDecoration(
               gradient: c.headerGradient,
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(36)),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
             ),
             padding: EdgeInsets.only(
               top: MediaQuery.of(context).padding.top + 48,
@@ -68,7 +68,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   width: 76, height: 76,
                   decoration: BoxDecoration(
                     color: c.onBanner.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                   child: Icon(Icons.store_rounded, size: 40, color: c.onPrimary),
                 ),
@@ -146,7 +146,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Container(
                       decoration: BoxDecoration(
                         gradient: c.primaryGradient,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(4),
                         boxShadow: [BoxShadow(color: c.primary.withValues(alpha: 0.35), blurRadius: 16, offset: Offset(0, 6))],
                       ),
                       child: ElevatedButton(
@@ -155,7 +155,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
                           minimumSize: const Size(double.infinity, 52),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                         ),
                         child: isLoading
                             ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: c.onPrimary, strokeWidth: 2))
@@ -190,7 +190,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
           title: Text(s.forgotPasswordTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -251,7 +251,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
           title: Text(s.resetPasswordTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,

@@ -58,14 +58,14 @@ class DashboardScreen extends ConsumerWidget {
                   Text(s.weeklyChart, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: c.onBanner)),
                   const SizedBox(height: 12),
                   dashAsync.when(
-                    loading: () => Container(height: 200, decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(20))),
+                    loading: () => Container(height: 200, decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(2))),
                     error: (_, _) => const SizedBox(height: 200),
                     data: (data) => Container(
                       height: 200,
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                       decoration: BoxDecoration(
                         color: c.surface,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(2),
                         boxShadow: [BoxShadow(color: c.primary.withValues(alpha: 0.08), blurRadius: 20, offset: Offset(0, 4))],
                       ),
                       child: BarChart(BarChartData(
@@ -148,7 +148,7 @@ class DashboardScreen extends ConsumerWidget {
         toY: y,
         gradient: c.primaryGradient,
         width: 26,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
       ),
     ],
   );
@@ -174,7 +174,7 @@ class _GradientHeader extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           gradient: c.headerGradient,
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
         ),
         padding: EdgeInsets.only(
           top: MediaQuery.of(context).padding.top + 20,
@@ -198,7 +198,7 @@ class _GradientHeader extends StatelessWidget {
               width: 44, height: 44,
               decoration: BoxDecoration(
                 color: c.onBanner.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(4),
               ),
               child: Icon(Icons.notifications_outlined, color: c.onPrimary, size: 22),
             ),
@@ -223,7 +223,7 @@ class _EmptyState extends StatelessWidget {
         children: [
           Container(
             width: 64, height: 64,
-            decoration: BoxDecoration(color: c.secondary, borderRadius: BorderRadius.circular(20)),
+            decoration: BoxDecoration(color: c.secondary, borderRadius: BorderRadius.circular(2)),
             child: Icon(Icons.event_available_rounded, size: 32, color: c.primary),
           ),
           const SizedBox(height: 12),
@@ -252,7 +252,7 @@ class _AppointmentTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(2),
         boxShadow: [BoxShadow(color: c.primary.withValues(alpha: 0.06), blurRadius: 12, offset: Offset(0, 3))],
       ),
       child: Row(
@@ -261,7 +261,7 @@ class _AppointmentTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               gradient: c.softGradient,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Text(appointment.startTime, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.primary)),
           ),
@@ -281,7 +281,7 @@ class _AppointmentTile extends StatelessWidget {
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(6)),
             child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
           ),
         ],
@@ -303,7 +303,7 @@ class _StatsShimmer extends StatelessWidget {
 
   Widget _box(AppColors c) => Container(
     height: 90,
-    decoration: BoxDecoration(color: c.surfaceVariant, borderRadius: BorderRadius.circular(16)),
+    decoration: BoxDecoration(color: c.surfaceVariant, borderRadius: BorderRadius.circular(2)),
   );
 }
 
@@ -320,7 +320,7 @@ class _StatCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: gradient,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(2),
         boxShadow: [BoxShadow(color: gradient.colors.first.withValues(alpha: 0.3), blurRadius: 12, offset: Offset(0, 4))],
       ),
       child: Column(
@@ -342,7 +342,7 @@ class _StatCard extends StatelessWidget {
               const SizedBox(width: 8),
               Container(
                 width: 32, height: 32,
-                decoration: BoxDecoration(color: c.onPrimary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: c.onPrimary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
                 child: Icon(icon, size: 16, color: c.onPrimary),
               ),
             ],

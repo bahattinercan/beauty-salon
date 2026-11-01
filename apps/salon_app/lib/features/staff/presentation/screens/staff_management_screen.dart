@@ -61,7 +61,7 @@ class StaffManagementScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
         title: Text(s.deleteStaffTitle),
         content: Text(s.deleteStaffBody(person.fullName)),
         actions: [
@@ -109,7 +109,7 @@ class _StaffCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: staff.isActive ? c.surfaceVariant : c.error.withValues(alpha: 0.2)),
         boxShadow: [BoxShadow(color: c.shadowCard, blurRadius: 10, offset: const Offset(0, 2))],
       ),
@@ -122,7 +122,7 @@ class _StaffCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: staff.isActive ? c.primaryGradient : null,
                   color: staff.isActive ? null : c.textHint,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Center(
                   child: Text(
@@ -178,7 +178,7 @@ class _StaffCard extends StatelessWidget {
               spacing: 6, runSpacing: 4,
               children: staff.serviceNames.map((svc) => Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: c.secondary, borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: c.secondary, borderRadius: BorderRadius.circular(6)),
                 child: Text(svc, style: TextStyle(fontSize: 11, color: c.primaryDark, fontWeight: FontWeight.w500)),
               )).toList(),
             ),
@@ -244,7 +244,7 @@ class _StaffFormSheetState extends ConsumerState<_StaffFormSheet> {
       child: Container(
         decoration: BoxDecoration(
           color: c.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -299,7 +299,7 @@ class _StaffFormSheetState extends ConsumerState<_StaffFormSheet> {
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: selected ? c.primary : c.surface,
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(6),
                               border: Border.all(color: selected ? c.primary : c.secondaryDark),
                             ),
                             child: Text(svc.name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: selected ? c.onPrimary : c.textSecondary)),

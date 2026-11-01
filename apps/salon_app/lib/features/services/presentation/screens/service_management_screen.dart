@@ -45,7 +45,7 @@ class ServiceManagementScreen extends ConsumerWidget {
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(color: c.secondary, borderRadius: BorderRadius.circular(10)),
+                                decoration: BoxDecoration(color: c.secondary, borderRadius: BorderRadius.circular(6)),
                                 child: Text('${entry.value.length}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.primary)),
                               ),
                             ],
@@ -82,7 +82,7 @@ class ServiceManagementScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
         title: Text(s.deleteServiceTitle),
         content: Text(s.deleteServiceBody(service.name)),
         actions: [
@@ -130,7 +130,7 @@ class _ServiceCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: service.isActive ? c.surfaceVariant : c.error.withValues(alpha: 0.2)),
         boxShadow: [BoxShadow(color: c.shadowCard, blurRadius: 8, offset: const Offset(0, 2))],
       ),
@@ -240,7 +240,7 @@ class _ServiceFormSheetState extends State<_ServiceFormSheet> {
       child: Container(
         decoration: BoxDecoration(
           color: c.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

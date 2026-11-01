@@ -133,7 +133,7 @@ class _SalonReviewsScreenState extends ConsumerState<SalonReviewsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? c.primary : c.surface,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: isSelected ? c.primary : c.secondaryDark),
         ),
         child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isSelected ? c.onPrimary : c.textSecondary)),
@@ -146,7 +146,7 @@ class _SalonReviewsScreenState extends ConsumerState<SalonReviewsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
         title: Text(s.replyDialogTitle(review.customerName)),
         content: TextField(
           controller: ctrl,
@@ -189,7 +189,7 @@ class _ReviewCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: review.hasReply ? c.surfaceVariant : c.warning.withValues(alpha: 0.3)),
         boxShadow: [BoxShadow(color: c.shadowCard, blurRadius: 8, offset: const Offset(0, 2))],
       ),
@@ -245,7 +245,7 @@ class _ReviewCard extends StatelessWidget {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: c.secondary,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

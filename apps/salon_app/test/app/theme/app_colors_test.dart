@@ -93,10 +93,15 @@ void main() {
     // Lime light temada metin/ikon olarak kullanılamaz (beyaz üstünde ~1.3:1).
     // Bu test, birinin `accentLime`'ı foreground yapmasını erken yakalar.
     test('lime açık zeminde metin olarak KULLANILAMAZ (< 3:1)', () {
+      // LX-001 sonrası şampanya: yüzeyde 2.29, zemide 2.01, variantta 1.93:1 —
+      // ikon eşiğinin (3:1) altında, yani metin/ikon olamaz; daima onAccentLime.
       expect(contrastRatio(AppColors.light.accentLime, AppColors.light.surface),
           lessThan(3.0));
       expect(
           contrastRatio(AppColors.light.accentLime, AppColors.light.background),
+          lessThan(3.0));
+      expect(
+          contrastRatio(AppColors.light.accentLime, AppColors.light.surfaceVariant),
           lessThan(3.0));
     });
 
@@ -148,8 +153,16 @@ void main() {
           }
         }
       });
-      test('${entry.key}: primary/cta gradyanı onPrimary ile >= 4.5:1', () {
-        for (final g in [c.primaryGradient, c.ctaGradient]) {
+      test('${entry.key}: primary/cta/stat gradyanı onPrimary ile >= 4.5:1', () {
+        // Stat kartı gradyanları (info/success/warning) de dolgu: üstlerindeki
+        // metin daima onPrimary — iki uç da AA vermek zorunda (madde 5).
+        for (final g in [
+          c.primaryGradient,
+          c.ctaGradient,
+          c.infoGradient,
+          c.successGradient,
+          c.warningGradient,
+        ]) {
           for (final stop in g.colors) {
             expect(contrastRatio(c.onPrimary, stop), greaterThanOrEqualTo(4.5),
                 reason: 'gradyan durağı $stop üzerinde metin okunmuyor');
@@ -163,6 +176,92 @@ void main() {
       });
     }
   });
+  group('LX-001 palet kilitleri (değer kaynağı: plans/saloon/SA-002)', () {
+    // Kontrast kapıları tek başına yeterli değil: bir token palet dışına çıkıp
+    // "AA geçen başka bir renk"e dönüşebilir. Bu test değerleri birebir kilitler,
+    // eşiği düşürmez; palet değişecekse önce SA-002 ve 08-design-system.md değişir.
+    test('light seti LX-001 değerleriyle birebir', () {
+      final c = AppColors.light;
+      for (final p in <(Color, int)>[
+        (c.background, 0xFFF4EEE3),
+        (c.surface, 0xFFFFFDF8),
+        (c.surfaceVariant, 0xFFF1E9DC),
+        (c.divider, 0xFFE3D9C7),
+        (c.textPrimary, 0xFF1A1815),
+        (c.textSecondary, 0xFF5C5449),
+        (c.textHint, 0xFF736959),
+        (c.primary, 0xFF4E3893),
+        (c.primaryDark, 0xFF43307F),
+        (c.primaryLight, 0xFF6B4FB8),
+        (c.onPrimary, 0xFFFFFFFF),
+        (c.secondary, 0xFFEFE6D8),
+        (c.secondaryDark, 0xFFE0D3BE),
+        (c.accent, 0xFF7C5CBF),
+        (c.accentLight, 0xFFA98FD8),
+        (c.accentLime, 0xFFC6A664), // ad korunur, deger sampanya altini
+        (c.onAccentLime, 0xFF1A1815),
+        (c.navPill, 0xFF1A1815),
+        (c.onNavPill, 0xFFF4EEE3),
+        (c.onNavPillMuted, 0xFFB7AC99),
+        (c.heroSurface, 0xFFEFE6D8),
+        (c.onBanner, 0xFFFFFFFF),
+        (c.starFilled, 0xFFA87B1F),
+        (c.starEmpty, 0xFFDDD3C2),
+        (c.success, 0xFF2F6B4F),
+        (c.error, 0xFFA8323C),
+        (c.warning, 0xFF7A5200),
+        (c.info, 0xFF2A5A8C),
+        (c.shadowCard, 0x0D1A1815),
+        (c.shadowRaised, 0x121A1815),
+      ]) {
+        expect(p.$1, Color(p.$2));
+      }
+    });
+
+    test('dark seti LX-001 değerleriyle birebir', () {
+      final c = AppColors.dark;
+      for (final p in <(Color, int)>[
+        (c.background, 0xFF14110D),
+        (c.surface, 0xFF221C16),
+        (c.surfaceVariant, 0xFF2C241C),
+        (c.divider, 0xFF332B22),
+        (c.textPrimary, 0xFFF4EDE1),
+        (c.textSecondary, 0xFFBDB2A0),
+        (c.textHint, 0xFF9A8F7C),
+        (c.primary, 0xFF9C82DC),
+        (c.primaryDark, 0xFF8F72D8),
+        (c.primaryLight, 0xFFB29AE8),
+        (c.onPrimary, 0xFF14110D),
+        (c.secondary, 0xFF2C241C),
+        (c.secondaryDark, 0xFF3D3327),
+        (c.accent, 0xFFB29AE8),
+        (c.accentLight, 0xFFC9B6F0),
+        (c.accentLime, 0xFFD8B872),
+        (c.onAccentLime, 0xFF14110D),
+        (c.navPill, 0xFF0E0B08),
+        (c.onNavPill, 0xFFF4EDE1),
+        (c.onNavPillMuted, 0xFFA79C88),
+        (c.heroSurface, 0xFF2C241C),
+        (c.onBanner, 0xFFFFFFFF),
+        (c.starFilled, 0xFFD8B872),
+        (c.starEmpty, 0xFF3D3327),
+        (c.success, 0xFF6FC08F),
+        (c.error, 0xFFF08A8A),
+        (c.warning, 0xFFE0B060),
+        (c.info, 0xFF8AB4E8),
+        (c.shadowCard, 0x00000000),
+        (c.shadowRaised, 0x00000000),
+      ]) {
+        expect(p.$1, Color(p.$2));
+      }
+    });
+
+    // LX-001 kuralı: şampanya (accentLime) asla metin rengi olmaz; yalnızca dolgu,
+    // kenarlık, hairline, ikon. Ölçüm kapısı yukarıdaki 'lime' testinde: koyu temada
+    // şampanya koyu zemine karşı 8.85:1 okunur olur, bu yüzden kapı yalnızca açık
+    // zeminde anlamlıdır (renk tek başına yetmez, kullanım yasağı SA-002'de yazılı).
+  });
+
   group('gölge ve puan tokenları', () {
     // AP-001 kuralı: gölge yalnızca açık temada; koyuda yüzey ayrımı kenarlıkla.
     test('açık temada gölge tokenları görünür, koyumda kapalı', () {

@@ -163,7 +163,7 @@ class _SalonAppointmentsScreenState extends ConsumerState<SalonAppointmentsScree
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: isSelected ? c.primary : c.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: isSelected ? c.primary : c.secondaryDark),
         ),
         child: Text(label,
@@ -196,7 +196,7 @@ class _SalonAppointmentsScreenState extends ConsumerState<SalonAppointmentsScree
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
         title: Text(s.cancelAppointmentTitle),
         content: Text(s.cancelAppointmentBody(customerName)),
         actions: [
@@ -248,7 +248,7 @@ class _AppointmentTile extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: c.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(4),
           border: Border.all(color: isPending ? c.warning.withValues(alpha: 0.4) : c.surfaceVariant),
           boxShadow: [BoxShadow(color: c.shadowCard, blurRadius: 8, offset: const Offset(0, 2))],
         ),
@@ -325,7 +325,7 @@ class _AppointmentTile extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
           child: Row(
             children: [
               Icon(icon, size: 14, color: color),

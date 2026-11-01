@@ -53,7 +53,7 @@ class SalonProfileScreen extends ConsumerWidget {
             child: Container(
               decoration: BoxDecoration(
                 gradient: c.headerGradient,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
               ),
               padding: EdgeInsets.only(
                 top: MediaQuery.of(context).padding.top + 24,
@@ -67,12 +67,12 @@ class SalonProfileScreen extends ConsumerWidget {
                     width: 86, height: 86,
                     decoration: BoxDecoration(
                       color: c.onBanner.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(2),
                       border: Border.all(color: c.onBanner.withValues(alpha: 0.3), width: 2),
                     ),
                     child: salon?.logoUrl != null
                         ? ClipRRect(
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(2),
                             child: Image.network(
                               resolveMediaUrl(salon!.logoUrl),
                               fit: BoxFit.cover,
@@ -94,7 +94,7 @@ class SalonProfileScreen extends ConsumerWidget {
                       if (salon?.isVerified == true)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(color: c.onBanner.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
+                          decoration: BoxDecoration(color: c.onBanner.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
                           child: Row(
                             children: [
                               Icon(Icons.check_circle_rounded, size: 14, color: c.onPrimary),
@@ -106,7 +106,7 @@ class SalonProfileScreen extends ConsumerWidget {
                       if (salon?.isVerified == true) const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: c.onBanner.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
+                        decoration: BoxDecoration(color: c.onBanner.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
                         child: Row(
                           children: [
                             Icon(Icons.star_rounded, size: 14, color: c.starFilled),
@@ -130,7 +130,7 @@ class SalonProfileScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                 decoration: BoxDecoration(
                   color: c.surface,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(2),
                   boxShadow: [BoxShadow(color: c.primary.withValues(alpha: 0.08), blurRadius: 16, offset: Offset(0, 4))],
                 ),
                 child: Row(
@@ -187,7 +187,7 @@ class SalonProfileScreen extends ConsumerWidget {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     side: BorderSide(color: c.error),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                   ),
                 ),
               ),
@@ -203,7 +203,7 @@ class SalonProfileScreen extends ConsumerWidget {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       side: BorderSide(color: AppColors.of(context).error),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                     ),
                   ),
                 ),
@@ -241,7 +241,7 @@ class SalonProfileScreen extends ConsumerWidget {
         Container(
           decoration: BoxDecoration(
             color: c.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(2),
             boxShadow: [BoxShadow(color: c.shadowRaised, blurRadius: 10, offset: const Offset(0, 2))],
           ),
           child: Column(
@@ -253,7 +253,7 @@ class SalonProfileScreen extends ConsumerWidget {
                   ListTile(
                     leading: Container(
                       width: 38, height: 38,
-                      decoration: BoxDecoration(color: c.secondary, borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(color: c.secondary, borderRadius: BorderRadius.circular(4)),
                       child: Icon(item.icon, color: c.primary, size: 20),
                     ),
                     title: Text(item.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
@@ -356,7 +356,7 @@ class SalonProfileScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
         title: Text(s.themeLabel),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -387,7 +387,7 @@ class SalonProfileScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
         title: Text(s.language),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -419,7 +419,7 @@ class SalonProfileScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
         title: const Text('Salonu Sil'),
         content: const Text('Bu salonu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.'),
         actions: [
@@ -443,7 +443,7 @@ class SalonProfileScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
         title: Text(s.signOutConfirmTitle),
         content: Text(s.signOutConfirmBody),
         actions: [
@@ -490,7 +490,7 @@ class _SalonGallerySection extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -523,11 +523,11 @@ class _SalonGallerySection extends ConsumerWidget {
                         width: 96,
                         height: 96,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(4),
                           border: Border.all(color: c.surfaceVariant),
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(4),
                           child: Image.network(
                             resolveMediaUrl(url),
                             fit: BoxFit.cover,
@@ -610,7 +610,7 @@ class _SalonEditSheetState extends State<_SalonEditSheet> {
       child: Container(
         decoration: BoxDecoration(
           color: c.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -744,7 +744,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
       child: Container(
         decoration: BoxDecoration(
           color: c.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -895,7 +895,7 @@ class _WorkingHoursSheetState extends State<_WorkingHoursSheet> {
       child: Container(
         decoration: BoxDecoration(
           color: c.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -990,7 +990,7 @@ class _TimeChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: c.secondary,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: c.primary.withValues(alpha: 0.4)),
         ),
         child: Text(time, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.primary)),
@@ -1080,7 +1080,7 @@ class _ContactChangeSheetState extends State<_ContactChangeSheet> {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
           title: Text(title),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1144,7 +1144,7 @@ class _ContactChangeSheetState extends State<_ContactChangeSheet> {
       child: Container(
         decoration: BoxDecoration(
           color: c.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1247,7 +1247,7 @@ class _VerifyOption extends StatelessWidget {
     final c = AppColors.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(

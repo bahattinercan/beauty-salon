@@ -63,8 +63,8 @@ class AppTheme {
         color: c.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: c.divider),
+          borderRadius: BorderRadius.circular(2),
+          side: BorderSide(color: c.divider, width: 1),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -74,7 +74,7 @@ class AppTheme {
           elevation: 0,
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(4),
           ),
           textStyle: const TextStyle(
               fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.w600),
@@ -86,7 +86,7 @@ class AppTheme {
           side: BorderSide(color: c.primary, width: 1.5),
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(4),
           ),
           textStyle: const TextStyle(
               fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.w600),
@@ -103,21 +103,22 @@ class AppTheme {
         hintStyle: TextStyle(color: c.textHint, fontSize: 14),
         labelStyle: TextStyle(color: c.textSecondary, fontSize: 14),
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(2),
             borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(2),
             borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(2),
             borderSide: BorderSide(color: c.primary, width: 1.5)),
         errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(2),
             borderSide: BorderSide(color: c.error, width: 1.5)),
         focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(2),
             borderSide: BorderSide(color: c.error, width: 1.5)),
       ),
+      // Hairline: 1 px, daima divider tokenindan (LX-001: kalın ayraç yok).
       dividerTheme: DividerThemeData(color: c.divider, thickness: 1),
       chipTheme: ChipThemeData(
         backgroundColor: c.secondary,
@@ -125,7 +126,7 @@ class AppTheme {
             fontFamily: 'Poppins', fontSize: 13, color: c.textPrimary),
         side: BorderSide(color: c.secondaryDark),
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
+            borderRadius: BorderRadius.circular(6)),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
       snackBarTheme: SnackBarThemeData(
