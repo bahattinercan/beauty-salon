@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { cx } from '@/lib/cx';
 import Button from '@/components/ui/Button';
+import { useI18n } from '@/providers/LocaleProvider';
 
 /** categories sayfasındaki satır içi modalin erişilebilir hâli. */
 export default function Dialog({
@@ -22,6 +23,7 @@ export default function Dialog({
   size?: 'sm' | 'md' | 'lg';
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     if (!open) return;
@@ -63,7 +65,7 @@ export default function Dialog({
     <div className="fixed inset-0 z-50 overflow-y-auto p-4">
       <button
         type="button"
-        aria-label="Kapat"
+        aria-label={t('ui.dialog.close')}
         onClick={onClose}
         className="fixed inset-0 h-full w-full cursor-default bg-fg/45"
       />
@@ -79,7 +81,7 @@ export default function Dialog({
       >
         <div className="flex items-start justify-between gap-3 border-b border-border p-4 sm:p-6">
           <h2 className="font-display text-lg font-bold text-fg">{title}</h2>
-          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Kapat">
+          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label={t('ui.dialog.close')}>
             <X className="h-4 w-4" aria-hidden />
           </Button>
         </div>

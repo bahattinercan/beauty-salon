@@ -19,13 +19,17 @@ vi.mock('next/navigation', () => ({
 
 import SideRail from '@/components/shell/SideRail';
 import ThemeProvider from '@/providers/ThemeProvider';
+import LocaleProvider from '@/providers/LocaleProvider';
 import { NAV_ITEMS } from '@/lib/nav';
 
+/** Türkçe metin assert'leri için dil `initialMode="tr"` ile sabitlenir (jsdom dili en-US). */
 function renderRail() {
   return render(
-    <ThemeProvider>
-      <SideRail />
-    </ThemeProvider>
+    <LocaleProvider initialMode="tr">
+      <ThemeProvider>
+        <SideRail />
+      </ThemeProvider>
+    </LocaleProvider>
   );
 }
 

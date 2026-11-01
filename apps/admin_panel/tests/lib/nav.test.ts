@@ -22,7 +22,11 @@ import { srcDir } from '../helpers/node-hooks.mjs';
 
 type NavModule = typeof import('../../src/lib/nav.ts');
 
+type I18nModule = typeof import('../../src/lib/i18n/index.ts');
+
 const navModule: Promise<NavModule> = import('../../src/lib/nav.ts');
+
+const i18nModule: Promise<I18nModule> = import('../../src/lib/i18n/index.ts');
 
 const pageFile = (href: string): string =>
   href === '/' ? path.join(srcDir, 'app', 'page.tsx') : path.join(srcDir, 'app', href.slice(1), 'page.tsx');
@@ -82,11 +86,16 @@ test('NAV_ITEMS: her href için src/app altında gerçek bir page.tsx var', asyn
   assert.deepEqual(missing, [], `sayfası olmayan gezinme öğeleri: ${missing.join(', ')}`);
 });
 
-test('NAV_ITEMS: her öğe etiket ve ikon taşır', async () => {
+test('NAV_ITEMS: her öğe etiket anahtarı ve ikon taşır', async () => {
   const { NAV_ITEMS } = await navModule;
+  const { translate } = await i18nModule;
   for (const item of NAV_ITEMS) {
-    assert.equal(typeof item.label, 'string');
-    assert.equal(item.label.length > 0, true);
+    assert.equal(typeof item.labelKey, 'string');
+    assert.equal(item.labelKey.length > 0, true);
+    assert.equal(item.labelKey.startsWith('nav.'), true, `nav.* anahtarı bekleniyor: ${item.labelKey}`);
+    // Anahtar iki dilde de çözülmeli: eksik çeviri arayüzde ham anahtar bırakır.
+    assert.notEqual(translate('tr', item.labelKey), item.labelKey);
+    assert.notEqual(translate('en', item.labelKey), item.labelKey);
     assert.equal(typeof item.icon, 'function');
   }
 });

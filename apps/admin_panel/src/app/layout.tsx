@@ -3,6 +3,7 @@ import { Inter, Nunito } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/shell/AppShell";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import LocaleProvider from "@/providers/LocaleProvider";
 
 // AP-001: daha önce `font-family: 'Inter'` bildiriliyordu ama font hiç yüklenmiyordu
 // (next/font / @font-face / public'de dosya yok) → panel Segoe UI ile çiziliyordu.
@@ -27,6 +28,21 @@ r.classList.toggle('dark',d);
 r.style.colorScheme=d?'dark':'light';
 }catch(e){}})();`;
 
+/**
+ * İlk boyamadan önce <html lang> değerini localStorage tercihinden (yoksa tarayıcı
+ * dilinden) yazar — tema script'iyle aynı desen. LocaleProvider mount'ta aynı değeri
+ * doğrular; bu script yalnız ilk boyamadaki yanlış `lang`'ı önler.
+ */
+const localeInitScript = `(function(){try{
+var k='app_locale_mode';
+var m=null;
+try{m=localStorage.getItem(k);}catch(e){}
+if(m!=='tr'&&m!=='en'&&m!=='system'){m='system';}
+var n=((typeof navigator!=='undefined'&&navigator.language)||'').toLowerCase();
+var l=m==='system'?((n==='tr'||n.indexOf('tr-')===0)?'tr':'en'):m;
+document.documentElement.lang=l;
+}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -36,11 +52,14 @@ export default function RootLayout({
     <html lang="tr" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: localeInitScript }} />
       </head>
       <body className={`antialiased ${inter.variable} ${nunito.variable}`}>
-        <ThemeProvider>
-          <AppShell>{children}</AppShell>
-        </ThemeProvider>
+        <LocaleProvider>
+          <ThemeProvider>
+            <AppShell>{children}</AppShell>
+          </ThemeProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

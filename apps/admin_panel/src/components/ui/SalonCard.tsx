@@ -4,6 +4,7 @@ import { Star, Store, MapPin } from 'lucide-react';
 import { cx } from '@/lib/cx';
 import { Card } from '@/components/ui/Card';
 import { SALON_STATUS, StatusBadge } from '@/components/ui/Badge';
+import { useI18n } from '@/providers/LocaleProvider';
 
 /**
  * Foto yokken tasarım "bitmemiş" görünmemeli (CA-019 WP0 dersi). Renk id hash'i
@@ -27,6 +28,7 @@ export function SalonMedia({
   alt: string;
   className?: string;
 }) {
+  const { t } = useI18n();
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element -- API göreli /uploads yolu dönebiliyor; next/image konfigürasyonu kapsam dışı
     return <img src={src} alt={alt} loading="lazy" className={cx('h-full w-full object-cover', className)} />;
@@ -35,7 +37,7 @@ export function SalonMedia({
   return (
     <div
       role="img"
-      aria-label={`${alt} — görsel yok`}
+      aria-label={`${alt} ${t('salons.card.noImage')}`}
       className={cx('flex h-full w-full items-center justify-center', className)}
       style={{
         background:
@@ -71,6 +73,7 @@ export default function SalonCard({
   const where = [salon.district, salon.city].filter(Boolean).join(', ');
   const isNew = !!salon.isNew;
   const rating = typeof salon.rating === 'number' ? salon.rating : null;
+  const { t } = useI18n();
 
   return (
     <Card as="article" className="flex flex-col overflow-hidden">
@@ -89,7 +92,7 @@ export default function SalonCard({
           ) : null}
           {isNew ? (
             // Lime yalnızca dolgudur; üstünde koyu token metin var.
-            <span className="badge-lime">Yeni</span>
+            <span className="badge-lime">{t('salons.card.new')}</span>
           ) : null}
         </div>
         {rating !== null ? (

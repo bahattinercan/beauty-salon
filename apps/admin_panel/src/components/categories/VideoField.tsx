@@ -5,6 +5,7 @@ import { Trash2, Upload, VideoOff } from 'lucide-react';
 import { Field, Input } from '@/components/ui/Field';
 import Button from '@/components/ui/Button';
 import { uploadFile } from '@/lib/api';
+import { useI18n } from '@/providers/LocaleProvider';
 
 /**
  * Yüklenen yol görelidir (`/uploads/<uuid>.mp4`) ve API tarafından servis
@@ -33,13 +34,16 @@ const ACCEPT = 'video/mp4,video/webm,video/ogg,video/quicktime';
  * hata `role="alert"` ile okunur (form alanının hatası sessiz kalmasın). Düğme
  * adı yüklenme sırasında DEĞİŞMEZ: adı değişen kontrol kullanıcıyı şaşırtır,
  * geri bildirim durum satırından gelir.
+ *
+ * Görünen metinler `categories.videoField.*` sözlüğünden `t()` ile basılır;
+ * `label` çağırandan çevrilmiş gelir (`categories.dialog.videoLabel`).
  */
 export default function VideoField({
   label,
   value,
   onChange,
   className,
-  hint = 'MP4, WebM, OGG veya MOV — en fazla 50 MB',
+  hint,
 }: {
   label: string;
   value?: string | null;
@@ -47,12 +51,14 @@ export default function VideoField({
   className?: string;
   hint?: string;
 }) {
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
 
   const id = `video-field-${label.toLowerCase().replace(/[^a-zçğıöşü]+/g, '-')}`;
+  const hintText = hint ?? t('categories.videoField.hint');
 
   async function handleFiles(files: FileList | null) {
     const file = files?.[0];
@@ -63,12 +69,12 @@ export default function VideoField({
       const res = await uploadFile('/upload/video', file);
       const url = res?.data?.url;
       if (!url) {
-        setError('Yükleme yanıtında video yolu yok');
+        setError(t('categories.videoField.missingUrl'));
         return;
       }
       onChange(url);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Video yüklenemedi');
+      setError(e instanceof Error ? e.message : t('categories.videoField.uploadError'));
     } finally {
       setBusy(false);
       // Aynı dosyayı tekrar seçebilmek için girişi sıfırla (change tetiklenmezdi).
@@ -96,7 +102,11 @@ export default function VideoField({
               className="h-full w-full object-cover"
             />
           ) : (
-            <div role="img" aria-label={`${label}: video yok`} className="text-fg-subtle">
+            <div
+              role="img"
+              aria-label={t('categories.videoField.noVideo', { label })}
+              className="text-fg-subtle"
+            >
               <VideoOff className="h-6 w-6" aria-hidden />
             </div>
           )}
@@ -119,7 +129,7 @@ export default function VideoField({
           disabled={busy}
         >
           <Upload className="h-4 w-4" aria-hidden />
-          Dosya seç
+          {t('categories.videoField.chooseFile')}
         </Button>
         <Button
           variant="ghost"
@@ -129,19 +139,19 @@ export default function VideoField({
             onChange(null);
           }}
           disabled={!value || busy}
-          aria-label={`${label} videosunu kaldır`}
+          aria-label={t('categories.videoField.removeLabel', { label })}
         >
           <Trash2 className="h-4 w-4" aria-hidden />
-          Kaldır
+          {t('categories.videoField.remove')}
         </Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <Input
-          aria-label={`${label} URL`}
+          aria-label={t('categories.videoField.urlLabel', { label })}
           className="min-w-[12rem] flex-1"
           value={draft}
-          placeholder="/uploads/… veya https://…"
+          placeholder={t('categories.videoField.urlPlaceholder')}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -151,7 +161,7 @@ export default function VideoField({
           }}
         />
         <Button variant="ghost" size="sm" onClick={applyDraft} disabled={!draft.trim()}>
-          URL kullan
+          {t('categories.videoField.useUrl')}
         </Button>
       </div>
 
@@ -161,7 +171,7 @@ export default function VideoField({
         aria-busy={busy}
         className="text-sm text-fg-muted"
       >
-        {busy ? 'Video yükleniyor' : hint}
+        {busy ? t('categories.videoField.uploading') : hintText}
       </span>
       {error ? (
         <p role="alert" className="text-sm text-error">

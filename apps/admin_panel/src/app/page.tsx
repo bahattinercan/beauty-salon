@@ -25,6 +25,8 @@ import {
   Star,
 } from 'lucide-react';
 import { useDashboard } from '@/providers/DashboardProvider';
+import { useI18n } from '@/providers/LocaleProvider';
+import type { Locale } from '@/lib/i18n';
 import useChartTheme from '@/lib/chartTheme';
 import PageHeader from '@/components/shell/PageHeader';
 import Button from '@/components/ui/Button';
@@ -32,25 +34,26 @@ import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import StatCard from '@/components/ui/StatCard';
 import { Skeleton, ErrorState, EmptyState } from '@/components/ui/States';
 
-function money(value: string) {
+function money(value: string, locale: Locale = 'tr') {
   const n = Number.parseFloat(value || '0');
-  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(
     Number.isFinite(n) ? n : 0
   );
 }
 
-function today() {
-  return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'long' }).format(new Date());
+function today(locale: Locale = 'tr') {
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(new Date());
 }
 
 export default function DashboardPage() {
   const { data, loading, error, refetch } = useDashboard();
   const chart = useChartTheme();
+  const { locale, t } = useI18n();
 
   if (error) {
     return (
       <>
-        <PageHeader title="Panel" subtitle={today()} />
+        <PageHeader title={t('dashboard.title')} subtitle={today(locale)} />
         <ErrorState message={error} onRetry={refetch} />
       </>
     );
@@ -59,7 +62,7 @@ export default function DashboardPage() {
   if (loading || !data) {
     return (
       <>
-        <PageHeader title="Panel" subtitle={today()} />
+        <PageHeader title={t('dashboard.title')} subtitle={today(locale)} />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-28" />
@@ -76,11 +79,11 @@ export default function DashboardPage() {
   return (
     <>
       <PageHeader
-        title="Panel"
-        subtitle={today()}
+        title={t('dashboard.title')}
+        subtitle={today(locale)}
         actions={
           <Button variant="outline" size="sm" onClick={refetch}>
-            Yenile
+            {t('dashboard.refresh')}
           </Button>
         }
       />
@@ -88,28 +91,28 @@ export default function DashboardPage() {
       {/* Hero: mobil heroSurface kartının karşılığı. Lime yalnızca CTA dolgusu. */}
       <section className="mb-5 rounded-card bg-hero-surface p-5 sm:p-6">
         <p className="text-xs font-bold uppercase tracking-wider text-primary">
-          {pending > 0 ? 'Onay bekliyor' : 'Gündem yok'}
+          {pending > 0 ? t('dashboard.hero.statusPending') : t('dashboard.hero.statusClear')}
         </p>
         <h2 className="mt-1 max-w-2xl font-display text-xl font-extrabold text-fg sm:text-2xl">
           {pending > 0
-            ? `${pending} salon başvurusu onay bekliyor`
-            : 'Bekleyen salon başvurusu yok'}
+            ? t('dashboard.hero.pendingHeadline', { count: pending })
+            : t('dashboard.hero.clearHeadline')}
         </h2>
         <p className="mt-1 max-w-xl text-sm text-fg-muted">
           {pending > 0
-            ? 'Onaylanan salonlar müşteri uygulamada hemen görünür; sırayı bozmamak için bugünkü başvuruları gözden geçirin.'
-            : 'Yeni başvuru geldikçe burada görünecek. Randevu akışını izlemek için randevulara bakabilirsiniz.'}
+            ? t('dashboard.hero.pendingDescription')
+            : t('dashboard.hero.clearDescription')}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link href={pending > 0 ? '/salons?filter=bekliyor' : '/appointments'}>
             <Button variant="lime" size="sm">
-              {pending > 0 ? 'Başvuruları incele' : 'Randevuları gör'}
+              {pending > 0 ? t('dashboard.hero.reviewApplications') : t('dashboard.hero.viewAppointments')}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Button>
           </Link>
           <Link href="/users">
             <Button variant="outline" size="sm">
-              Kullanıcılar
+              {t('dashboard.hero.users')}
             </Button>
           </Link>
         </div>
@@ -117,32 +120,60 @@ export default function DashboardPage() {
 
       {/* Ana sayılar — API'de büyüme verisi yok, bu yüzden sahte %12/%8 etiketleri kaldırıldı. */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Toplam Salon" value={stats.totalSalons ?? 0} icon={Store} tone="primary" />
-        <StatCard label="Toplam Kullanıcı" value={stats.totalUsers ?? 0} icon={Users} tone="info" />
         <StatCard
-          label="Toplam Randevu"
+          label={t('dashboard.stats.totalSalons')}
+          value={stats.totalSalons ?? 0}
+          icon={Store}
+          tone="primary"
+        />
+        <StatCard
+          label={t('dashboard.stats.totalUsers')}
+          value={stats.totalUsers ?? 0}
+          icon={Users}
+          tone="info"
+        />
+        <StatCard
+          label={t('dashboard.stats.totalAppointments')}
           value={stats.totalAppointments ?? 0}
           icon={CalendarDays}
           tone="success"
-          hint={`${stats.recentAppointments ?? 0} son 30 gün`}
+          hint={t('dashboard.stats.recentAppointmentsHint', { count: stats.recentAppointments ?? 0 })}
         />
-        <StatCard label="Toplam Gelir" value={money(stats.totalRevenue)} icon={Wallet} tone="warning" />
+        <StatCard
+          label={t('dashboard.stats.totalRevenue')}
+          value={money(stats.totalRevenue, locale)}
+          icon={Wallet}
+          tone="warning"
+        />
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Bekleyen Salon" value={pending} icon={Clock} tone="warning" />
         <StatCard
-          label="Tamamlanan Randevu"
+          label={t('dashboard.stats.pendingSalons')}
+          value={pending}
+          icon={Clock}
+          tone="warning"
+        />
+        <StatCard
+          label={t('dashboard.stats.completedAppointments')}
           value={stats.completedAppointments ?? 0}
           icon={CheckCircle2}
           tone="success"
         />
-        <StatCard label="Bu Hafta Yeni Kullanıcı" value={stats.newUsersThisWeek ?? 0} icon={UserPlus} tone="info" />
+        <StatCard
+          label={t('dashboard.stats.newUsersThisWeek')}
+          value={stats.newUsersThisWeek ?? 0}
+          icon={UserPlus}
+          tone="info"
+        />
       </div>
 
       <div className="mt-4 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader title="Aylık Randevu" description="Son 6 ay" />
+          <CardHeader
+            title={t('dashboard.charts.monthlyTitle')}
+            description={t('dashboard.charts.monthlyDescription')}
+          />
           <CardBody>
             <div className="h-64 min-w-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -170,7 +201,7 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="min-w-0">
-          <CardHeader title="Randevu Durumları" />
+          <CardHeader title={t('dashboard.charts.statusTitle')} />
           <CardBody>
             <div className="h-52 min-w-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -219,19 +250,22 @@ export default function DashboardPage() {
 
       <Card className="mt-4">
         <CardHeader
-          title="Son Yorumlar"
+          title={t('dashboard.reviews.recentTitle')}
           action={
             <Link
               href="/reviews"
               className="inline-flex min-h-11 items-center rounded-field px-2 font-semibold text-primary hover:bg-surface-variant hover:underline"
             >
-              Tümünü gör
+              {t('dashboard.reviews.viewAll')}
             </Link>
           }
         />
         <CardBody>
           {recentReviews.length === 0 ? (
-            <EmptyState title="Henüz yorum yok" description="Onaylanan randevulardan sonra yorumlar burada birikir." />
+            <EmptyState
+              title={t('dashboard.reviews.emptyTitle')}
+              description={t('dashboard.reviews.emptyDescription')}
+            />
           ) : (
             <ul className="divide-y divide-border">
               {recentReviews.map((review) => (

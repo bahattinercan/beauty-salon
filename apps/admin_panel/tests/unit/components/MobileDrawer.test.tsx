@@ -20,14 +20,18 @@ vi.mock('next/navigation', () => ({
 
 import MobileDrawer from '@/components/shell/MobileDrawer';
 import ThemeProvider from '@/providers/ThemeProvider';
+import LocaleProvider from '@/providers/LocaleProvider';
 import { NAV_ITEMS } from '@/lib/nav';
 
+/** Türkçe metin assert'leri için dil `initialMode="tr"` ile sabitlenir (jsdom dili en-US). */
 function renderDrawer(open = true) {
   const onClose = vi.fn();
   const utils = render(
-    <ThemeProvider>
-      <MobileDrawer open={open} onClose={onClose} />
-    </ThemeProvider>
+    <LocaleProvider initialMode="tr">
+      <ThemeProvider>
+        <MobileDrawer open={open} onClose={onClose} />
+      </ThemeProvider>
+    </LocaleProvider>
   );
   return { onClose, ...utils };
 }
@@ -91,9 +95,11 @@ describe('MobileDrawer — açıkken', () => {
 
     navState.pathname = '/users';
     rerender(
-      <ThemeProvider>
-        <MobileDrawer open onClose={onClose} />
-      </ThemeProvider>
+      <LocaleProvider initialMode="tr">
+        <ThemeProvider>
+          <MobileDrawer open onClose={onClose} />
+        </ThemeProvider>
+      </LocaleProvider>
     );
     expect(onClose).toHaveBeenCalledTimes(1);
   });

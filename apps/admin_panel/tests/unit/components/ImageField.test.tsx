@@ -35,6 +35,17 @@ const pickFile = async (file: File) => {
 const firstCall = (spy: { mock: { calls: unknown[] } }): [string, RequestInit] =>
   spy.mock.calls[0] as [string, RequestInit];
 
+import LocaleProvider from '@/providers/LocaleProvider';
+
+import type { ReactElement } from 'react';
+
+/**
+ * Görünen metinler sözlükten `t()` ile basılır; testler bugünkü Türkçe kopyayı
+ * görsün diye her render `LocaleProvider initialMode="tr"` ile sarmalanır.
+ */
+const renderTr = (ui: ReactElement) =>
+  render(<LocaleProvider initialMode="tr">{ui}</LocaleProvider>);
+
 describe('ImageField', () => {
   beforeEach(() => {
     localStorage.setItem('access_token', 'tok-123');
@@ -45,7 +56,7 @@ describe('ImageField', () => {
       jsonResponse(200, { success: true, data: { url: '/uploads/abc.png' } })
     );
     const onChange = vi.fn();
-    render(<ImageField label="Logo" value={null} onChange={onChange} />);
+    renderTr(<ImageField label="Logo" value={null} onChange={onChange} />);
 
     const input = screen.getByLabelText('Logo') as HTMLInputElement;
     expect(input.type).toBe('file');
@@ -63,7 +74,7 @@ describe('ImageField', () => {
     const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       jsonResponse(200, { success: true, data: { url: '/uploads/abc.png' } })
     );
-    render(<ImageField label="Logo" value={null} onChange={vi.fn()} />);
+    renderTr(<ImageField label="Logo" value={null} onChange={vi.fn()} />);
     await pickFile(pngFile());
 
     const [, init] = firstCall(spy);
@@ -83,7 +94,7 @@ describe('ImageField', () => {
     const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       jsonResponse(200, { success: true, data: { url: '/uploads/abc.png' } })
     );
-    render(<ImageField label="Logo" value={null} onChange={vi.fn()} />);
+    renderTr(<ImageField label="Logo" value={null} onChange={vi.fn()} />);
     await pickFile(pngFile());
     expect(firstCall(spy)[1].headers).toBeUndefined();
   });
@@ -95,7 +106,7 @@ describe('ImageField', () => {
     });
     vi.spyOn(globalThis, 'fetch').mockReturnValue(pending);
     const onChange = vi.fn();
-    render(<ImageField label="Logo" value={null} onChange={onChange} />);
+    renderTr(<ImageField label="Logo" value={null} onChange={onChange} />);
 
     const input = screen.getByLabelText('Logo') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [pngFile()] } });
@@ -118,7 +129,7 @@ describe('ImageField', () => {
       jsonResponse(413, { success: false, message: 'Dosya çok büyük' })
     );
     const onChange = vi.fn();
-    render(<ImageField label="Logo" value={null} onChange={onChange} />);
+    renderTr(<ImageField label="Logo" value={null} onChange={onChange} />);
     await pickFile(pngFile());
 
     expect(screen.getByRole('alert').textContent).toBe('Dosya çok büyük');
@@ -128,20 +139,20 @@ describe('ImageField', () => {
   test('yanıtta yol yoksa sessiz kalmaz: hata basar', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse(200, { success: true, data: {} }));
     const onChange = vi.fn();
-    render(<ImageField label="Logo" value={null} onChange={onChange} />);
+    renderTr(<ImageField label="Logo" value={null} onChange={onChange} />);
     await pickFile(pngFile());
     expect(onChange).not.toHaveBeenCalled();
     expect(screen.getByRole('alert').textContent).toContain('görsel yolu');
   });
 
   test('değer varsa önizleme API origin’ine tamamlanmış hâlde basılır', () => {
-    render(<ImageField label="Kapak görseli" value="/uploads/kapak.png" onChange={vi.fn()} />);
+    renderTr(<ImageField label="Kapak görseli" value="/uploads/kapak.png" onChange={vi.fn()} />);
     const img = screen.getByRole('img', { name: 'Kapak görseli önizleme' });
     expect(img.getAttribute('src')).toBe('http://localhost:3000/uploads/kapak.png');
   });
 
   test('mutlak URL olduğu gibi kullanılır (ör. harici CDN)', () => {
-    render(
+    renderTr(
       <ImageField
         label="Kapak görseli"
         value="https://cdn.example.com/a.png"
@@ -154,7 +165,7 @@ describe('ImageField', () => {
   });
 
   test('görsel yokken yer tutucu basılır, kaldırma devre dışıdır', () => {
-    render(<ImageField label="Logo" value={null} onChange={vi.fn()} />);
+    renderTr(<ImageField label="Logo" value={null} onChange={vi.fn()} />);
     expect(screen.getByRole('img', { name: 'Logo: görsel yok' })).toBeTruthy();
     expect(
       screen.getByRole('button', { name: 'Logo görselini kaldır' }).hasAttribute('disabled')
@@ -163,7 +174,7 @@ describe('ImageField', () => {
 
   test('kaldır mevcut yolu null’a döndürür', async () => {
     const onChange = vi.fn();
-    render(<ImageField label="Logo" value="/uploads/abc.png" onChange={onChange} />);
+    renderTr(<ImageField label="Logo" value="/uploads/abc.png" onChange={onChange} />);
     await userEvent.click(screen.getByRole('button', { name: 'Logo görselini kaldır' }));
     expect(onChange).toHaveBeenCalledWith(null);
   });
@@ -171,7 +182,7 @@ describe('ImageField', () => {
   test('URL yapıştırma alternatifi fetch ETMEZ; boşken düğme devre dışıdır', async () => {
     const spy = vi.spyOn(globalThis, 'fetch');
     const onChange = vi.fn();
-    render(<ImageField label="Logo" value={null} onChange={onChange} />);
+    renderTr(<ImageField label="Logo" value={null} onChange={onChange} />);
 
     const apply = screen.getByRole('button', { name: 'URL kullan' });
     expect(apply.hasAttribute('disabled')).toBe(true);
@@ -186,7 +197,7 @@ describe('ImageField', () => {
 
   test('URL alanında Enter uygulamayı tetikler (form gönderimi yok)', () => {
     const onChange = vi.fn();
-    render(<ImageField label="Logo" value={null} onChange={onChange} />);
+    renderTr(<ImageField label="Logo" value={null} onChange={onChange} />);
     const input = screen.getByLabelText('Logo URL') as HTMLInputElement;
     fireEvent.change(input, { target: { value: '/uploads/enter.png' } });
     fireEvent.keyDown(input, { key: 'Enter' });

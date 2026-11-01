@@ -46,6 +46,15 @@ describe('Settings API', () => {
         .set('Authorization', `Bearer ${ownerToken}`);
       expect(res.status).to.equal(403);
     });
+
+    it('language varsayılanı system döner', async () => {
+      const res = await request
+        .get('/api/v1/settings')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).to.equal(200);
+      expect(res.body.data.language).to.equal('system');
+    });
   });
 
   describe('PUT /settings', () => {
@@ -91,6 +100,36 @@ describe('Settings API', () => {
         .send({});
       expect(res.status).to.equal(200);
       expect(res.body.data).to.be.an('object');
+    });
+
+    it('language güncellenir ve geri okunur', async () => {
+      const res = await request
+        .put('/api/v1/settings')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ language: 'en' });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.data.language).to.equal('en');
+
+      const again = await request
+        .get('/api/v1/settings')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(again.body.data.language).to.equal('en');
+    });
+
+    it('geçersiz language 400 döner, değer değişmez', async () => {
+      const res = await request
+        .put('/api/v1/settings')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ language: 'de' });
+
+      expect(res.status).to.equal(400);
+      expect(res.body.success).to.equal(false);
+
+      const again = await request
+        .get('/api/v1/settings')
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(again.body.data.language).to.equal('en');
     });
   });
 });

@@ -8,6 +8,7 @@ import { NAV_ITEMS, isNavActive } from '@/lib/nav';
 import { clearSession, useStoredUser } from '@/lib/session';
 import { cx } from '@/lib/cx';
 import ThemeToggle from '@/components/ThemeToggle';
+import { useI18n } from '@/providers/LocaleProvider';
 
 /**
  * Dar ekranda tam liste. Erişilebilirlik: role=dialog + aria-modal, Esc ile kapanır,
@@ -18,6 +19,7 @@ export default function MobileDrawer({ open, onClose }: { open: boolean; onClose
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement>(null);
   const user = useStoredUser();
+  const { t } = useI18n();
 
   useEffect(() => {
     if (!open) return;
@@ -66,7 +68,7 @@ export default function MobileDrawer({ open, onClose }: { open: boolean; onClose
     <div className="fixed inset-0 z-50 lg:hidden">
       <button
         type="button"
-        aria-label="Menüyü kapat"
+        aria-label={t('nav.aria.close')}
         onClick={onClose}
         className="absolute inset-0 h-full w-full cursor-default bg-fg/40"
       />
@@ -74,29 +76,32 @@ export default function MobileDrawer({ open, onClose }: { open: boolean; onClose
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Gezinme menüsü"
+        aria-label={t('nav.aria.drawer')}
         className={cx(
           'absolute inset-y-0 left-0 flex w-[min(20rem,88vw)] flex-col bg-nav-pill text-on-nav-pill shadow-raised'
         )}
       >
         <div className="flex items-center justify-between gap-3 px-4 py-4">
           <div className="min-w-0">
-            <div className="truncate font-display text-base font-extrabold">Beauty Salon</div>
+            <div className="truncate font-display text-base font-extrabold">{t('shell.brand')}</div>
             <div className="truncate text-xs text-on-nav-pill-muted">{user?.email}</div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Kapat"
+            aria-label={t('nav.aria.dismiss')}
             className="grid h-11 w-11 place-items-center rounded-field text-on-nav-pill-muted hover:bg-on-nav-pill/10 hover:text-on-nav-pill"
           >
             <X className="h-5 w-5" aria-hidden />
           </button>
         </div>
 
-        <nav aria-label="Tüm gezinme" className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+        <nav
+          aria-label={t('nav.aria.all')}
+          className="min-h-0 flex-1 overflow-y-auto px-3 pb-4"
+        >
           <ul className="space-y-1">
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+            {NAV_ITEMS.map(({ href, labelKey, icon: Icon }) => {
               const active = isNavActive(pathname, href);
               return (
                 <li key={href}>
@@ -117,7 +122,7 @@ export default function MobileDrawer({ open, onClose }: { open: boolean; onClose
                       <span className="h-6 w-1 shrink-0" />
                     )}
                     <Icon className="h-5 w-5 shrink-0" aria-hidden />
-                    <span className="truncate">{label}</span>
+                    <span className="truncate">{t(labelKey)}</span>
                   </Link>
                 </li>
               );
@@ -133,7 +138,7 @@ export default function MobileDrawer({ open, onClose }: { open: boolean; onClose
             className="flex min-h-11 w-full items-center gap-3 rounded-field px-3 text-sm font-semibold text-on-nav-pill-muted hover:bg-error/20 hover:text-error"
           >
             <LogOut className="h-5 w-5" aria-hidden />
-            Çıkış yap
+            {t('shell.logout')}
           </button>
         </div>
       </div>

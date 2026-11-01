@@ -11,6 +11,9 @@
  * - `sirala` tek parametrede `sort:order` taşır.
  * - `toApiSearchParams` `status=tümü` göndermez; tarih önceli `dateFrom`/`dateTo`
  *   olarak **yerel** takvime göre açılır (`toISOString` yok).
+ * - i18n: modül SAF kalır — seçenekler ve çipler metin değil **anahtar** taşır
+ *   (`labelKey`/`valueKey`/`vars`). Burada hem anahtarlar hem de sayfanın bastığı
+ *   çözülmüş `tr` metni doğrulanır (bugünkü Türkçe kopya birebir korunmalı).
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,10 +21,12 @@ import assert from 'node:assert/strict';
 import {
   APPOINTMENT_SORT_OPTIONS,
   APPOINTMENTS_PAGE_SIZES,
+  DATE_PRESET_LABEL_KEYS,
   DATE_PRESET_OPTIONS,
   DEFAULT_APPOINTMENTS_QUERY,
   DEFAULT_PAGE_SIZE,
   PAGE_SIZE_STORAGE_KEY,
+  STATUS_LABEL_KEYS,
   activeChips,
   buildAppointmentsQuery,
   dateRangeForPreset,
@@ -29,6 +34,7 @@ import {
   parseAppointmentsQuery,
   toApiSearchParams,
 } from '../../src/lib/appointmentsQuery.ts';
+import { translate } from '../../src/lib/i18n/index.ts';
 
 /** Sabit "bugün": 27 Ekim 2026, Salı (Pazartesi 26 Ekim, Pazar 1 Kasım). */
 const TODAY = new Date(2026, 9, 27);
@@ -39,6 +45,22 @@ const TODAY = new Date(2026, 9, 27);
  */
 function patchOf(values: Record<string, unknown>): Partial<typeof DEFAULT_APPOINTMENTS_QUERY> {
   return values as Partial<typeof DEFAULT_APPOINTMENTS_QUERY>;
+}
+
+/**
+ * Çip metnini sayfanın bastığı gibi çözer (`app/appointments/page.tsx`): şablon
+ * anahtarı + (varsa) `{label}` değer anahtarı + hazır değişkenler. Tip importu
+ * yok (AP-002 deseni): yapısal parametre yeterli.
+ */
+function chipLabel(chip: {
+  labelKey: string;
+  valueKey?: string;
+  vars?: Record<string, string | number>;
+}): string {
+  return translate('tr', chip.labelKey, {
+    ...chip.vars,
+    ...(chip.valueKey ? { label: translate('tr', chip.valueKey) } : null),
+  });
 }
 
 test('sabitler: sayfa boyutları, depolama anahtarı ve seçenekler', () => {
@@ -52,6 +74,24 @@ test('sabitler: sayfa boyutları, depolama anahtarı ve seçenekler', () => {
   assert.deepEqual(
     DATE_PRESET_OPTIONS.map((option) => option.value),
     ['tümü', 'bugün', 'yarın', 'bu-hafta', 'bu-ay', 'geçmiş', 'gelecek']
+  );
+  // Etiketler metin değil i18n anahtarı taşır; bugünkü tr kopyası birebir korunur.
+  assert.deepEqual(
+    APPOINTMENT_SORT_OPTIONS.map((option) => translate('tr', option.labelKey)),
+    ['En yeni', 'Tarih (yakın)', 'Tarih (uzak)']
+  );
+  assert.deepEqual(
+    DATE_PRESET_OPTIONS.map((option) => translate('tr', option.labelKey)),
+    ['Tüm tarihler', 'Bugün', 'Yarın', 'Bu hafta', 'Bu ay', 'Geçmiş', 'Gelecek']
+  );
+  // Select ve chip aynı anahtar kaynağını kullanır (sapma olursa burada yakalanır).
+  assert.deepEqual(
+    DATE_PRESET_OPTIONS.map((option) => option.labelKey),
+    DATE_PRESET_OPTIONS.map((option) => DATE_PRESET_LABEL_KEYS[option.value])
+  );
+  assert.deepEqual(
+    Object.values(STATUS_LABEL_KEYS).map((key) => translate('tr', key)),
+    ['Tümü', 'Bekliyor', 'Onaylandı', 'Tamamlandı', 'İptal Edildi', 'Gelmedi']
   );
   // Varsayılan sorgu sıralamaları seçeneklerle tutarlı olmalı.
   assert.ok(
@@ -301,8 +341,26 @@ test('activeChips: üç filtre durum → salon → tarih sırasıyla ve doğru e
     chips.map((chip) => chip.key),
     ['status', 'salon', 'date', 'q']
   );
+  // Ham sözleşme: anahtar + değişkenler (modül metin taşımaz).
   assert.deepEqual(
-    chips.map((chip) => chip.label),
+    chips.map((chip) => chip.labelKey),
+    [
+      'appointments.chips.status',
+      'appointments.chips.salon',
+      'appointments.chips.date',
+      'appointments.chips.search',
+    ]
+  );
+  assert.deepEqual(
+    chips.map((chip) => chip.valueKey),
+    ['appointments.status.CONFIRMED', undefined, 'appointments.datePreset.tomorrow', undefined]
+  );
+  assert.deepEqual(chips[1].vars, { name: 'salon-1' });
+  assert.deepEqual(chips[3].vars, { query: 'cilt' });
+  assert.equal(chips[2].vars, undefined);
+  // Sayfanın bastığı metin bugünkü Türkçeyle aynı kalır.
+  assert.deepEqual(
+    chips.map((chip) => chipLabel(chip)),
     ['Durum: Onaylandı', 'Salon: salon-1', 'Tarih: Yarın', 'Arama: "cilt"']
   );
   // Her yama ilgili alanı varsayılana çeker ve sayfayı 1'e döner.
@@ -330,7 +388,17 @@ test('activeChips: beş filtre tam sırayla, isimler varsa görünen ad kullanı
     ['status', 'salon', 'staff', 'date', 'q']
   );
   assert.deepEqual(
-    chips.map((chip) => chip.label),
+    chips.map((chip) => chip.valueKey),
+    [
+      'appointments.status.CANCELLED',
+      undefined,
+      undefined,
+      'appointments.datePreset.thisWeek',
+      undefined,
+    ]
+  );
+  assert.deepEqual(
+    chips.map((chip) => chipLabel(chip)),
     [
       'Durum: İptal Edildi',
       'Salon: Kuaför Yıldız',
@@ -342,20 +410,23 @@ test('activeChips: beş filtre tam sırayla, isimler varsa görünen ad kullanı
   assert.deepEqual(chips[2].patch, { staffId: '', page: 1 });
 });
 
-test('activeChips: her durum etiketi TR_LABEL karşılığıyla üretilir', () => {
+test('activeChips: her durum etiketi STATUS_LABEL_KEYS karşılığıyla üretilir', () => {
   const expected = [
-    ['PENDING', 'Durum: Bekliyor'],
-    ['CONFIRMED', 'Durum: Onaylandı'],
-    ['COMPLETED', 'Durum: Tamamlandı'],
-    ['CANCELLED', 'Durum: İptal Edildi'],
-    ['NO_SHOW', 'Durum: Gelmedi'],
+    ['PENDING', 'appointments.status.PENDING', 'Durum: Bekliyor'],
+    ['CONFIRMED', 'appointments.status.CONFIRMED', 'Durum: Onaylandı'],
+    ['COMPLETED', 'appointments.status.COMPLETED', 'Durum: Tamamlandı'],
+    ['CANCELLED', 'appointments.status.CANCELLED', 'Durum: İptal Edildi'],
+    ['NO_SHOW', 'appointments.status.NO_SHOW', 'Durum: Gelmedi'],
   ] as const;
 
-  for (const [status, label] of expected) {
+  for (const [status, valueKey, label] of expected) {
     const chips = activeChips({ ...DEFAULT_APPOINTMENTS_QUERY, status });
     assert.equal(chips.length, 1);
-    assert.equal(chips[0].label, label);
     assert.equal(chips[0].key, 'status');
+    assert.equal(chips[0].labelKey, 'appointments.chips.status');
+    assert.equal(chips[0].valueKey, valueKey);
+    assert.equal(chips[0].valueKey, STATUS_LABEL_KEYS[status]);
+    assert.equal(chipLabel(chips[0]), label);
   }
 });
 

@@ -14,7 +14,7 @@ import Dialog from '@/components/ui/Dialog';
 
 function renderDialog(props: Partial<React.ComponentProps<typeof Dialog>> = {}) {
   const onClose = vi.fn();
-  const utils = render(
+  const utils = renderTr(
     <Dialog open onClose={onClose} title="Kategori düzenle" {...props}>
       <input aria-label="Kategori adı" />
     </Dialog>
@@ -22,9 +22,21 @@ function renderDialog(props: Partial<React.ComponentProps<typeof Dialog>> = {}) 
   return { onClose, ...utils };
 }
 
+import LocaleProvider from '@/providers/LocaleProvider';
+import type { ReactElement } from 'react';
+
+/**
+ * Bileşen kendi sabit metinlerini sözlükten (`ui.*`) basar; testler bugünkü
+ * Türkçe kopyayı görsün diye her render `LocaleProvider initialMode="tr"` ile
+ * sarmalanır (jsdom `navigator.language` = 'en-US' olduğu için 'system' modu
+ * İngilizceye düşerdi).
+ */
+const renderTr = (ui: ReactElement) =>
+  render(<LocaleProvider initialMode="tr">{ui}</LocaleProvider>);
+
 describe('Dialog — kapalıyken', () => {
   test('open=false iken hiçbir düğüm basmaz', () => {
-    const { container } = render(
+    const { container } = renderTr(
       <Dialog open={false} onClose={() => {}} title="Gizli">
         içerik
       </Dialog>

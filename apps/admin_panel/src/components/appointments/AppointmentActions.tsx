@@ -3,6 +3,7 @@
 import { CheckCheck, CheckCircle2, Eye, Loader2, UserX, XCircle } from 'lucide-react';
 import { cx } from '@/lib/cx';
 import Button from '@/components/ui/Button';
+import { useI18n } from '@/providers/LocaleProvider';
 
 export type AppointmentActionStatus =
   | 'PENDING'
@@ -29,7 +30,8 @@ export type AppointmentPendingAction = 'confirm' | 'complete' | 'noShow' | 'canc
  * kullanıcıyı şaşırtır), geri bildirim yalnız ikon + `disabled` ile verilir.
  * `disabled` yalnız uçuştaki butona basılır — mesela `İptal` beklerken `Detay`
  * tıklanabilir kalır. Tüm ikonlar `aria-hidden`: erişilebilir ad metinden gelir,
- * ikon adı eklenseydi ad çiftlenirdi.
+ * ikon adı eklenseydi ad çiftlenirdi. Metinler `appointments.actions.*`
+ * anahtarlarından gelir (i18n).
  */
 export default function AppointmentActions({
   status,
@@ -50,6 +52,7 @@ export default function AppointmentActions({
   onCancel: () => void;
   className?: string;
 }) {
+  const { t } = useI18n();
   const confirming = pending === 'confirm';
   const completing = pending === 'complete';
   const markingNoShow = pending === 'noShow';
@@ -59,7 +62,7 @@ export default function AppointmentActions({
     <div className={cx('flex flex-wrap items-center justify-end gap-2', className)}>
       <Button variant="outline" size="sm" onClick={onDetail}>
         <Eye className="h-4 w-4" aria-hidden />
-        Detay
+        {t('appointments.actions.detail')}
       </Button>
 
       {status === 'PENDING' ? (
@@ -69,7 +72,7 @@ export default function AppointmentActions({
           ) : (
             <CheckCircle2 className="h-4 w-4" aria-hidden />
           )}
-          Onayla
+          {t('appointments.actions.confirm')}
         </Button>
       ) : null}
 
@@ -81,7 +84,7 @@ export default function AppointmentActions({
             ) : (
               <CheckCheck className="h-4 w-4" aria-hidden />
             )}
-            Tamamla
+            {t('appointments.actions.complete')}
           </Button>
 
           <Button variant="outline" size="sm" onClick={onNoShow} disabled={markingNoShow}>
@@ -90,7 +93,7 @@ export default function AppointmentActions({
             ) : (
               <UserX className="h-4 w-4" aria-hidden />
             )}
-            Gelmedi
+            {t('appointments.actions.noShow')}
           </Button>
 
           <Button variant="danger" size="sm" onClick={onCancel} disabled={cancelling}>
@@ -99,7 +102,7 @@ export default function AppointmentActions({
             ) : (
               <XCircle className="h-4 w-4" aria-hidden />
             )}
-            İptal
+            {t('appointments.actions.cancel')}
           </Button>
         </>
       ) : null}

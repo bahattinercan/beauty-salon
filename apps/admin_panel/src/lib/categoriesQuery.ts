@@ -10,6 +10,10 @@
  * `sayfa`, `limit`, `sirala`, `gorunum`. Sıralama tek parametrede taşınır:
  * `sirala=<sort>:<order>`. Varsayılanlar URL'e **yazılmaz** (temiz deep-link);
  * okuma tarafı eksik/geçersiz değeri varsayılana çeker.
+ *
+ * i18n: modül görünen metin taşımaz — sabit etiketler `labelKey` döndürür, metni
+ * sayfa `t(labelKey, vars)` ile basar (`categories.*` sözlüğü). Böylece modül
+ * React'siz ve dilsiz kalır; test onu sözlükten bağımsız sınayabilir.
  */
 
 /** Sayfa boyutu seçenekleri; API `limit` üst sınırı 100 ile uyumlu. */
@@ -68,36 +72,54 @@ export const CATEGORY_MEDIA_FILTERS: CategoryMediaFilter[] = [
   'medyasız',
 ];
 
+/** Durum filtresi sekmelerinin (`Tümü`, `Aktif`, `Pasif`) sözlük anahtarları. */
+export const CATEGORY_STATUS_FILTER_LABEL_KEYS: Record<CategoryStatusFilter, string> = {
+  'tümü': 'categories.statusFilter.all',
+  aktif: 'categories.statusFilter.active',
+  pasif: 'categories.statusFilter.passive',
+};
+
+/** Medya filtresi seçeneklerinin (`Tümü`, `Görselli`, …) sözlük anahtarları. */
+export const CATEGORY_MEDIA_FILTER_LABEL_KEYS: Record<CategoryMediaFilter, string> = {
+  'tümü': 'categories.mediaFilter.all',
+  görselli: 'categories.mediaFilter.withImage',
+  videolu: 'categories.mediaFilter.withVideo',
+  medyasız: 'categories.mediaFilter.withoutMedia',
+};
+
 /**
  * `sirala` parametresinin tek kaynağı: UI select seçenekleri de buradan üretilir.
- * `value` = URL biçimi, `sort`/`order` = karşılaştırma anahtarı. İlk kayıt
- * varsayılandır (`normalizeQuery` buradan çözer).
+ * `value` = URL biçimi, `sort`/`order` = karşılaştırma anahtarı, `labelKey` =
+ * görünen metnin `categories.*` sözlüğündeki anahtarı. İlk kayıt varsayılandır
+ * (`normalizeQuery` buradan çözer).
  */
 export const CATEGORY_SORT_OPTIONS: {
   value: string;
-  label: string;
+  labelKey: string;
   sort: CategorySort;
   order: CategorySortOrder;
 }[] = [
-  { value: 'sortOrder:asc', label: 'Sıra (varsayılan)', sort: 'sortOrder', order: 'asc' },
-  { value: 'name:asc', label: 'İsim (A-Z)', sort: 'name', order: 'asc' },
-  { value: 'name:desc', label: 'İsim (Z-A)', sort: 'name', order: 'desc' },
-  { value: 'serviceCount:desc', label: 'Hizmet sayısı (çok)', sort: 'serviceCount', order: 'desc' },
-  { value: 'createdAt:desc', label: 'En yeni', sort: 'createdAt', order: 'desc' },
+  {
+    value: 'sortOrder:asc',
+    labelKey: 'categories.filter.sortDefault',
+    sort: 'sortOrder',
+    order: 'asc',
+  },
+  { value: 'name:asc', labelKey: 'categories.filter.sortNameAsc', sort: 'name', order: 'asc' },
+  { value: 'name:desc', labelKey: 'categories.filter.sortNameDesc', sort: 'name', order: 'desc' },
+  {
+    value: 'serviceCount:desc',
+    labelKey: 'categories.filter.sortServiceCountDesc',
+    sort: 'serviceCount',
+    order: 'desc',
+  },
+  {
+    value: 'createdAt:desc',
+    labelKey: 'categories.filter.sortNewest',
+    sort: 'createdAt',
+    order: 'desc',
+  },
 ];
-
-const STATUS_LABELS: Record<CategoryStatusFilter, string> = {
-  'tümü': 'Tümü',
-  aktif: 'Aktif',
-  pasif: 'Pasif',
-};
-
-const MEDIA_LABELS: Record<CategoryMediaFilter, string> = {
-  'tümü': 'Tümü',
-  görselli: 'Görselli',
-  videolu: 'Videolu',
-  medyasız: 'Medyasız',
-};
 
 /** Arama metni üst sınırı API validator'ı ile aynı (`search` ≤100). */
 const MAX_Q = 100;
@@ -166,7 +188,15 @@ export function buildCategoriesQuery(state: CategoriesQueryState): string {
 
 export interface CategoryChip {
   key: 'status' | 'media' | 'icon' | 'q' | 'sort';
-  label: string;
+  /** Chip metninin sözlük anahtarı; sayfa `t(labelKey, vars)` ile basar. */
+  labelKey: string;
+  /**
+   * `{label}` yer tutucusunu dolduracak etiketin anahtarı (durum/medya/sıralama
+   * chip'lerinde). Sayfa `t(valueKey)` ile çözer; modül sözlüğe bakmaz.
+   */
+  valueKey?: string;
+  /** `{icon}`, `{q}` yer tutucularının hazır değerleri (çevrilmiş metin değil). */
+  vars?: Record<string, string | number>;
   /** Chip kaldırıldığında uygulanacak yama; sayfa her zaman 1'e döner (sayfa çağrıda). */
   patch: Partial<CategoriesQueryState>;
 }
@@ -179,22 +209,34 @@ export function activeChips(state: CategoriesQueryState): CategoryChip[] {
   if (query.status !== 'tümü') {
     chips.push({
       key: 'status',
-      label: `Durum: ${STATUS_LABELS[query.status]}`,
+      labelKey: 'categories.chips.status',
+      valueKey: CATEGORY_STATUS_FILTER_LABEL_KEYS[query.status],
       patch: { status: 'tümü' },
     });
   }
   if (query.media !== 'tümü') {
     chips.push({
       key: 'media',
-      label: `Medya: ${MEDIA_LABELS[query.media]}`,
+      labelKey: 'categories.chips.media',
+      valueKey: CATEGORY_MEDIA_FILTER_LABEL_KEYS[query.media],
       patch: { media: 'tümü' },
     });
   }
   if (query.icon) {
-    chips.push({ key: 'icon', label: `İkon: ${query.icon}`, patch: { icon: '' } });
+    chips.push({
+      key: 'icon',
+      labelKey: 'categories.chips.icon',
+      vars: { icon: query.icon },
+      patch: { icon: '' },
+    });
   }
   if (query.q) {
-    chips.push({ key: 'q', label: `Arama: "${query.q}"`, patch: { q: '' } });
+    chips.push({
+      key: 'q',
+      labelKey: 'categories.chips.q',
+      vars: { q: query.q },
+      patch: { q: '' },
+    });
   }
   if (query.sort !== DEFAULT_CATEGORIES_QUERY.sort || query.order !== DEFAULT_CATEGORIES_QUERY.order) {
     const option =
@@ -202,7 +244,8 @@ export function activeChips(state: CategoriesQueryState): CategoryChip[] {
       CATEGORY_SORT_OPTIONS[0];
     chips.push({
       key: 'sort',
-      label: `Sıralama: ${option.label}`,
+      labelKey: 'categories.chips.sort',
+      valueKey: option.labelKey,
       patch: { sort: DEFAULT_CATEGORIES_QUERY.sort, order: DEFAULT_CATEGORIES_QUERY.order },
     });
   }

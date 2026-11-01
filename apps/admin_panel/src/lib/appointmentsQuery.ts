@@ -65,37 +65,49 @@ export const APPOINTMENT_STATUS_FILTERS: AppointmentStatusFilter[] = [
 
 /**
  * `sirala` parametresinin tek kaynağı: UI select seçenekleri de buradan üretilir.
- * `value` = URL biçimi, `sort`/`order` = API parametreleri.
+ * `value` = URL biçimi, `sort`/`order` = API parametreleri, `labelKey` = i18n
+ * anahtarı (modül SAF kalır: metin değil anahtar döner, çeviriyi sayfa yapar).
  */
 export const APPOINTMENT_SORT_OPTIONS: {
   value: string;
-  label: string;
+  labelKey: string;
   sort: AppointmentSort;
   order: SortOrder;
 }[] = [
-  { value: 'createdAt:desc', label: 'En yeni', sort: 'createdAt', order: 'desc' },
-  { value: 'date:asc', label: 'Tarih (yakın)', sort: 'date', order: 'asc' },
-  { value: 'date:desc', label: 'Tarih (uzak)', sort: 'date', order: 'desc' },
+  { value: 'createdAt:desc', labelKey: 'appointments.sort.newest', sort: 'createdAt', order: 'desc' },
+  { value: 'date:asc', labelKey: 'appointments.sort.dateAsc', sort: 'date', order: 'asc' },
+  { value: 'date:desc', labelKey: 'appointments.sort.dateDesc', sort: 'date', order: 'desc' },
 ];
 
-export const DATE_PRESET_OPTIONS: { value: DatePreset; label: string }[] = [
-  { value: 'tümü', label: 'Tüm tarihler' },
-  { value: 'bugün', label: 'Bugün' },
-  { value: 'yarın', label: 'Yarın' },
-  { value: 'bu-hafta', label: 'Bu hafta' },
-  { value: 'bu-ay', label: 'Bu ay' },
-  { value: 'geçmiş', label: 'Geçmiş' },
-  { value: 'gelecek', label: 'Gelecek' },
+/** Tarih önceli → i18n anahtarı: select seçenekleri ve chipler aynı kaynaktan. */
+export const DATE_PRESET_LABEL_KEYS: Record<DatePreset, string> = {
+  'tümü': 'appointments.datePreset.all',
+  'bugün': 'appointments.datePreset.today',
+  'yarın': 'appointments.datePreset.tomorrow',
+  'bu-hafta': 'appointments.datePreset.thisWeek',
+  'bu-ay': 'appointments.datePreset.thisMonth',
+  'geçmiş': 'appointments.datePreset.past',
+  'gelecek': 'appointments.datePreset.upcoming',
+};
+
+export const DATE_PRESET_OPTIONS: { value: DatePreset; labelKey: string }[] = [
+  { value: 'tümü', labelKey: DATE_PRESET_LABEL_KEYS['tümü'] },
+  { value: 'bugün', labelKey: DATE_PRESET_LABEL_KEYS['bugün'] },
+  { value: 'yarın', labelKey: DATE_PRESET_LABEL_KEYS['yarın'] },
+  { value: 'bu-hafta', labelKey: DATE_PRESET_LABEL_KEYS['bu-hafta'] },
+  { value: 'bu-ay', labelKey: DATE_PRESET_LABEL_KEYS['bu-ay'] },
+  { value: 'geçmiş', labelKey: DATE_PRESET_LABEL_KEYS['geçmiş'] },
+  { value: 'gelecek', labelKey: DATE_PRESET_LABEL_KEYS['gelecek'] },
 ];
 
-/** Chip etiketlerindeki durum adları (API enum → Türkçe görünen metin). */
-const TR_LABEL: Record<AppointmentStatusFilter, string> = {
-  'tümü': 'Tümü',
-  PENDING: 'Bekliyor',
-  CONFIRMED: 'Onaylandı',
-  COMPLETED: 'Tamamlandı',
-  CANCELLED: 'İptal Edildi',
-  NO_SHOW: 'Gelmedi',
+/** Durum adlarının i18n anahtarları (API enum + panelin `tümü` değeri). */
+export const STATUS_LABEL_KEYS: Record<AppointmentStatusFilter, string> = {
+  'tümü': 'appointments.status.all',
+  PENDING: 'appointments.status.PENDING',
+  CONFIRMED: 'appointments.status.CONFIRMED',
+  COMPLETED: 'appointments.status.COMPLETED',
+  CANCELLED: 'appointments.status.CANCELLED',
+  NO_SHOW: 'appointments.status.NO_SHOW',
 };
 
 const DATE_PRESET_VALUES: DatePreset[] = DATE_PRESET_OPTIONS.map((option) => option.value);
@@ -249,10 +261,21 @@ export function toApiSearchParams(state: AppointmentsQueryState, today: Date): s
   return params.toString();
 }
 
-/** Kaldırılabilir filtre çipi; `patch` alanı varsayılana çeker ve sayfayı 1'e döner. */
-interface AppointmentChip {
+/**
+ * Kaldırılabilir filtre çipi; `patch` alanı varsayılana çeker ve sayfayı 1'e döner.
+ *
+ * Metin taşımaz — çeviri anahtarı taşır (modül SAF):
+ * - `labelKey`: çip şablonu (`appointments.chips.status`).
+ * - `valueKey`: şablondaki `{label}` yer tutucusunun çeviri anahtarı (durum/tarih).
+ * - `vars`: şablondaki diğer yer tutucuların hazır değerleri (ad, arama metni).
+ *
+ * Sayfa basar: `t(chip.labelKey, { ...chip.vars, ...(chip.valueKey ? { label: t(chip.valueKey) } : {}) })`.
+ */
+export interface AppointmentChip {
   key: 'status' | 'salon' | 'staff' | 'date' | 'q';
-  label: string;
+  labelKey: string;
+  valueKey?: string;
+  vars?: Record<string, string | number>;
   patch: Partial<AppointmentsQueryState>;
 }
 
@@ -271,31 +294,42 @@ export function activeChips(
   if (query.status !== 'tümü') {
     chips.push({
       key: 'status',
-      label: `Durum: ${TR_LABEL[query.status]}`,
+      labelKey: 'appointments.chips.status',
+      valueKey: STATUS_LABEL_KEYS[query.status],
       patch: { status: 'tümü', page: 1 },
     });
   }
   if (query.salonId) {
     chips.push({
       key: 'salon',
-      label: `Salon: ${names?.salon ?? query.salonId}`,
+      labelKey: 'appointments.chips.salon',
+      vars: { name: names?.salon ?? query.salonId },
       patch: { salonId: '', page: 1 },
     });
   }
   if (query.staffId) {
     chips.push({
       key: 'staff',
-      label: `Personel: ${names?.staff ?? query.staffId}`,
+      labelKey: 'appointments.chips.staff',
+      vars: { name: names?.staff ?? query.staffId },
       patch: { staffId: '', page: 1 },
     });
   }
   if (query.date !== 'tümü') {
-    const label =
-      DATE_PRESET_OPTIONS.find((option) => option.value === query.date)?.label ?? query.date;
-    chips.push({ key: 'date', label: `Tarih: ${label}`, patch: { date: 'tümü', page: 1 } });
+    chips.push({
+      key: 'date',
+      labelKey: 'appointments.chips.date',
+      valueKey: DATE_PRESET_LABEL_KEYS[query.date],
+      patch: { date: 'tümü', page: 1 },
+    });
   }
   if (query.q) {
-    chips.push({ key: 'q', label: `Arama: "${query.q}"`, patch: { q: '', page: 1 } });
+    chips.push({
+      key: 'q',
+      labelKey: 'appointments.chips.search',
+      vars: { query: query.q },
+      patch: { q: '', page: 1 },
+    });
   }
 
   return chips;

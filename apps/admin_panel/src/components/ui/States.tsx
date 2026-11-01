@@ -5,16 +5,18 @@ import type { LucideIcon } from 'lucide-react';
 import { cx } from '@/lib/cx';
 import Button from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { useI18n } from '@/providers/LocaleProvider';
 
 export function Skeleton({ className }: { className?: string }) {
   return <div className={cx('animate-pulse rounded-field bg-surface-variant', className)} />;
 }
 
-export function LoadingBlock({ label = 'Yükleniyor…' }: { label?: string }) {
+export function LoadingBlock({ label }: { label?: string }) {
+  const { t } = useI18n();
   return (
     <div className="flex min-h-40 flex-col items-center justify-center gap-2 text-fg-muted">
       <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{label ?? t('ui.states.loading')}</span>
     </div>
   );
 }
@@ -45,18 +47,19 @@ export function EmptyState({
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const { t } = useI18n();
   return (
     <Card className="border-error/30 bg-error/8 p-4">
       <div className="flex items-start gap-3">
         <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-error" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="font-display font-bold text-fg">Veri alınamadı</p>
+          <p className="font-display font-bold text-fg">{t('ui.states.errorTitle')}</p>
           <p className="mt-1 text-sm text-fg-muted">{message}</p>
         </div>
         {onRetry ? (
           <Button variant="outline" size="sm" onClick={onRetry}>
             <RefreshCw className="h-4 w-4" aria-hidden />
-            Yeniden dene
+            {t('ui.states.retry')}
           </Button>
         ) : null}
       </div>

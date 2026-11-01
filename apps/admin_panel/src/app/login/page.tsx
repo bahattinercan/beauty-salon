@@ -6,6 +6,7 @@ import { Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
+import { useI18n } from '@/providers/LocaleProvider';
 import { cx } from '@/lib/cx';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
@@ -19,6 +20,7 @@ const DEV_PREFILL_PASSWORD = IS_PRODUCTION ? '' : 'Admin123!';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [email, setEmail] = useState(DEV_PREFILL_EMAIL);
   const [password, setPassword] = useState(DEV_PREFILL_PASSWORD);
   const [loading, setLoading] = useState(false);
@@ -39,11 +41,11 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Giriş başarısız oldu');
+        throw new Error(data.message || t('pages.login.errorFailed'));
       }
 
       if (data.data?.user?.role !== 'ADMIN') {
-        throw new Error('Bu panele yalnızca Admin rolündeki kullanıcılar erişebilir');
+        throw new Error(t('pages.login.errorAdminOnly'));
       }
 
       localStorage.setItem('access_token', data.data.accessToken);
@@ -52,7 +54,7 @@ export default function LoginPage() {
 
       router.push('/');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Giriş yapılırken bir hata oluştu');
+      setError(err instanceof Error ? err.message : t('pages.login.errorGeneric'));
     } finally {
       setLoading(false);
     }
@@ -61,7 +63,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-dvh flex-col bg-background">
       <div className="flex items-center justify-end gap-3 px-4 py-4">
-        <span className="text-sm font-semibold text-fg-muted">Tema</span>
+        <span className="text-sm font-semibold text-fg-muted">{t('pages.login.themeLabel')}</span>
         <ThemeToggle />
       </div>
 
@@ -78,9 +80,9 @@ export default function LoginPage() {
               <span className="font-display text-sm font-extrabold text-on-primary">BS</span>
             </span>
             <h1 className="mt-3 font-display text-2xl font-extrabold text-on-primary">
-              Admin Girişi
+              {t('pages.login.title')}
             </h1>
-            <p className="mt-1 text-sm text-on-primary/80">Beauty Salon Yönetim Paneli</p>
+            <p className="mt-1 text-sm text-on-primary/80">{t('pages.login.subtitle')}</p>
           </div>
 
           <div className="p-5 sm:p-6">
@@ -97,7 +99,7 @@ export default function LoginPage() {
             ) : null}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Field label="E-posta adresi" htmlFor="email" required>
+              <Field label={t('pages.login.emailLabel')} htmlFor="email" required>
                 <Input
                   id="email"
                   icon={Mail}
@@ -106,11 +108,11 @@ export default function LoginPage() {
                   autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@beautysalon.com"
+                  placeholder={t('pages.login.emailPlaceholder')}
                 />
               </Field>
 
-              <Field label="Şifre" htmlFor="password" required>
+              <Field label={t('pages.login.passwordLabel')} htmlFor="password" required>
                 <Input
                   id="password"
                   icon={Lock}
@@ -119,7 +121,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder={t('pages.login.passwordPlaceholder')}
                 />
               </Field>
 
@@ -127,10 +129,10 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                    Giriş yapılıyor…
+                    {t('pages.login.submitting')}
                   </>
                 ) : (
-                  'Giriş yap'
+                  t('pages.login.submit')
                 )}
               </Button>
             </form>

@@ -3,6 +3,7 @@
 import { X } from 'lucide-react';
 import { cx } from '@/lib/cx';
 import Button from '@/components/ui/Button';
+import { useI18n } from '@/providers/LocaleProvider';
 
 export interface FilterChip {
   key: string;
@@ -30,7 +31,7 @@ export interface FilterChip {
 export default function FilterChips({
   chips,
   onClearAll,
-  clearLabel = 'Temizle',
+  clearLabel,
   className,
 }: {
   chips: FilterChip[];
@@ -38,13 +39,16 @@ export default function FilterChips({
   clearLabel?: string;
   className?: string;
 }) {
+  const { t } = useI18n();
   const count = chips.length;
+  // Prop verilmezse sözlükten gelir (prop API'si değişmedi: `clearLabel?`).
+  const clearText = clearLabel ?? t('common.clear');
 
   return (
     <div className={cx('flex flex-wrap items-center gap-2', className)}>
       {count > 0 ? (
         <ul
-          aria-label="Etkin filtreler"
+          aria-label={t('ui.filterChips.activeFilters')}
           className="flex min-w-[12rem] flex-1 flex-nowrap items-center gap-2 overflow-x-auto py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {chips.map((chip) => (
@@ -52,7 +56,7 @@ export default function FilterChips({
               <button
                 type="button"
                 onClick={chip.onRemove}
-                aria-label={`${chip.label} filtresini kaldır`}
+                aria-label={t('ui.filterChips.remove', { label: chip.label })}
                 className="flex min-h-9 max-w-[16rem] items-center gap-1.5 rounded-pill border border-border-strong bg-surface px-3 text-sm font-medium text-fg transition-colors hover:bg-surface-variant focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 <span className="truncate">{chip.label}</span>
@@ -65,11 +69,11 @@ export default function FilterChips({
       {/* Canlı bölge her zaman DOM'da kalır (0 filtrede de): kendi flex öğesinde. */}
       <div className="flex shrink-0 items-center gap-2">
         <span aria-live="polite" className="tnum whitespace-nowrap text-sm text-fg-muted">
-          {count > 0 ? `${count} filtre etkin` : ''}
+          {count > 0 ? t('ui.filterChips.count', { count }) : ''}
         </span>
         {count > 0 && onClearAll ? (
           <Button variant="ghost" size="sm" onClick={onClearAll} className="shrink-0">
-            {clearLabel}
+            {clearText}
           </Button>
         ) : null}
       </div>

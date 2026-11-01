@@ -2,6 +2,7 @@
 
 import { CheckCircle, Loader2, Pencil, Power, XCircle } from 'lucide-react';
 import { cx } from '@/lib/cx';
+import { useI18n } from '@/providers/LocaleProvider';
 import Button from '@/components/ui/Button';
 
 export type SalonActionStatus = 'onaylı' | 'bekliyor' | 'pasif';
@@ -42,12 +43,13 @@ export default function SalonActions({
 }) {
   const verifying = pending === 'verify';
   const toggling = pending === 'toggle';
+  const { t } = useI18n();
 
   return (
     <div className={cx('flex flex-wrap items-center justify-end gap-2', className)}>
       <Button variant="outline" size="sm" onClick={onEdit}>
         <Pencil className="h-4 w-4" aria-hidden />
-        Düzenle
+        {t('salons.actions.edit')}
       </Button>
 
       {status === 'bekliyor' ? (
@@ -57,7 +59,7 @@ export default function SalonActions({
           ) : (
             <CheckCircle className="h-4 w-4" aria-hidden />
           )}
-          Onayla
+          {t('salons.actions.verify')}
         </Button>
       ) : null}
 
@@ -68,7 +70,7 @@ export default function SalonActions({
           ) : (
             <Power className="h-4 w-4" aria-hidden />
           )}
-          Etkinleştir
+          {t('salons.actions.activate')}
         </Button>
       ) : (
         <Button variant="danger" size="sm" onClick={onDeactivate} disabled={toggling}>
@@ -77,7 +79,7 @@ export default function SalonActions({
           ) : (
             <XCircle className="h-4 w-4" aria-hidden />
           )}
-          Pasife al
+          {t('salons.actions.deactivate')}
         </Button>
       )}
     </div>

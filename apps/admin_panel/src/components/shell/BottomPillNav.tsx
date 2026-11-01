@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { NAV_ITEMS, isNavActive } from '@/lib/nav';
 import { cx } from '@/lib/cx';
+import { useI18n } from '@/providers/LocaleProvider';
 
 /**
  * Mobil gezinme: CA-019'ın yüzen pill nav'ının web karşılığı. Koyu zemin +
@@ -11,15 +12,16 @@ import { cx } from '@/lib/cx';
  */
 export default function BottomPillNav({ onMore }: { onMore: () => void }) {
   const pathname = usePathname();
+  const { t } = useI18n();
   const items = NAV_ITEMS.filter((i) => i.primary);
 
   return (
     <nav
-      aria-label="Hızlı gezinme"
+      aria-label={t('nav.aria.quick')}
       className="fixed inset-x-3 bottom-3 z-40 rounded-pill bg-nav-pill px-2 py-2 shadow-raised lg:hidden"
     >
       <ul className="grid grid-cols-5">
-        {items.map(({ href, label, icon: Icon }) => {
+        {items.map(({ href, labelKey, icon: Icon }) => {
           const active = isNavActive(pathname, href);
           return (
             <li key={href}>
@@ -39,7 +41,7 @@ export default function BottomPillNav({ onMore }: { onMore: () => void }) {
                 >
                   <Icon className="h-5 w-5" aria-hidden />
                 </span>
-                <span className="truncate">{label}</span>
+                <span className="truncate">{t(labelKey)}</span>
               </Link>
             </li>
           );
@@ -57,7 +59,7 @@ export default function BottomPillNav({ onMore }: { onMore: () => void }) {
                 <span className="h-1.5 w-1.5 rounded-pill bg-current" />
               </span>
             </span>
-            <span>Daha fazla</span>
+            <span>{t('nav.more')}</span>
           </button>
         </li>
       </ul>

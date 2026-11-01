@@ -8,6 +8,9 @@
  * `İptal nedeni` satırı yalnız `status === 'CANCELLED'` iken basılır.
  * Para biriminde tam sembol iddia edilmez (ICU sürümüne göre değişir), yalnız
  * sayının kendisi (`750`) aranır.
+ *
+ * Etiketler `useI18n()` ile çevrilir; testler bugünkü Türkçe kopyayı doğruladığından
+ * dil `initialMode="tr"` ile sabitlenir (jsdom `navigator.language` = 'en-US').
  */
 import { describe, expect, test, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -16,6 +19,13 @@ import userEvent from '@testing-library/user-event';
 import AppointmentDetailDialog, {
   type AppointmentDetail,
 } from '@/components/appointments/AppointmentDetailDialog';
+import LocaleProvider from '@/providers/LocaleProvider';
+import type { ReactElement } from 'react';
+
+/** Bileşen `t()` kullanır: her render Türkçe locale ile sarılır. */
+function renderTr(node: ReactElement) {
+  return render(<LocaleProvider initialMode="tr">{node}</LocaleProvider>);
+}
 
 const appointment: AppointmentDetail = {
   id: 'appointment-1',
@@ -34,7 +44,7 @@ const appointment: AppointmentDetail = {
 
 function renderDialog(overrides: Partial<AppointmentDetail> = {}, open = true) {
   const onClose = vi.fn();
-  const utils = render(
+  const utils = renderTr(
     <AppointmentDetailDialog
       open={open}
       appointment={{ ...appointment, ...overrides }}
@@ -62,7 +72,7 @@ describe('AppointmentDetailDialog — kapalıyken', () => {
 
 describe('AppointmentDetailDialog — açıkken', () => {
   test('randevu yoksa gövde boş basılır, diyalog patlamaz', () => {
-    render(<AppointmentDetailDialog open appointment={null} onClose={vi.fn()} />);
+    renderTr(<AppointmentDetailDialog open appointment={null} onClose={vi.fn()} />);
 
     expect(screen.getByRole('dialog', { name: 'Randevu detayı' })).toBeTruthy();
     expect(document.querySelector('dl')).toBeNull();
@@ -96,7 +106,13 @@ describe('AppointmentDetailDialog — açıkken', () => {
     expect(valueOf('Personel')).toBe('Merve Demir');
     expect(valueOf('Tarih / Saat')).toContain('30 Eyl 2026');
     expect(valueOf('Tarih / Saat')).toContain('10:00–10:45');
-    expect(valueOf('Tutar')).toContain('750');
+    expect(valueOf('Tutar')).toBe(
+      new Intl.NumberFormat('tr', {
+        style: 'currency',
+        currency: 'TRY',
+        maximumFractionDigits: 0,
+      }).format(750)
+    );
     expect(valueOf('Not')).toBe('Kısa kesim istendi');
     expect(valueOf('Oluşturma')).toBe('20 Eyl 2026');
   });
@@ -127,6 +143,38 @@ describe('AppointmentDetailDialog — açıkken', () => {
 
     renderDialog({ status: 'COMPLETED', cancellationReason: 'Müşteri talebiyle iptal edildi' });
     expect(screen.queryByText('İptal nedeni')).toBeNull();
+  });
+
+  test('dil en olunca başlık, etiketler, rozet, tarih ve tutar İngilizceye döner (t() ve locale bağlantısı)', () => {
+    render(
+      <LocaleProvider initialMode="en">
+        <AppointmentDetailDialog open appointment={appointment} onClose={vi.fn()} />
+      </LocaleProvider>
+    );
+
+    expect(screen.getByRole('dialog', { name: 'Appointment details' })).toBeTruthy();
+    expect(valueOf('Customer')).toContain('Zeynep Kaya');
+    expect(valueOf('Date / Time')).toContain('Sep 30, 2026');
+    expect(valueOf('Date / Time')).toContain('10:00–10:45');
+    expect(valueOf('Amount')).toBe(
+      new Intl.NumberFormat('en', {
+        style: 'currency',
+        currency: 'TRY',
+        maximumFractionDigits: 0,
+      }).format(750)
+    );
+    expect(valueOf('Amount')).not.toBe(
+      new Intl.NumberFormat('tr', {
+        style: 'currency',
+        currency: 'TRY',
+        maximumFractionDigits: 0,
+      }).format(750)
+    );
+    expect(valueOf('Created')).toBe('Sep 20, 2026');
+    expect(valueOf('Status')).toBe('Completed');
+    // Footer'daki "Close" ve ortak `Dialog` bileşeninin scrim + başlıktaki X
+    // düğmeleri aynı erişilebilir adı taşır: üçü de aktif dile çevrilir.
+    expect(screen.getAllByRole('button', { name: 'Close' })).toHaveLength(3);
   });
 
   test('Kapat düğmesi onClose çağırır', async () => {

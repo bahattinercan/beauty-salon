@@ -29,6 +29,19 @@ vi.mock('next/navigation', () => {
 });
 
 import SalonsPage from '@/app/salons/page';
+import LocaleProvider from '@/providers/LocaleProvider';
+
+/**
+ * Sayfa tüm görünen metinleri sözlükten `t()` ile basar; testler bugünkü Türkçe
+ * kopyayı görsün diye her render `LocaleProvider initialMode="tr"` ile sarmalanır
+ * (jsdom'un `navigator.language` değeri 'en-US' olduğundan 'system' modu İngilizceye düşerdi).
+ */
+const renderPage = () =>
+  render(
+    <LocaleProvider initialMode="tr">
+      <SalonsPage />
+    </LocaleProvider>
+  );
 
 const apiSalon = {
   id: 'salon-1',
@@ -83,7 +96,7 @@ describe('SalonsPage', () => {
   });
 
   test('ilk yüklemede filtreleri sunucuya varsayılanlarla gönderir', async () => {
-    render(<SalonsPage />);
+    renderPage();
 
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
     const params = lastParams();
@@ -103,7 +116,7 @@ describe('SalonsPage', () => {
   });
 
   test('durum filtresi sunucuya status olarak gider ve sayfayı 1e döndürür', async () => {
-    render(<SalonsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     await userEvent.click(screen.getByLabelText('Sonraki sayfa'));
@@ -117,7 +130,7 @@ describe('SalonsPage', () => {
   });
 
   test('arama 300ms debounce edilir: yazarken değil, sonra tek istek', async () => {
-    render(<SalonsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     await userEvent.type(screen.getByLabelText('Salon ara'), 'kuaför');
@@ -130,7 +143,7 @@ describe('SalonsPage', () => {
   });
 
   test('sayfa boyutu limit olarak gider ve localStoragea yazılır', async () => {
-    render(<SalonsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     fireEvent.change(screen.getByLabelText('Sayfa başına kayıt'), { target: { value: '50' } });
@@ -141,7 +154,7 @@ describe('SalonsPage', () => {
   });
 
   test('chip kaldırma filtreyi sıfırlar ve sayfayı 1e döndürür', async () => {
-    render(<SalonsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     await userEvent.click(screen.getByRole('tab', { name: /Onaylı/ }));
@@ -155,7 +168,7 @@ describe('SalonsPage', () => {
   });
 
   test('Temizle tüm filtreleri sıfırlar, limit ve görünüm korunur', async () => {
-    render(<SalonsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     await userEvent.click(screen.getByRole('tab', { name: /Onaylı/ }));
@@ -173,7 +186,7 @@ describe('SalonsPage', () => {
   });
 
   test('Pasife al onayı iptal edilirse istek atılmaz (R7)', async () => {
-    render(<SalonsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     const table = screen.getByRole('table');
@@ -189,7 +202,7 @@ describe('SalonsPage', () => {
   });
 
   test('bekliyor satırında Düzenle + Onayla + Pasife al; Düzenle diyaloğu açar', async () => {
-    render(<SalonsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     const table = screen.getByRole('table');

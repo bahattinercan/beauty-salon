@@ -40,7 +40,7 @@ const salon: SalonEditSource = {
 function renderDialog(overrides: Partial<SalonEditSource> = {}) {
   const onSaved = vi.fn();
   const onClose = vi.fn();
-  render(
+  renderTr(
     <SalonEditDialog
       open
       salon={{ ...salon, ...overrides }}
@@ -60,6 +60,17 @@ const lastBody = (): Record<string, unknown> => {
   const call = apiFetchMock.mock.calls.at(-1) as [string, RequestInit];
   return JSON.parse(String(call[1].body)) as Record<string, unknown>;
 };
+
+import LocaleProvider from '@/providers/LocaleProvider';
+
+import type { ReactElement } from 'react';
+
+/**
+ * Görünen metinler sözlükten `t()` ile basılır; testler bugünkü Türkçe kopyayı
+ * görsün diye her render `LocaleProvider initialMode="tr"` ile sarmalanır.
+ */
+const renderTr = (ui: ReactElement) =>
+  render(<LocaleProvider initialMode="tr">{ui}</LocaleProvider>);
 
 describe('SalonEditDialog', () => {
   beforeEach(() => {

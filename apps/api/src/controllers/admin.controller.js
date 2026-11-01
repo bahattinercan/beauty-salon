@@ -26,6 +26,15 @@ const APPOINTMENT_SORT_COLUMNS = {
   date: 'date',
 };
 
+// Sıralama parametresi -> Review kolonu
+const REVIEW_SORT_COLUMNS = {
+  createdAt: 'createdAt',
+  rating: 'rating',
+};
+
+// Puan dağılımı anahtarları sabit: eksik puanlar 0 olarak döner
+const REVIEW_RATING_KEYS = ['1', '2', '3', '4', '5'];
+
 // GET /admin/dashboard
 const getDashboard = async (req, res, next) => {
   try {
@@ -345,21 +354,189 @@ const getAllAppointments = async (req, res, next) => {
 const getAllReviews = async (req, res, next) => {
   try {
     const { limit, offset, page } = paginate(req.query.page, req.query.limit);
+    const {
+      search, rating, visibility = 'all', replied = 'all', salonId,
+      dateFrom, dateTo, sort = 'createdAt', order = 'desc',
+    } = req.query;
 
-    const { count, rows } = await Review.findAndCountAll({
-      include: [
-        { model: User, as: 'customer', attributes: ['fullName'] },
-        { model: Salon, as: 'salon', attributes: ['name'] },
-      ],
-      order: [['createdAt', 'DESC']],
-      limit,
-      offset,
-    });
+    const conditions = [];
+    if (rating !== undefined && rating !== '') conditions.push({ rating: parseInt(rating, 10) });
+    if (visibility === 'visible') conditions.push({ isVisible: true });
+    if (visibility === 'hidden') conditions.push({ isVisible: false });
+    if (replied === 'replied') conditions.push({ salonReply: { [Op.ne]: null } });
+    if (replied === 'unreplied') conditions.push({ salonReply: null });
+    if (salonId) conditions.push({ salonId });
+    if (dateFrom || dateTo) {
+      // Gün sınırı YEREL takvimde kuruluyor: panel `YYYY-MM-DD` tarihini yerel günden üretiyor
+      // (`reviewsQuery.localDate`). `Z` ile (UTC) parse edilirse sınır UTC+3'te 3 saat kayıyor
+      // ve günün ilk saatlerindeki yorumlar filtreden düşüyordu (AP-010 §10 S2).
+      const dateRange = {};
+      if (dateFrom) dateRange[Op.gte] = new Date(`${dateFrom}T00:00:00.000`);
+      if (dateTo) dateRange[Op.lte] = new Date(`${dateTo}T23:59:59.999`);
+      conditions.push({ createdAt: dateRange });
+    }
+    if (search) {
+      // Arama ilişkili tablolarda: include.where count'u bozar (AP-007 R1).
+      // `$customer.fullName$` SQLite'ta alan adına çevrilmiyor → LOWER(kolon) LIKE ile açıkça yazılıyor.
+      const term = `%${String(search).toLowerCase()}%`;
+      const lowerLike = (column) => sequelize.where(
+        sequelize.fn('LOWER', sequelize.col(column)),
+        { [Op.like]: term },
+      );
+      conditions.push({
+        [Op.or]: [
+          lowerLike('customer.full_name'),
+          lowerLike('salon.name'),
+          lowerLike('Review.comment'),
+        ],
+      });
+    }
+    const where = conditions.length ? { [Op.and]: conditions } : {};
 
-    successResponse(res, paginatedResponse(rows, count, page, limit));
+    const orderColumn = REVIEW_SORT_COLUMNS[sort] || 'createdAt';
+    const orderDirection = order === 'asc' ? 'ASC' : 'DESC';
+    // sort=rating: eşit puanda yeni yorum önce gelsin
+    const orderClause = sort === 'rating'
+      ? [[orderColumn, orderDirection], ['createdAt', 'DESC']]
+      : [[orderColumn, orderDirection]];
+
+    const [
+      result, totalReviews, visibleCount, hiddenCount, repliedCount, unrepliedCount,
+      ratingRows, salonIdRows,
+    ] = await Promise.all([
+      Review.findAndCountAll({
+        where,
+        include: [
+          { model: User, as: 'customer', attributes: ['fullName'] },
+          { model: Salon, as: 'salon', attributes: ['name'] },
+        ],
+        order: orderClause,
+        limit,
+        offset,
+        distinct: true,
+        subQuery: false,
+      }),
+      // counts/ratings/salons filtrelerden bağımsız (global) — panel sekmeleri ve select'ler için
+      Review.count(),
+      Review.count({ where: { isVisible: true } }),
+      Review.count({ where: { isVisible: false } }),
+      Review.count({ where: { salonReply: { [Op.ne]: null } } }),
+      Review.count({ where: { salonReply: null } }),
+      Review.findAll({
+        attributes: ['rating', [sequelize.fn('COUNT', sequelize.col('id')), 'n']],
+        group: ['rating'],
+        raw: true,
+      }),
+      // salon select'i de global: yorumu olan salonların kümesi
+      Review.findAll({ attributes: ['salonId'], group: ['salonId'], raw: true }),
+    ]);
+
+    const ratings = {};
+    REVIEW_RATING_KEYS.forEach((key) => { ratings[key] = 0; });
+    ratingRows.forEach((row) => { ratings[String(row.rating)] = parseInt(row.n, 10); });
+
+    const reviewSalonIds = salonIdRows.map((row) => row.salonId).filter(Boolean);
+    const salons = reviewSalonIds.length
+      ? await Salon.findAll({
+        where: { id: { [Op.in]: reviewSalonIds } },
+        attributes: ['id', 'name'],
+        order: [['name', 'ASC']],
+        raw: true,
+      })
+      : [];
+
+    const payload = paginatedResponse(result.rows, result.count, page, limit);
+    payload.meta.counts = {
+      all: totalReviews,
+      visible: visibleCount,
+      hidden: hiddenCount,
+      replied: repliedCount,
+      unreplied: unrepliedCount,
+    };
+    payload.meta.ratings = ratings;
+    payload.meta.salons = salons.map((salon) => ({ id: salon.id, name: salon.name }));
+
+    successResponse(res, payload);
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { getDashboard, getAllSalons, getAllAppointments, getAllReviews };
+// PATCH /admin/reviews/:id/reply
+const replyToReview = async (req, res, next) => {
+  try {
+    const review = await Review.findByPk(req.params.id);
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Yorum bulunamadı' });
+    }
+
+    await review.update({
+      salonReply: req.body.reply,
+      salonReplyAt: new Date(),
+    });
+
+    successResponse(res, {
+      id: review.id,
+      salonReply: review.salonReply,
+      salonReplyAt: review.salonReplyAt,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// DELETE /admin/reviews/:id
+const deleteReview = async (req, res, next) => {
+  try {
+    const review = await Review.findByPk(req.params.id);
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Yorum bulunamadı' });
+    }
+
+    const reviewId = review.id;
+    const { salonId } = review;
+
+    // Silme + salon puanının yeniden hesabı tek transaction'da (review.controller.create deseni)
+    const rating = await sequelize.transaction(async (t) => {
+      await review.destroy({ transaction: t });
+
+      const rows = await Review.findAll({
+        where: { salonId, isVisible: true },
+        attributes: [
+          [sequelize.fn('AVG', sequelize.col('rating')), 'avgRating'],
+          [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+        ],
+        raw: true,
+        transaction: t,
+      });
+
+      const ratingAvg = Math.round((parseFloat(rows[0].avgRating) || 0) * 10) / 10;
+      const reviewCount = parseInt(rows[0].count, 10) || 0;
+
+      await Salon.update({ ratingAvg, reviewCount }, {
+        where: { id: salonId },
+        transaction: t,
+      });
+
+      return { ratingAvg, reviewCount };
+    });
+
+    successResponse(res, {
+      id: reviewId,
+      salonId,
+      ratingAvg: rating.ratingAvg,
+      reviewCount: rating.reviewCount,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  getDashboard,
+  getAllSalons,
+  getAllAppointments,
+  getAllReviews,
+  replyToReview,
+  deleteReview,
+};

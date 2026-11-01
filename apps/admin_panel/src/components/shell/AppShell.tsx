@@ -8,6 +8,7 @@ import BottomPillNav from '@/components/shell/BottomPillNav';
 import MobileDrawer from '@/components/shell/MobileDrawer';
 import ThemeToggle from '@/components/ThemeToggle';
 import { DashboardProvider } from '@/providers/DashboardProvider';
+import { useI18n } from '@/providers/LocaleProvider';
 
 /**
  * AP-001 WP2 — kabuk. İki kritik düzeltme:
@@ -21,6 +22,7 @@ import { DashboardProvider } from '@/providers/DashboardProvider';
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { t } = useI18n();
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   if (pathname === '/login') {
@@ -37,7 +39,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              aria-label="Menüyü aç"
+              aria-label={t('nav.aria.open')}
               aria-expanded={drawerOpen}
               className="grid h-11 w-11 shrink-0 place-items-center rounded-field text-fg hover:bg-surface-variant"
             >
@@ -47,7 +49,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <span className="font-display text-[11px] font-extrabold">BS</span>
             </span>
             <span className="min-w-0 truncate font-display text-sm font-extrabold text-fg">
-              Beauty Salon
+              {t('shell.brand')}
             </span>
             <span className="ml-auto">
               <ThemeToggle />

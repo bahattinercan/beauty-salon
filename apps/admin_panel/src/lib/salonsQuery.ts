@@ -8,6 +8,10 @@
  * `sirala`, `gorunum`. Sıralama tek parametrede taşınır: `sirala=<sort>:<order>`
  * (`createdAt:desc`, `name:asc`, `rating:desc`). Varsayılanlar URL'e **yazılmaz**
  * (temiz deep-link); okuma tarafı eksik/geçersiz değeri varsayılana çeker.
+ *
+ * i18n: modül görünen metin taşımaz — sabit etiketler `labelKey` döndürür, metni
+ * sayfa `t(labelKey, vars)` ile basar (`salons.*` sözlüğü). Böylece modül React'siz
+ * ve dilsiz kalır, `node:test` altında ağsız/DOM'suz sınanabilir.
  */
 
 /** API `limit` üst sınırı 100 (plan H3); panelde üç seçenek var. */
@@ -49,25 +53,39 @@ export const SALON_STATUS_FILTERS: SalonStatusFilter[] = ['tümü', 'onaylı', '
 
 /**
  * `sirala` parametresinin tek kaynağı: UI select seçenekleri de buradan üretilir.
- * `value` = URL biçimi, `sort`/`order` = API parametreleri.
+ * `value` = URL biçimi, `sort`/`order` = API parametreleri, `labelKey` = görünen
+ * metnin `salons.*` sözlüğündeki anahtarı.
  */
 export const SALON_SORT_OPTIONS: {
   value: string;
-  label: string;
+  labelKey: string;
   sort: SalonSort;
   order: SalonSortOrder;
 }[] = [
-  { value: 'createdAt:desc', label: 'En yeni', sort: 'createdAt', order: 'desc' },
-  { value: 'createdAt:asc', label: 'En eski', sort: 'createdAt', order: 'asc' },
-  { value: 'name:asc', label: 'İsim (A-Z)', sort: 'name', order: 'asc' },
-  { value: 'rating:desc', label: 'Puan (yüksek)', sort: 'rating', order: 'desc' },
+  { value: 'createdAt:desc', labelKey: 'salons.filter.sortNewest', sort: 'createdAt', order: 'desc' },
+  { value: 'createdAt:asc', labelKey: 'salons.filter.sortOldest', sort: 'createdAt', order: 'asc' },
+  { value: 'name:asc', labelKey: 'salons.filter.sortNameAsc', sort: 'name', order: 'asc' },
+  { value: 'rating:desc', labelKey: 'salons.filter.sortRatingDesc', sort: 'rating', order: 'desc' },
 ];
 
-const STATUS_LABELS: Record<SalonStatusFilter, string> = {
-  'tümü': 'Tümü',
-  'onaylı': 'Onaylı',
-  'bekliyor': 'Bekliyor',
-  'pasif': 'Pasif',
+/** Durum filtresi sekmelerinin (`Tümü`, `Onaylı`, …) sözlük anahtarları. */
+export const SALON_STATUS_FILTER_LABEL_KEYS: Record<SalonStatusFilter, string> = {
+  'tümü': 'salons.statusFilter.all',
+  'onaylı': 'salons.statusFilter.approved',
+  'bekliyor': 'salons.statusFilter.pending',
+  'pasif': 'salons.statusFilter.passive',
+};
+
+/**
+ * Etkin filtre chip'lerinin TAM etiket anahtarları (`Durum: Onaylı`). Ayrı anahtar
+ * tutulur: chip metni sözlükte tek parçadır, sayfa `t(labelKey)` ile basar; durum
+ * kelimesini çevirmek için modülün sözlüğe bakması gerekmez.
+ */
+export const SALON_STATUS_CHIP_LABEL_KEYS: Record<SalonStatusFilter, string> = {
+  'tümü': 'salons.chips.statusAll',
+  'onaylı': 'salons.chips.statusApproved',
+  'bekliyor': 'salons.chips.statusPending',
+  'pasif': 'salons.chips.statusPassive',
 };
 
 /** Arama metni üst sınırı API validator'ı ile aynı (`search` ≤100). */
@@ -156,7 +174,10 @@ export function toApiSearchParams(state: SalonsQueryState): string {
 
 export interface SalonChip {
   key: 'status' | 'city' | 'minRating' | 'q';
-  label: string;
+  /** Chip metninin sözlük anahtarı; sayfa `t(labelKey, vars)` ile basar. */
+  labelKey: string;
+  /** `{city}`, `{rating}`, `{q}` yer tutucularının değerleri (çevrilmiş metin değil). */
+  vars?: Record<string, string | number>;
   /** Chip kaldırıldığında uygulanacak yama; sayfa her zaman 1'e döner. */
   patch: Partial<SalonsQueryState>;
 }
@@ -169,22 +190,33 @@ export function activeChips(state: SalonsQueryState): SalonChip[] {
   if (query.status !== 'tümü') {
     chips.push({
       key: 'status',
-      label: `Durum: ${STATUS_LABELS[query.status]}`,
+      labelKey: SALON_STATUS_CHIP_LABEL_KEYS[query.status],
       patch: { status: 'tümü' },
     });
   }
   if (query.city) {
-    chips.push({ key: 'city', label: `Şehir: ${query.city}`, patch: { city: '' } });
+    chips.push({
+      key: 'city',
+      labelKey: 'salons.chips.city',
+      vars: { city: query.city },
+      patch: { city: '' },
+    });
   }
   if (query.minRating !== null) {
     chips.push({
       key: 'minRating',
-      label: `Puan: ${query.minRating}+`,
+      labelKey: 'salons.chips.minRating',
+      vars: { rating: query.minRating },
       patch: { minRating: null },
     });
   }
   if (query.q) {
-    chips.push({ key: 'q', label: `Arama: "${query.q}"`, patch: { q: '' } });
+    chips.push({
+      key: 'q',
+      labelKey: 'salons.chips.q',
+      vars: { q: query.q },
+      patch: { q: '' },
+    });
   }
 
   return chips;

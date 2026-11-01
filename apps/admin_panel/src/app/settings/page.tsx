@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Save, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import { apiFetch } from '@/lib/api';
@@ -9,6 +9,28 @@ import Button from '@/components/ui/Button';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Field, Input, Select, Toggle } from '@/components/ui/Field';
 import { cx } from '@/lib/cx';
+import { useI18n } from '@/providers/LocaleProvider';
+import { LOCALE_STORAGE_KEY, parseLocaleMode, type LocaleMode } from '@/lib/i18n';
+
+/** Dil kartındaki üç seçenek; etiket aktif dile göre `t()` ile basılır. */
+const LANGUAGE_OPTIONS: { value: LocaleMode; labelKey: string }[] = [
+  { value: 'system', labelKey: 'settings.fields.languageSystem' },
+  { value: 'tr', labelKey: 'settings.fields.languageTr' },
+  { value: 'en', labelKey: 'settings.fields.languageEn' },
+];
+
+/**
+ * localStorage'daki geçerli dil tercihi (yoksa `null`). Sunucudaki `language`
+ * değeri yalnız yerel tercih YOKKEN uygulanır — kullanıcı seçimi ezilmez.
+ */
+function readStoredLocaleMode(): LocaleMode | null {
+  try {
+    return parseLocaleMode(window.localStorage.getItem(LOCALE_STORAGE_KEY));
+  } catch {
+    /* private mode / storage kapalı: yerel tercih yok sayılır */
+    return null;
+  }
+}
 
 function ToggleRow({
   title,
@@ -33,6 +55,15 @@ function ToggleRow({
 }
 
 export default function SettingsPage() {
+  const { mode, setMode, t } = useI18n();
+
+  // Sunucu dili bir kez, yalnızca yerel tercih yokken uygulanır. Yükleme effect'i
+  // tek kez koştuğu için `setMode` ref üzerinden okunur (dil değişimi formu sıfırlamaz).
+  const setModeRef = useRef(setMode);
+  useEffect(() => {
+    setModeRef.current = setMode;
+  }, [setMode]);
+
   // Genel
   const [platformName, setPlatformName] = useState('Beauty Salon');
   const [contactEmail, setContactEmail] = useState('');
@@ -52,7 +83,12 @@ export default function SettingsPage() {
   const [maintenanceModeEnabled, setMaintenanceModeEnabled] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  // Metin anahtar olarak tutulur: dil değişince bildirim de çevrilir.
+  const [saveMessage, setSaveMessage] = useState<{
+    type: 'success' | 'error';
+    messageKey: string;
+    detail?: string | null;
+  } | null>(null);
 
   useEffect(() => {
     apiFetch<{ data: Record<string, unknown> }>('/settings')
@@ -67,11 +103,18 @@ export default function SettingsPage() {
         setNewSalonNotificationsEnabled(Boolean(data.newSalonNotificationsEnabled ?? true));
         setNewReviewNotificationsEnabled(Boolean(data.newReviewNotificationsEnabled ?? true));
         setMaintenanceModeEnabled(Boolean(data.maintenanceModeEnabled ?? false));
+
+        // Sunucu dili yalnız yerel tercih yokken uygulanır (yerel seçim önceliklidir).
+        const serverLanguage = parseLocaleMode(
+          typeof data.language === 'string' ? data.language : null
+        );
+        if (serverLanguage && readStoredLocaleMode() === null) setModeRef.current(serverLanguage);
       })
       .catch((err: unknown) => {
         setSaveMessage({
           type: 'error',
-          message: err instanceof Error ? err.message : 'Ayarlar yüklenemedi',
+          messageKey: 'settings.loadFailed',
+          detail: err instanceof Error ? err.message : null,
         });
       });
   }, []);
@@ -92,12 +135,13 @@ export default function SettingsPage() {
           newSalonNotificationsEnabled,
           newReviewNotificationsEnabled,
           maintenanceModeEnabled,
+          language: mode,
         }),
       });
-      setSaveMessage({ type: 'success', message: 'Ayarlar başarıyla kaydedildi.' });
+      setSaveMessage({ type: 'success', messageKey: 'settings.saved' });
       setTimeout(() => setSaveMessage(null), 3000);
     } catch {
-      setSaveMessage({ type: 'error', message: 'Ayarlar kaydedilirken bir hata oluştu.' });
+      setSaveMessage({ type: 'error', messageKey: 'settings.saveFailed' });
       setTimeout(() => setSaveMessage(null), 3000);
     } finally {
       setIsSaving(false);
@@ -107,12 +151,12 @@ export default function SettingsPage() {
   return (
     <>
       <PageHeader
-        title="Ayarlar"
-        subtitle="Platform, güvenlik ve bildirim tercihleri"
+        title={t('settings.title')}
+        subtitle={t('settings.subtitle')}
         actions={
           <Button size="sm" onClick={handleSave} disabled={isSaving}>
             <Save className="h-4 w-4" aria-hidden />
-            {isSaving ? 'Kaydediliyor…' : 'Kaydet'}
+            {isSaving ? t('settings.saving') : t('settings.save')}
           </Button>
         }
       />
@@ -132,50 +176,75 @@ export default function SettingsPage() {
           ) : (
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
           )}
-          <p className="text-sm font-semibold">{saveMessage.message}</p>
+          <p className="text-sm font-semibold">{saveMessage.detail ?? t(saveMessage.messageKey)}</p>
         </div>
       ) : null}
 
       <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader
-            title="Görünüm"
-            description="Tema tercihi bu tarayıcıda saklanır; sunucu ayarlarına kaydedilmez."
+            title={t('settings.sections.appearance')}
+            description={t('settings.sections.appearanceDescription')}
           />
           <CardBody>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-fg-muted">Light / Dark / Sistem — üst barda da erişilebilir.</p>
+              <p className="text-sm text-fg-muted">{t('settings.sections.appearanceHint')}</p>
               <ThemeToggle />
             </div>
           </CardBody>
         </Card>
 
         <Card>
-          <CardHeader title="Genel Ayarlar" />
+          <CardHeader
+            title={t('settings.sections.language')}
+            description={t('settings.sections.languageDescription')}
+          />
+          <CardBody>
+            <Field label={t('settings.fields.language')} htmlFor="language">
+              <Select
+                id="language"
+                value={mode}
+                onChange={(e) => {
+                  const next = parseLocaleMode(e.target.value);
+                  if (next) setMode(next);
+                }}
+              >
+                {LANGUAGE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {t(option.labelKey)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader title={t('settings.sections.general')} />
           <CardBody>
             <div className="space-y-4">
-              <Field label="Platform adı" htmlFor="platform-name">
+              <Field label={t('settings.fields.platformName')} htmlFor="platform-name">
                 <Input
                   id="platform-name"
                   value={platformName}
                   onChange={(e) => setPlatformName(e.target.value)}
                 />
               </Field>
-              <Field label="İletişim e-postası" htmlFor="contact-email">
+              <Field label={t('settings.fields.contactEmail')} htmlFor="contact-email">
                 <Input
                   id="contact-email"
                   type="email"
                   value={contactEmail}
                   onChange={(e) => setContactEmail(e.target.value)}
-                  placeholder="destek@beautysalon.com"
+                  placeholder={t('settings.fields.contactEmailPlaceholder')}
                 />
               </Field>
-              <Field label="Destek telefonu" htmlFor="support-phone">
+              <Field label={t('settings.fields.supportPhone')} htmlFor="support-phone">
                 <Input
                   id="support-phone"
                   value={supportPhone}
                   onChange={(e) => setSupportPhone(e.target.value)}
-                  placeholder="+90 212 000 00 00"
+                  placeholder={t('settings.fields.supportPhonePlaceholder')}
                 />
               </Field>
             </div>
@@ -183,10 +252,10 @@ export default function SettingsPage() {
         </Card>
 
         <Card>
-          <CardHeader title="Güvenlik Ayarları" />
+          <CardHeader title={t('settings.sections.security')} />
           <CardBody>
             <div className="space-y-4">
-              <Field label="Maksimum giriş denemesi" htmlFor="max-attempts">
+              <Field label={t('settings.fields.maxLoginAttempts')} htmlFor="max-attempts">
                 <Input
                   id="max-attempts"
                   type="number"
@@ -195,7 +264,7 @@ export default function SettingsPage() {
                   onChange={(e) => setMaxLoginAttempts(Number(e.target.value))}
                 />
               </Field>
-              <Field label="Token süresi (dakika)" htmlFor="token-duration">
+              <Field label={t('settings.fields.tokenDuration')} htmlFor="token-duration">
                 <Select
                   id="token-duration"
                   value={tokenDuration}
@@ -203,15 +272,15 @@ export default function SettingsPage() {
                 >
                   {['15', '30', '60', '120'].map((v) => (
                     <option key={v} value={v}>
-                      {v} dakika
+                      {t('settings.fields.tokenDurationOption', { value: v })}
                     </option>
                   ))}
                 </Select>
               </Field>
               <div className="divide-y divide-border">
                 <ToggleRow
-                  title="Rate limiting"
-                  description="Aşırı isteklerde bulunan istemcileri sınırla."
+                  title={t('settings.fields.rateLimiting')}
+                  description={t('settings.fields.rateLimitingDescription')}
                   checked={rateLimitingEnabled}
                   onChange={setRateLimitingEnabled}
                 />
@@ -221,22 +290,22 @@ export default function SettingsPage() {
         </Card>
 
         <Card>
-          <CardHeader title="Bildirim Ayarları" />
+          <CardHeader title={t('settings.sections.notifications')} />
           <CardBody>
             <div className="divide-y divide-border">
               <ToggleRow
-                title="E-posta bildirimleri"
-                description="Panel bildirimleri e-posta ile gönderilsin."
+                title={t('settings.fields.emailNotifications')}
+                description={t('settings.fields.emailNotificationsDescription')}
                 checked={emailNotificationsEnabled}
                 onChange={setEmailNotificationsEnabled}
               />
               <ToggleRow
-                title="Yeni salon başvurusu"
+                title={t('settings.fields.newSalonNotifications')}
                 checked={newSalonNotificationsEnabled}
                 onChange={setNewSalonNotificationsEnabled}
               />
               <ToggleRow
-                title="Yeni yorum"
+                title={t('settings.fields.newReviewNotifications')}
                 checked={newReviewNotificationsEnabled}
                 onChange={setNewReviewNotificationsEnabled}
               />
@@ -246,13 +315,13 @@ export default function SettingsPage() {
 
         <Card className={cx(maintenanceModeEnabled && 'border-warning/40 bg-warning/8')}>
           <CardHeader
-            title="Bakım Modu"
-            description="Açıkken müşteri ve salon uygulamaları bakım sayfası görür."
+            title={t('settings.sections.maintenance')}
+            description={t('settings.sections.maintenanceDescription')}
           />
           <CardBody>
             <ToggleRow
-              title="Bakım modu aktif"
-              description="Yalnızca panel erişimi açık kalır."
+              title={t('settings.maintenance.active')}
+              description={t('settings.maintenance.activeDescription')}
               checked={maintenanceModeEnabled}
               onChange={setMaintenanceModeEnabled}
             />
@@ -263,7 +332,7 @@ export default function SettingsPage() {
       <div className="mt-4 flex justify-end">
         <Button onClick={handleSave} disabled={isSaving}>
           <Save className="h-4 w-4" aria-hidden />
-          {isSaving ? 'Kaydediliyor…' : 'Ayarları kaydet'}
+          {isSaving ? t('settings.saving') : t('settings.saveAll')}
         </Button>
       </div>
     </>

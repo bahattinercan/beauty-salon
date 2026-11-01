@@ -27,12 +27,16 @@ vi.mock('@/providers/DashboardProvider', () => ({
 
 import AppShell from '@/components/shell/AppShell';
 import ThemeProvider from '@/providers/ThemeProvider';
+import LocaleProvider from '@/providers/LocaleProvider';
 
+/** Türkçe metin assert'leri için dil `initialMode="tr"` ile sabitlenir (jsdom dili en-US). */
 function renderShell(children: React.ReactNode = <p>sayfa içeriği</p>) {
   return render(
-    <ThemeProvider>
-      <AppShell>{children}</AppShell>
-    </ThemeProvider>
+    <LocaleProvider initialMode="tr">
+      <ThemeProvider>
+        <AppShell>{children}</AppShell>
+      </ThemeProvider>
+    </LocaleProvider>
   );
 }
 

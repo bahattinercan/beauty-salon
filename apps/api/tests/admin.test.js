@@ -571,4 +571,465 @@ describe('Admin API', () => {
       }
     });
   });
+
+  // --- Yorum yönetimi: filtre/meta + reply/delete testleri için ortak veri ---
+  const { User, Salon, Staff, Service, Appointment, Review } = require('../src/models');
+
+  let bellaSalon;
+  let bellaStaff;
+  let reviewBellaUnreplied;
+  let reviewBellaHidden;
+
+  // reviews.appointment_id unique: her yorum kendi randevusunu ister
+  const createReviewWithAppointment = async ({
+    customerId, salonId, staffId, serviceId, rating, comment, isVisible = true, salonReply = null,
+  }) => {
+    const appointment = await Appointment.create({
+      customerId,
+      salonId,
+      staffId,
+      serviceId,
+      date: '2026-01-05',
+      startTime: '10:00:00',
+      endTime: '11:00:00',
+      status: 'COMPLETED',
+    });
+
+    return Review.create({
+      customerId,
+      salonId,
+      appointmentId: appointment.id,
+      rating,
+      comment,
+      isVisible,
+      salonReply,
+      salonReplyAt: salonReply ? new Date() : null,
+    });
+  };
+
+  describe('GET /admin/reviews — filtreler, sıralama, meta', () => {
+    let salon1;
+    let customer1;
+    let customer2;
+    let staff1;
+    let service1;
+    let service4;
+
+    const getReviews = (query) => request
+      .get('/api/v1/admin/reviews')
+      .query(query)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    const addDays = (days) => {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      return date.toISOString().split('T')[0];
+    };
+
+    before(async () => {
+      salon1 = await Salon.findOne({ where: { name: 'Elegance Beauty Studio' } });
+      bellaSalon = await Salon.findOne({ where: { name: 'Bella Güzellik' } });
+      customer1 = await User.findOne({ where: { email: 'customer@test.com' } });
+      customer2 = await User.findOne({ where: { email: 'customer2@test.com' } });
+      staff1 = await Staff.findOne({ where: { salonId: salon1.id, fullName: 'Merve Demir' } });
+      service1 = await Service.findOne({ where: { name: 'Saç Kesimi' } });
+      service4 = await Service.findOne({ where: { name: 'Pedikür' } });
+      bellaStaff = await Staff.create({
+        salonId: bellaSalon.id,
+        fullName: 'Nazlı Ak',
+        title: 'Tırnak Uzmanı',
+        isActive: true,
+      });
+
+      // Seed yorumu: Elegance / Zeynep Kaya / 5 / yanıtlı / görünür
+      reviewBellaUnreplied = await createReviewWithAppointment({
+        customerId: customer2.id,
+        salonId: bellaSalon.id,
+        staffId: bellaStaff.id,
+        serviceId: service4.id,
+        rating: 3,
+        comment: 'Fiyatı biraz yüksekti',
+      });
+
+      reviewBellaHidden = await createReviewWithAppointment({
+        customerId: customer1.id,
+        salonId: bellaSalon.id,
+        staffId: bellaStaff.id,
+        serviceId: service4.id,
+        rating: 4,
+        comment: 'Temiz ve düzenli bir salon',
+        isVisible: false,
+      });
+
+      await createReviewWithAppointment({
+        customerId: customer2.id,
+        salonId: salon1.id,
+        staffId: staff1.id,
+        serviceId: service1.id,
+        rating: 2,
+        comment: 'Beklediğimden kısa sürdü',
+        salonReply: 'Geri bildiriminiz için teşekkürler',
+      });
+    });
+
+    it('parametresiz istek mevcut davranışı korur (createdAt DESC) ve meta doldurur', async () => {
+      const res = await getReviews({});
+
+      expect(res.status).to.equal(200);
+      expect(res.body.success).to.equal(true);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(4);
+      expect(meta.page).to.equal(1);
+      expect(meta.limit).to.equal(20);
+      expect(meta.totalPages).to.equal(1);
+
+      const createdAt = data.map((row) => new Date(row.createdAt).getTime());
+      expect(createdAt).to.deep.equal([...createdAt].sort((a, b) => b - a));
+
+      expect(meta.counts).to.deep.equal({
+        all: 4, visible: 3, hidden: 1, replied: 2, unreplied: 2,
+      });
+      expect(meta.ratings).to.deep.equal({ 1: 0, 2: 1, 3: 1, 4: 1, 5: 1 });
+      expect(meta.salons).to.deep.equal([
+        { id: bellaSalon.id, name: 'Bella Güzellik' },
+        { id: salon1.id, name: 'Elegance Beauty Studio' },
+      ]);
+    });
+
+    it('search müşteri adında eşleşir (customer.fullName)', async () => {
+      const res = await getReviews({ search: 'elif', limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(2);
+      expect(data.length).to.equal(2);
+      data.forEach((row) => {
+        expect(row.customer.fullName.toLowerCase()).to.contain('elif');
+      });
+    });
+
+    it('search salon adında eşleşir, count join yüzünden şişmez (salon.name)', async () => {
+      const res = await getReviews({ search: 'bella', limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(2);
+      expect(data.length).to.equal(2);
+      data.forEach((row) => {
+        expect(row.salon.name).to.equal('Bella Güzellik');
+      });
+    });
+
+    it('search yorum metninde eşleşir (Review.comment)', async () => {
+      const res = await getReviews({ search: 'kısa', limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(1);
+      expect(data[0].comment).to.contain('kısa');
+    });
+
+    it('rating filtresi yalnız o puanı döndürür', async () => {
+      const res = await getReviews({ rating: 4, limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(1);
+      data.forEach((row) => {
+        expect(row.rating).to.equal(4);
+      });
+    });
+
+    it('visibility=hidden yalnız gizli yorumları döndürür', async () => {
+      const res = await getReviews({ visibility: 'hidden', limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(1);
+      expect(data[0].id).to.equal(reviewBellaHidden.id);
+      expect(data[0].isVisible).to.equal(false);
+    });
+
+    it('replied=unreplied yalnız yanıtsız yorumları döndürür', async () => {
+      const res = await getReviews({ replied: 'unreplied', limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(2);
+      data.forEach((row) => {
+        expect(row.salonReply).to.equal(null);
+      });
+    });
+
+    it('replied=replied yalnız yanıtlı yorumları döndürür', async () => {
+      const res = await getReviews({ replied: 'replied', limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(2);
+      data.forEach((row) => {
+        expect(row.salonReply).to.be.a('string').that.is.not.empty;
+      });
+    });
+
+    it('salonId filtresi yalnız o salonun yorumlarını döndürür', async () => {
+      const res = await getReviews({ salonId: bellaSalon.id, limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const { data, meta } = res.body.data;
+      expect(meta.total).to.equal(2);
+      data.forEach((row) => {
+        expect(row.salonId).to.equal(bellaSalon.id);
+      });
+    });
+
+    it('dateFrom/dateTo aralık filtresi aralık dışını döndürmez', async () => {
+      const inRange = await getReviews({ dateFrom: '2000-01-01', dateTo: addDays(0), limit: 100 });
+      expect(inRange.status).to.equal(200);
+      expect(inRange.body.data.meta.total).to.equal(4);
+
+      const future = await getReviews({ dateFrom: addDays(1) });
+      expect(future.status).to.equal(200);
+      expect(future.body.data.meta.total).to.equal(0);
+
+      const past = await getReviews({ dateTo: '2000-12-31' });
+      expect(past.status).to.equal(200);
+      expect(past.body.data.meta.total).to.equal(0);
+      expect(past.body.data.data).to.deep.equal([]);
+    });
+
+    it('sort=rating&order=asc puana göre artan sıralar', async () => {
+      const res = await getReviews({ sort: 'rating', order: 'asc', limit: 100 });
+
+      expect(res.status).to.equal(200);
+      const ratings = res.body.data.data.map((row) => row.rating);
+      expect(ratings).to.deep.equal([2, 3, 4, 5]);
+    });
+
+    it('meta.counts/ratings/salons filtre uygulanınca değişmez (global)', async () => {
+      const plain = await getReviews({ limit: 100 });
+      const filtered = await getReviews({ visibility: 'hidden', limit: 100 });
+
+      expect(filtered.status).to.equal(200);
+      expect(filtered.body.data.meta.total).to.equal(1);
+      expect(filtered.body.data.meta.counts).to.deep.equal(plain.body.data.meta.counts);
+      expect(filtered.body.data.meta.ratings).to.deep.equal(plain.body.data.meta.ratings);
+      expect(filtered.body.data.meta.salons).to.deep.equal(plain.body.data.meta.salons);
+      expect(filtered.body.data.meta.salons.length).to.equal(2);
+    });
+
+    it('geçersiz parametreler 400 döndürür', async () => {
+      const cases = [
+        { rating: 9 },
+        { rating: 0 },
+        { visibility: 'foo' },
+        { replied: 'foo' },
+        { sort: 'foo' },
+        { order: 'sideways' },
+        { salonId: 'uuid-degil' },
+        { dateFrom: '2025-12-31', dateTo: '2025-01-01' },
+        { dateFrom: '31.12.2025' },
+      ];
+
+      for (const query of cases) {
+        const res = await getReviews(query);
+        expect(res.status, JSON.stringify(query)).to.equal(400);
+        expect(res.body.success).to.equal(false);
+        expect(res.body.errors).to.be.an('array').that.is.not.empty;
+      }
+    });
+
+    it('limit=1000 kırpılır, limit=50 korunur', async () => {
+      const clipped = await getReviews({ limit: 1000 });
+      expect(clipped.status).to.equal(200);
+      expect(clipped.body.data.meta.limit).to.equal(100);
+
+      const fifty = await getReviews({ limit: 50 });
+      expect(fifty.status).to.equal(200);
+      expect(fifty.body.data.meta.limit).to.equal(50);
+    });
+
+    it('dateFrom gün sınırı YEREL takvimde: gün başından 30 dk sonrası döner, önceki gün 23:30 dönmez', async () => {
+      // Sınır kanıtı: panel `YYYY-MM-DD` tarihini yerel günden üretiyor, API de aynı sınırı
+      // yerel okumalı. UTC okunsaydı sınır UTC+3'te 3 saat kayar ve 00:30'daki yorum düşerdi.
+      const dayStart = new Date();
+      dayStart.setHours(0, 0, 0, 0);
+      const day = [
+        dayStart.getFullYear(),
+        String(dayStart.getMonth() + 1).padStart(2, '0'),
+        String(dayStart.getDate()).padStart(2, '0'),
+      ].join('-');
+
+      const makeReviewAt = async (comment, createdAt) => {
+        const review = await createReviewWithAppointment({
+          customerId: customer2.id,
+          salonId: salon1.id,
+          staffId: staff1.id,
+          serviceId: service1.id,
+          rating: 5,
+          comment,
+        });
+        // createdAt'i elle sabitliyoruz: sınır davranışı yalnız zaman damgasına bağlı.
+        await Review.update({ createdAt }, { where: { id: review.id }, silent: true });
+        return review;
+      };
+
+      const afterMidnight = await makeReviewAt(
+        'AP-010 sınır: gün başı 00:30',
+        new Date(dayStart.getTime() + 30 * 60 * 1000),
+      );
+      const beforeMidnight = await makeReviewAt(
+        'AP-010 sınır: önceki gün 23:30',
+        new Date(dayStart.getTime() - 30 * 60 * 1000),
+      );
+
+      try {
+        const res = await getReviews({ dateFrom: day, limit: 100 });
+        expect(res.status).to.equal(200);
+
+        const comments = res.body.data.data.map((row) => row.comment);
+        expect(comments).to.include(afterMidnight.comment);
+        expect(comments).to.not.include(beforeMidnight.comment);
+      } finally {
+        // Sonraki describe'ların sayaçlarını etkilememesi için kendi verimizi temizliyoruz.
+        await Review.destroy({ where: { id: [afterMidnight.id, beforeMidnight.id] } });
+      }
+    });
+  });
+
+  describe('PATCH /admin/reviews/:id/reply', () => {
+    const patchReply = (id, body, token = adminToken) => request
+      .patch(`/api/v1/admin/reviews/${id}/reply`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(body);
+
+    it('admin yanıtı yazar, trim eder ve zamanı döndürür', async () => {
+      const res = await patchReply(reviewBellaUnreplied.id, { reply: '  Teşekkür ederiz!  ' });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.success).to.equal(true);
+      expect(res.body.data.id).to.equal(reviewBellaUnreplied.id);
+      expect(res.body.data.salonReply).to.equal('Teşekkür ederiz!');
+      expect(res.body.data.salonReplyAt).to.be.a('string');
+
+      const stored = await Review.findByPk(reviewBellaUnreplied.id);
+      expect(stored.salonReply).to.equal('Teşekkür ederiz!');
+      expect(stored.salonReplyAt).to.be.instanceOf(Date);
+    });
+
+    it('var olan yanıtı günceller', async () => {
+      const res = await patchReply(reviewBellaUnreplied.id, { reply: 'Güncellenmiş yanıt' });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.data.salonReply).to.equal('Güncellenmiş yanıt');
+    });
+
+    it('olmayan yorum için 404 döndürür', async () => {
+      const res = await patchReply('11111111-1111-4111-8111-111111111111', { reply: 'Merhaba' });
+
+      expect(res.status).to.equal(404);
+      expect(res.body.success).to.equal(false);
+      expect(res.body.message).to.equal('Yorum bulunamadı');
+    });
+
+    it('boş veya 2000 karakterden uzun yanıt 400 döndürür', async () => {
+      const empty = await patchReply(reviewBellaUnreplied.id, { reply: '   ' });
+      expect(empty.status).to.equal(400);
+      expect(empty.body.errors).to.be.an('array').that.is.not.empty;
+
+      const missing = await patchReply(reviewBellaUnreplied.id, {});
+      expect(missing.status).to.equal(400);
+
+      const tooLong = await patchReply(reviewBellaUnreplied.id, { reply: 'a'.repeat(2001) });
+      expect(tooLong.status).to.equal(400);
+      expect(tooLong.body.errors).to.be.an('array').that.is.not.empty;
+    });
+
+    it('admin olmayan kullanıcı 403 alır', async () => {
+      const res = await patchReply(reviewBellaUnreplied.id, { reply: 'Yetkisiz' }, ownerToken);
+
+      expect(res.status).to.equal(403);
+    });
+  });
+
+  describe('DELETE /admin/reviews/:id', () => {
+    let seedReview;
+    let extraReview;
+
+    const deleteReview = (id, token = adminToken) => request
+      .delete(`/api/v1/admin/reviews/${id}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    before(async () => {
+      const salon1 = await Salon.findOne({ where: { name: 'Elegance Beauty Studio' } });
+      seedReview = await Review.findOne({ where: { salonId: salon1.id } });
+
+      const customer1 = await User.findOne({ where: { email: 'customer@test.com' } });
+      const service4 = await Service.findOne({ where: { name: 'Pedikür' } });
+      // Bella'da görünür iki yorum kalsın: silme sonrası ortalama yeniden hesaplanabilsin
+      extraReview = await createReviewWithAppointment({
+        customerId: customer1.id,
+        salonId: bellaSalon.id,
+        staffId: bellaStaff.id,
+        serviceId: service4.id,
+        rating: 4,
+        comment: 'Personel çok ilgiliydi',
+      });
+
+      await bellaSalon.update({ ratingAvg: 3.5, reviewCount: 2 });
+    });
+
+    it('admin olmayan kullanıcı 403 alır ve yorum silinmez', async () => {
+      const res = await deleteReview(seedReview.id, ownerToken);
+
+      expect(res.status).to.equal(403);
+      expect(await Review.findByPk(seedReview.id)).to.not.equal(null);
+    });
+
+    it('yorumu siler ve salon puanını görünür yorumlardan yeniden hesaplar', async () => {
+      const res = await deleteReview(reviewBellaUnreplied.id);
+
+      expect(res.status).to.equal(200);
+      expect(res.body.success).to.equal(true);
+      expect(res.body.data).to.deep.equal({
+        id: reviewBellaUnreplied.id,
+        salonId: bellaSalon.id,
+        ratingAvg: 4,
+        reviewCount: 1,
+      });
+
+      expect(await Review.findByPk(reviewBellaUnreplied.id)).to.equal(null);
+      const salon = await Salon.findByPk(bellaSalon.id);
+      expect(salon.ratingAvg).to.equal(4);
+      expect(salon.reviewCount).to.equal(1);
+    });
+
+    it('gizli yorum silinince ortalamaya katılmaz', async () => {
+      const res = await deleteReview(reviewBellaHidden.id);
+
+      expect(res.status).to.equal(200);
+      expect(res.body.data.ratingAvg).to.equal(4);
+      expect(res.body.data.reviewCount).to.equal(1);
+    });
+
+    it('son görünür yorum silinince salon 0/0 olur', async () => {
+      const res = await deleteReview(extraReview.id);
+
+      expect(res.status).to.equal(200);
+      expect(res.body.data.ratingAvg).to.equal(0);
+      expect(res.body.data.reviewCount).to.equal(0);
+
+      const salon = await Salon.findByPk(bellaSalon.id);
+      expect(salon.ratingAvg).to.equal(0);
+      expect(salon.reviewCount).to.equal(0);
+    });
+
+    it('olmayan yorum için 404 döndürür', async () => {
+      const res = await deleteReview('11111111-1111-4111-8111-111111111111');
+
+      expect(res.status).to.equal(404);
+      expect(res.body.success).to.equal(false);
+      expect(res.body.message).to.equal('Yorum bulunamadı');
+    });
+  });
 });

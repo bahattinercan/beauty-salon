@@ -17,16 +17,28 @@ import WorkingHoursEditor, {
   WORKING_DAYS,
   type WorkingHours,
 } from '@/components/salons/WorkingHoursEditor';
+import LocaleProvider from '@/providers/LocaleProvider';
+import { translate } from '@/lib/i18n';
+
+import type { ReactElement } from 'react';
+
+/**
+ * Gün adları/`aria-label`'lar sözlükten `t()` ile basılır; test Türkçe kopyayı
+ * görsün diye her render `LocaleProvider initialMode="tr"` ile sarmalanır.
+ */
+const renderTr = (ui: ReactElement) =>
+  render(<LocaleProvider initialMode="tr">{ui}</LocaleProvider>);
 
 const setTime = (name: string, value: string) =>
   fireEvent.change(screen.getByLabelText(name), { target: { value } });
 
 describe('WorkingHoursEditor', () => {
   test('7 günün tamamı tek grup altında, Türkçe etiketlerle basılır', () => {
-    render(<WorkingHoursEditor value={{}} onChange={() => {}} />);
+    renderTr(<WorkingHoursEditor value={{}} onChange={() => {}} />);
     expect(screen.getByRole('group', { name: 'Çalışma saatleri' })).toBeTruthy();
     expect(screen.getAllByRole('switch')).toHaveLength(7);
-    expect(WORKING_DAYS.map((d) => d.label)).toEqual([
+    // Gün adları metin değil anahtar taşır (`labelKey`); metin sözlükten gelir.
+    expect(WORKING_DAYS.map((day) => translate('tr', day.labelKey))).toEqual([
       'Pazartesi',
       'Salı',
       'Çarşamba',
@@ -35,13 +47,15 @@ describe('WorkingHoursEditor', () => {
       'Cumartesi',
       'Pazar',
     ]);
-    for (const { label } of WORKING_DAYS) {
+    for (const { labelKey } of WORKING_DAYS) {
+      const label = translate('tr', labelKey);
+      expect(labelKey.startsWith('salons.workingHours.days.')).toBe(true);
       expect(screen.getByRole('switch', { name: `${label} açık` })).toBeTruthy();
     }
   });
 
   test('value’daki günler açık gelir ve saatleri inputlarda görünür', () => {
-    render(
+    renderTr(
       <WorkingHoursEditor
         value={{ monday: { open: '09:00', close: '21:00' }, saturday: { open: '10:00', close: '20:00' } }}
         onChange={() => {}}
@@ -56,14 +70,14 @@ describe('WorkingHoursEditor', () => {
 
   test('kapalı günü açınca varsayılan saatler yazılır', async () => {
     const onChange = vi.fn();
-    render(<WorkingHoursEditor value={{}} onChange={onChange} />);
+    renderTr(<WorkingHoursEditor value={{}} onChange={onChange} />);
     await userEvent.click(screen.getByRole('switch', { name: 'Pazar açık' }));
     expect(onChange.mock.calls[0][0]).toEqual({ sunday: DEFAULT_DAY_HOURS });
   });
 
   test('günü kapatınca anahtar workingHours’a HİÇ yazılmaz (kapalı = anahtar yok)', async () => {
     const onChange = vi.fn();
-    render(
+    renderTr(
       <WorkingHoursEditor
         value={{
           monday: { open: '09:00', close: '18:00' },
@@ -80,7 +94,7 @@ describe('WorkingHoursEditor', () => {
 
   test('saat değişimi yalnız o günü günceller; kapalı günde saat inputları devre dışıdır', () => {
     const onChange = vi.fn();
-    render(
+    renderTr(
       <WorkingHoursEditor
         value={{ friday: { open: '09:00', close: '18:00' } }}
         onChange={onChange}
@@ -96,7 +110,7 @@ describe('WorkingHoursEditor', () => {
 
   test('kapanış saati de aynı günün kümesini koruyarak güncellenir', () => {
     const onChange = vi.fn();
-    render(
+    renderTr(
       <WorkingHoursEditor value={{ friday: { open: '10:00', close: '20:00' } }} onChange={onChange} />
     );
     setTime('Cuma kapanış saati', '19:30');
@@ -108,7 +122,7 @@ describe('WorkingHoursEditor', () => {
     const frozen = Object.freeze({
       monday: Object.freeze({ open: '09:00', close: '18:00' }),
     }) as WorkingHours;
-    render(<WorkingHoursEditor value={frozen} onChange={onChange} />);
+    renderTr(<WorkingHoursEditor value={frozen} onChange={onChange} />);
     setTime('Pazartesi açılış saati', '11:00');
     const next = onChange.mock.calls[0][0] as WorkingHours;
     expect(next).not.toBe(frozen);
@@ -123,7 +137,7 @@ describe('WorkingHoursEditor', () => {
   });
 
   test('gün satırları tablo gibi hizalanır: başlık satırında açılış/kapanış etiketleri var', () => {
-    render(<WorkingHoursEditor value={{}} onChange={() => {}} />);
+    renderTr(<WorkingHoursEditor value={{}} onChange={() => {}} />);
     expect(screen.getByText('Açılış')).toBeTruthy();
     expect(screen.getByText('Kapanış')).toBeTruthy();
     expect(screen.getByText('Açık')).toBeTruthy();

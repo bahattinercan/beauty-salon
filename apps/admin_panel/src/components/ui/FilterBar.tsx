@@ -1,6 +1,7 @@
 'use client';
 
 import { cx } from '@/lib/cx';
+import { useI18n } from '@/providers/LocaleProvider';
 
 /**
  * AP-007 W2 — tek satır filtre çubuğu kabuğu (plan §5.1, §5.3).
@@ -24,7 +25,7 @@ export default function FilterBar({
   trailing,
   children,
   className,
-  ariaLabel = 'Filtre çubuğu',
+  ariaLabel,
 }: {
   leading?: React.ReactNode;
   trailing?: React.ReactNode;
@@ -32,10 +33,12 @@ export default function FilterBar({
   className?: string;
   ariaLabel?: string;
 }) {
+  const { t } = useI18n();
+
   return (
     <div
       role="group"
-      aria-label={ariaLabel}
+      aria-label={ariaLabel ?? t('ui.filterBar.label')}
       className={cx(
         'flex min-w-0 flex-wrap items-center gap-2 [&>*]:min-w-0 lg:flex-nowrap',
         className

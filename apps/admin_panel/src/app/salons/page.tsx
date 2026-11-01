@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Search, SearchX } from "lucide-react";
 import { apiFetch } from "@/lib/api";
@@ -10,7 +10,7 @@ import DataTable, { type Column } from "@/components/ui/DataTable";
 import Dialog from "@/components/ui/Dialog";
 import Pagination from "@/components/ui/Pagination";
 import SalonCard from "@/components/ui/SalonCard";
-import { StatusBadge, SALON_STATUS } from "@/components/ui/Badge";
+import { StatusBadge, SALON_STATUS, localizeStatusMap } from "@/components/ui/Badge";
 import Tabs from "@/components/ui/Tabs";
 import { Input, Select } from "@/components/ui/Field";
 import { ErrorState } from "@/components/ui/States";
@@ -20,10 +20,13 @@ import FilterChips from "@/components/ui/FilterChips";
 import SalonActions, { type SalonPendingAction } from "@/components/salons/SalonActions";
 import SalonEditDialog, { type SalonEditPayload } from "@/components/salons/SalonEditDialog";
 import useDebouncedValue from "@/lib/useDebouncedValue";
+import { useI18n } from "@/providers/LocaleProvider";
 import {
   DEFAULT_SALONS_QUERY,
   PAGE_SIZE_STORAGE_KEY,
   SALON_SORT_OPTIONS,
+  SALON_STATUS_FILTERS,
+  SALON_STATUS_FILTER_LABEL_KEYS,
   SALONS_PAGE_SIZES,
   activeChips,
   buildSalonsQuery,
@@ -159,7 +162,12 @@ function mapSalon(s: ApiSalon, now: number): Salon {
 const EMPTY_META: SalonsMeta = { total: 0, page: 1, limit: DEFAULT_SALONS_QUERY.limit, totalPages: 1 };
 
 export default function SalonsPage() {
+  const { t } = useI18n();
   const router = useRouter();
+
+  // Durum adları paylaşılan `SALON_STATUS` map'inden gelir; renk tonu orada kalır,
+  // yalnız etiket (`ui.badge.salon.*`) aktif dile çevrilir.
+  const statusMap = useMemo(() => localizeStatusMap(SALON_STATUS, t), [t]);
 
   const [query, setQuery] = useState<SalonsQueryState>(DEFAULT_SALONS_QUERY);
   const [hydrated, setHydrated] = useState(false);
@@ -217,7 +225,7 @@ export default function SalonsPage() {
       } catch (err) {
         // R3: iptal edilen istek state yazmaz (yavaş cevap yeni filtreyi ezmesin).
         if (signal.aborted) return;
-        const msg = err instanceof Error ? err.message : "Veri yüklenemedi";
+        const msg = err instanceof Error ? err.message : t("salons.error.load");
         if (msg.includes("401") || msg.includes("403")) {
           router.push("/login");
           return;
@@ -227,7 +235,7 @@ export default function SalonsPage() {
         if (!signal.aborted) setLoading(false);
       }
     },
-    [router]
+    [router, t]
   );
 
   useEffect(() => {
@@ -276,11 +284,11 @@ export default function SalonsPage() {
       setNotice(null);
       await apiFetch(`/salons/${id}/verify`, { method: "PATCH" });
       setSalons((prev) => prev.map((s) => (s.id === id ? { ...s, status: "onaylı" } : s)));
-      setNotice({ kind: "success", text: "Salon onaylandı" });
+      setNotice({ kind: "success", text: t("salons.notice.verified") });
     } catch (err) {
       setNotice({
         kind: "error",
-        text: err instanceof Error ? err.message : "İşlem başarısız",
+        text: err instanceof Error ? err.message : t("salons.error.action"),
       });
     } finally {
       setPending(null);
@@ -296,11 +304,11 @@ export default function SalonsPage() {
         body: JSON.stringify({ isActive: true }),
       });
       setSalons((prev) => prev.map((s) => (s.id === id ? { ...s, status: "bekliyor" } : s)));
-      setNotice({ kind: "success", text: "Salon etkinleştirildi" });
+      setNotice({ kind: "success", text: t("salons.notice.activated") });
     } catch (err) {
       setNotice({
         kind: "error",
-        text: err instanceof Error ? err.message : "İşlem başarısız",
+        text: err instanceof Error ? err.message : t("salons.error.action"),
       });
     } finally {
       setPending(null);
@@ -315,11 +323,11 @@ export default function SalonsPage() {
       await apiFetch(`/salons/${id}`, { method: "DELETE" });
       setSalons((prev) => prev.map((s) => (s.id === id ? { ...s, status: "pasif" } : s)));
       setConfirmTarget(null);
-      setNotice({ kind: "success", text: "Salon pasife alındı" });
+      setNotice({ kind: "success", text: t("salons.notice.deactivated") });
     } catch (err) {
       setNotice({
         kind: "error",
-        text: err instanceof Error ? err.message : "İşlem başarısız",
+        text: err instanceof Error ? err.message : t("salons.error.action"),
       });
     } finally {
       setPending(null);
@@ -350,7 +358,7 @@ export default function SalonsPage() {
     );
     setEditTarget(null);
     // Başarı duyurusu sayfada: diyalog kapanınca kendi canlı bölgesi sökülürdü.
-    setNotice({ kind: "success", text: "Salon güncellendi" });
+    setNotice({ kind: "success", text: t("salons.notice.updated") });
   };
 
   const pendingFor = (id: string): SalonPendingAction => {
@@ -381,20 +389,20 @@ export default function SalonsPage() {
   const columns: Column<Salon>[] = [
     {
       key: "name",
-      header: "Salon",
+      header: t("salons.columns.name"),
       mobile: "primary",
       cell: (s) => <span className="font-semibold text-fg">{s.name}</span>,
     },
-    { key: "owner", header: "Sahibi", cell: (s) => s.owner },
+    { key: "owner", header: t("salons.columns.owner"), cell: (s) => s.owner },
     {
       key: "address",
-      header: "Konum",
+      header: t("salons.columns.address"),
       mobile: false,
       cell: (s) => <span className="text-fg-muted">{s.address}</span>,
     },
     {
       key: "rating",
-      header: "Puan",
+      header: t("salons.columns.rating"),
       align: "right",
       cell: (s) =>
         s.rating === null ? (
@@ -408,12 +416,12 @@ export default function SalonsPage() {
     },
     {
       key: "status",
-      header: "Durum",
-      cell: (s) => <StatusBadge map={SALON_STATUS} value={s.status} />,
+      header: t("salons.columns.status"),
+      cell: (s) => <StatusBadge map={statusMap} value={s.status} />,
     },
     {
       key: "actions",
-      header: "İşlem",
+      header: t("salons.columns.actions"),
       align: "right",
       mobile: false,
       cell: (s) => rowActions(s),
@@ -423,25 +431,28 @@ export default function SalonsPage() {
   return (
     <>
       <PageHeader
-        title="Salon Yönetimi"
+        title={t("pages.salons.title")}
         // Sayaçlar filtreli `meta.total` değil, filtrelerden bağımsız global `meta.counts` (plan §5.2).
-        subtitle={`${counts["tümü"] ?? meta.total} salon · ${counts.bekliyor ?? 0} onay bekliyor`}
+        subtitle={t("pages.salons.subtitle", {
+          count: counts["tümü"] ?? meta.total,
+          pending: counts.bekliyor ?? 0,
+        })}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {/* Görünüm seçimi filtre değil sunum kontrolü: 1280px'te filtre çubuğuna
                 sığmadığı için başlık aksiyonlarına taşındı (AP-007 §5.3). */}
             <Tabs<View>
-              ariaLabel="Görünüm"
+              ariaLabel={t("salons.filter.view")}
               className="mx-0 -mb-1 [&>button]:px-2.5"
               value={query.view}
               onChange={(view) => setQuery((prev) => normalizeQuery({ ...prev, view }))}
               items={[
-                { value: "tablo", label: "Tablo" },
-                { value: "kartlar", label: "Kartlar" },
+                { value: "tablo", label: t("salons.filter.viewTable") },
+                { value: "kartlar", label: t("salons.filter.viewCards") },
               ]}
             />
             <Button variant="outline" size="sm" onClick={() => setReloadKey((key) => key + 1)}>
-              Yenile
+              {t("salons.filter.refresh")}
             </Button>
           </div>
         }
@@ -457,33 +468,32 @@ export default function SalonsPage() {
                 icon={Search}
                 value={query.q}
                 onChange={(e) => updateFilter({ q: e.target.value })}
-                placeholder="Salon adı, sahibi veya adres ara…"
-                aria-label="Salon ara"
+                placeholder={t("salons.filter.searchPlaceholder")}
+                aria-label={t("salons.filter.search")}
               />
             </div>
           }
         >
           <div className="max-w-full shrink-0">
             <Tabs<SalonStatusFilter>
-              ariaLabel="Durum filtresi"
+              ariaLabel={t("salons.filter.status")}
               className="mx-0 -mb-1 [&>button]:px-2 [&>button]:gap-1 [&_span]:px-1"
               value={query.status}
               onChange={(status) => updateFilter({ status })}
-              items={[
-                { value: "tümü", label: "Tümü", count: counts["tümü"] },
-                { value: "onaylı", label: "Onaylı", count: counts["onaylı"] },
-                { value: "bekliyor", label: "Bekliyor", count: counts["bekliyor"] },
-                { value: "pasif", label: "Pasif", count: counts["pasif"] },
-              ]}
+              items={SALON_STATUS_FILTERS.map((status) => ({
+                value: status,
+                label: t(SALON_STATUS_FILTER_LABEL_KEYS[status]),
+                count: counts[status],
+              }))}
             />
           </div>
           <div className="min-w-28 max-w-40 flex-1">
             <Select
-              aria-label="Şehir"
+              aria-label={t("salons.filter.city")}
               value={query.city}
               onChange={(e) => updateFilter({ city: e.target.value })}
             >
-              <option value="">Tüm şehirler</option>
+              <option value="">{t("salons.filter.cityAll")}</option>
               {cityOptions.map((city) => (
                 <option key={city} value={city}>
                   {city}
@@ -493,21 +503,21 @@ export default function SalonsPage() {
           </div>
           <div className="min-w-28 max-w-40 flex-1">
             <Select
-              aria-label="Puan"
+              aria-label={t("salons.filter.rating")}
               value={query.minRating === null ? "" : String(query.minRating)}
               onChange={(e) =>
                 updateFilter({ minRating: e.target.value ? Number(e.target.value) : null })
               }
             >
-              <option value="">Tüm puanlar</option>
-              <option value="3">3+ puan</option>
-              <option value="4">4+ puan</option>
-              <option value="4.5">4.5+ puan</option>
+              <option value="">{t("salons.filter.ratingAll")}</option>
+              <option value="3">{t("salons.filter.rating3")}</option>
+              <option value="4">{t("salons.filter.rating4")}</option>
+              <option value="4.5">{t("salons.filter.rating45")}</option>
             </Select>
           </div>
           <div className="min-w-28 max-w-40 flex-1">
             <Select
-              aria-label="Sıralama"
+              aria-label={t("salons.filter.sort")}
               value={`${query.sort}:${query.order}`}
               onChange={(e) => {
                 const option = SALON_SORT_OPTIONS.find((item) => item.value === e.target.value);
@@ -516,7 +526,7 @@ export default function SalonsPage() {
             >
               {SALON_SORT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t(option.labelKey)}
                 </option>
               ))}
             </Select>
@@ -526,9 +536,10 @@ export default function SalonsPage() {
         <FilterChips
           chips={activeChips(query).map((chip) => ({
             key: chip.key,
-            label: chip.label,
+            label: t(chip.labelKey, chip.vars),
             onRemove: () => updateFilter(chip.patch),
           }))}
+          clearLabel={t("common.clear")}
           onClearAll={clearFilters}
         />
       </div>
@@ -554,9 +565,11 @@ export default function SalonsPage() {
           loading={loading}
           actions={rowActions}
           minWidthClass="min-w-[40rem]"
-          emptyTitle={hasFilters ? "Eşleşme yok" : "Salon yok"}
+          emptyTitle={hasFilters ? t("salons.empty.noMatch") : t("salons.empty.none")}
           emptyDescription={
-            hasFilters ? "Filtreleri temizleyip tekrar deneyin." : "Henüz salon bulunmuyor."
+            hasFilters
+              ? t("salons.empty.noMatchDescription")
+              : t("salons.empty.noneDescription")
           }
         />
       ) : loading ? (
@@ -571,8 +584,8 @@ export default function SalonsPage() {
         <Card>
           <div className="flex min-h-40 flex-col items-center justify-center gap-2 p-6 text-center text-fg-muted">
             <SearchX className="h-8 w-8" aria-hidden />
-            <p className="font-display font-bold text-fg">Eşleşme yok</p>
-            <p className="text-sm">Arama veya filtre kriterlerinizi değiştirin.</p>
+            <p className="font-display font-bold text-fg">{t("salons.empty.noMatch")}</p>
+            <p className="text-sm">{t("salons.empty.cardsDescription")}</p>
           </div>
         </Card>
       ) : (
@@ -602,12 +615,12 @@ export default function SalonsPage() {
       <Dialog
         open={confirmTarget !== null}
         onClose={() => setConfirmTarget(null)}
-        title="Salonu pasife al"
+        title={t("salons.deactivate.title")}
         size="sm"
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirmTarget(null)} disabled={pending !== null}>
-              Vazgeç
+              {t("salons.deactivate.cancel")}
             </Button>
             <Button
               variant="danger"
@@ -619,14 +632,14 @@ export default function SalonsPage() {
               {pending !== null ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               ) : null}
-              Pasife al
+              {t("salons.deactivate.confirm")}
             </Button>
           </>
         }
       >
         <p className="text-sm text-fg-muted">
-          <span className="font-semibold text-fg">{confirmTarget?.name}</span> pasife alınacak;
-          mevcut randevular silinmez.
+          <span className="font-semibold text-fg">{confirmTarget?.name}</span>{" "}
+          {t("salons.deactivate.body")}
         </p>
       </Dialog>
     </>

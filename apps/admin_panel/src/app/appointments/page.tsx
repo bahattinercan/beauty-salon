@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Search } from "lucide-react";
 import { apiFetch } from "@/lib/api";
@@ -19,6 +19,8 @@ import AppointmentActions, {
 } from "@/components/appointments/AppointmentActions";
 import AppointmentDetailDialog from "@/components/appointments/AppointmentDetailDialog";
 import useDebouncedValue from "@/lib/useDebouncedValue";
+import type { Locale } from "@/lib/i18n";
+import { useI18n } from "@/providers/LocaleProvider";
 import {
   APPOINTMENT_SORT_OPTIONS,
   APPOINTMENT_STATUS_FILTERS,
@@ -26,6 +28,7 @@ import {
   DATE_PRESET_OPTIONS,
   DEFAULT_APPOINTMENTS_QUERY,
   PAGE_SIZE_STORAGE_KEY,
+  STATUS_LABEL_KEYS,
   activeChips,
   buildAppointmentsQuery,
   normalizeQuery,
@@ -69,55 +72,43 @@ interface ApiResponse {
   data: { data: ApiAppointment[]; meta: AppointmentsMeta };
 }
 
-/** Satır aksiyonu → API durumu ve onay metni. `confirm` onay istemez. */
+/** Satır aksiyonu → API durumu ve onay metinleri. `confirm` onay istemez. */
 type StatusActionKey = "confirm" | "complete" | "noShow" | "cancel";
 
+/**
+ * `keyPrefix` altında dört i18n yaprağı var: `verb` (onay cümlesindeki eylem),
+ * `title` (onay diyalogu başlığı), `label` (onay butonu), `success` (bildirim).
+ */
 const STATUS_ACTIONS: Record<
   StatusActionKey,
   {
     status: AppointmentStatus;
-    /** Onay cümlesindeki eylem: "<müşteri> — <tarih> randevusu <verb>." */
-    verb: string;
-    title: string;
-    confirmLabel: string;
-    successText: string;
+    keyPrefix: string;
     needsConfirm: boolean;
     variant: "primary" | "danger";
   }
 > = {
   confirm: {
     status: "CONFIRMED",
-    verb: "onaylanacak",
-    title: "Randevuyu onayla",
-    confirmLabel: "Onayla",
-    successText: "Randevu onaylandı",
+    keyPrefix: "appointments.statusActions.confirm",
     needsConfirm: false,
     variant: "primary",
   },
   complete: {
     status: "COMPLETED",
-    verb: "tamamlanacak",
-    title: "Randevuyu tamamla",
-    confirmLabel: "Tamamla",
-    successText: "Randevu tamamlandı",
+    keyPrefix: "appointments.statusActions.complete",
     needsConfirm: true,
     variant: "primary",
   },
   noShow: {
     status: "NO_SHOW",
-    verb: "gelmedi olarak işaretlenecek",
-    title: "Gelmedi olarak işaretle",
-    confirmLabel: "Gelmedi",
-    successText: "Randevu gelmedi olarak işaretlendi",
+    keyPrefix: "appointments.statusActions.noShow",
     needsConfirm: true,
     variant: "primary",
   },
   cancel: {
     status: "CANCELLED",
-    verb: "iptal edilecek",
-    title: "Randevuyu iptal et",
-    confirmLabel: "İptal et",
-    successText: "Randevu iptal edildi",
+    keyPrefix: "appointments.statusActions.cancel",
     needsConfirm: true,
     variant: "danger",
   },
@@ -125,17 +116,17 @@ const STATUS_ACTIONS: Record<
 
 /** DATEONLY alanları yerel güne çevrilir: `new Date('2026-09-30')` UTC okur ve
  *  negatif saat dilimlerinde bir gün geriye kayardı. */
-function formatDate(value: string): string {
+function formatDate(value: string, locale: Locale = "tr"): string {
   const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   const date = dateOnly
     ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
     : new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
+  return date.toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function money(value: number): string {
-  return new Intl.NumberFormat("tr-TR", {
+function money(value: number, locale: Locale = "tr"): string {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "TRY",
     maximumFractionDigits: 0,
@@ -149,12 +140,22 @@ const EMPTY_META: AppointmentsMeta = {
   totalPages: 1,
 };
 
-/** Durum select etiketi: `tümü` panelde var, API enum'unda yok. */
-const statusOptionLabel = (value: AppointmentStatusFilter): string =>
-  value === "tümü" ? "Tümü" : (APPOINTMENT_STATUS[value]?.label ?? value);
-
 export default function AppointmentsPage() {
+  const { locale, t } = useI18n();
   const router = useRouter();
+
+  // Durum adları paylaşılan `APPOINTMENT_STATUS` map'inden gelir; renk tonu orada
+  // kalır, yalnız etiket aktif dile çevrilir (Badge bileşeni değişmez).
+  const statusMap = useMemo(
+    () => ({
+      PENDING: { ...APPOINTMENT_STATUS.PENDING, label: t("appointments.status.PENDING") },
+      CONFIRMED: { ...APPOINTMENT_STATUS.CONFIRMED, label: t("appointments.status.CONFIRMED") },
+      COMPLETED: { ...APPOINTMENT_STATUS.COMPLETED, label: t("appointments.status.COMPLETED") },
+      CANCELLED: { ...APPOINTMENT_STATUS.CANCELLED, label: t("appointments.status.CANCELLED") },
+      NO_SHOW: { ...APPOINTMENT_STATUS.NO_SHOW, label: t("appointments.status.NO_SHOW") },
+    }),
+    [t]
+  );
 
   const [query, setQuery] = useState<AppointmentsQueryState>(DEFAULT_APPOINTMENTS_QUERY);
   const [hydrated, setHydrated] = useState(false);
@@ -214,7 +215,7 @@ export default function AppointmentsPage() {
       } catch (err) {
         // İptal edilen istek state yazmaz: yavaş cevap yeni filtreyi ezmesin.
         if (signal.aborted) return;
-        const message = err instanceof Error ? err.message : "Randevular yüklenemedi";
+        const message = err instanceof Error ? err.message : t("appointments.notice.loadError");
         if (message.includes("401") || message.includes("403")) {
           router.push("/login");
           return;
@@ -224,7 +225,7 @@ export default function AppointmentsPage() {
         if (!signal.aborted) setLoading(false);
       }
     },
-    [router]
+    [router, t]
   );
 
   useEffect(() => {
@@ -278,11 +279,11 @@ export default function AppointmentsPage() {
         prev.map((row) => (row.id === appointment.id ? { ...row, status: config.status } : row))
       );
       setConfirmTarget(null);
-      setNotice({ kind: "success", text: config.successText });
+      setNotice({ kind: "success", text: t(`${config.keyPrefix}.success`) });
     } catch (err) {
       setNotice({
         kind: "error",
-        text: err instanceof Error ? err.message : "İşlem başarısız",
+        text: err instanceof Error ? err.message : t("appointments.notice.actionError"),
       });
     } finally {
       setPending(null);
@@ -345,15 +346,19 @@ export default function AppointmentsPage() {
 
   const confirmConfig = confirmTarget ? STATUS_ACTIONS[confirmTarget.action] : null;
   const confirmText = confirmTarget
-    ? `${confirmTarget.appointment.customer?.fullName ?? "Müşteri"} — ${formatDate(
-        confirmTarget.appointment.date
-      )} randevusu ${STATUS_ACTIONS[confirmTarget.action].verb}. Emin misiniz?`
+    ? t("appointments.confirm.message", {
+        customer:
+          confirmTarget.appointment.customer?.fullName ??
+          t("appointments.confirm.anonymousCustomer"),
+        date: formatDate(confirmTarget.appointment.date, locale),
+        verb: t(`${STATUS_ACTIONS[confirmTarget.action].keyPrefix}.verb`),
+      })
     : "";
 
   const columns: Column<ApiAppointment>[] = [
     {
       key: "salon",
-      header: "Salon / Hizmet",
+      header: t("appointments.columns.salonService"),
       mobile: "primary",
       cell: (appointment) => (
         <div className="min-w-0">
@@ -364,14 +369,14 @@ export default function AppointmentsPage() {
     },
     {
       key: "customer",
-      header: "Müşteri",
+      header: t("appointments.columns.customer"),
       cell: (appointment) => (
         <span className="truncate">{appointment.customer?.fullName ?? "—"}</span>
       ),
     },
     {
       key: "staff",
-      header: "Personel",
+      header: t("appointments.columns.staff"),
       mobile: "meta",
       cell: (appointment) => (
         <span className="text-fg-muted">{appointment.staff?.fullName ?? "—"}</span>
@@ -379,11 +384,11 @@ export default function AppointmentsPage() {
     },
     {
       key: "when",
-      header: "Tarih / Saat",
+      header: t("appointments.columns.when"),
       mobile: "meta",
       cell: (appointment) => (
         <span className="tnum whitespace-nowrap">
-          {formatDate(appointment.date)}
+          {formatDate(appointment.date, locale)}
           <span className="text-fg-muted">
             {" "}
             {appointment.startTime.slice(0, 5)}–{appointment.endTime.slice(0, 5)}
@@ -393,20 +398,20 @@ export default function AppointmentsPage() {
     },
     {
       key: "price",
-      header: "Tutar",
+      header: t("appointments.columns.price"),
       align: "right",
       cell: (appointment) => (
-        <span className="tnum font-semibold">{money(appointment.service?.price ?? 0)}</span>
+        <span className="tnum font-semibold">{money(appointment.service?.price ?? 0, locale)}</span>
       ),
     },
     {
       key: "status",
-      header: "Durum",
-      cell: (appointment) => <StatusBadge map={APPOINTMENT_STATUS} value={appointment.status} />,
+      header: t("appointments.columns.status"),
+      cell: (appointment) => <StatusBadge map={statusMap} value={appointment.status} />,
     },
     {
       key: "actions",
-      header: "İşlem",
+      header: t("appointments.columns.actions"),
       align: "right",
       mobile: false,
       cell: (appointment) => rowActions(appointment),
@@ -416,12 +421,15 @@ export default function AppointmentsPage() {
   return (
     <>
       <PageHeader
-        title="Randevu Yönetimi"
+        title={t("pages.appointments.title")}
         // Sayaçlar filtreli `meta.total` değil, filtrelerden bağımsız global `meta.counts`.
-        subtitle={`${counts["tümü"] ?? meta.total} randevu · ${counts.PENDING ?? 0} bekliyor`}
+        subtitle={t("pages.appointments.subtitle", {
+          count: counts["tümü"] ?? meta.total,
+          pending: counts.PENDING ?? 0,
+        })}
         actions={
           <Button variant="outline" size="sm" onClick={() => setReloadKey((key) => key + 1)}>
-            Yenile
+            {t("appointments.page.refresh")}
           </Button>
         }
       />
@@ -436,8 +444,8 @@ export default function AppointmentsPage() {
                 icon={Search}
                 value={query.q}
                 onChange={(e) => updateFilter({ q: e.target.value })}
-                placeholder="Müşteri, salon, personel veya hizmet ara…"
-                aria-label="Randevu ara"
+                placeholder={t("appointments.page.searchPlaceholder")}
+                aria-label={t("appointments.page.searchAriaLabel")}
               />
             </div>
           }
@@ -447,7 +455,7 @@ export default function AppointmentsPage() {
               Sayaçlar seçenek etiketinde, `meta.counts`tan (filtresiz global). */}
           <div className="!min-w-[9.5rem] max-w-48 flex-1">
             <Select
-              aria-label="Durum"
+              aria-label={t("appointments.page.statusFilter")}
               value={query.status}
               onChange={(e) =>
                 updateFilter({ status: e.target.value as AppointmentStatusFilter })
@@ -455,7 +463,10 @@ export default function AppointmentsPage() {
             >
               {APPOINTMENT_STATUS_FILTERS.map((value) => (
                 <option key={value} value={value}>
-                  {`${statusOptionLabel(value)} (${counts[value] ?? 0})`}
+                  {t("appointments.statusOption", {
+                    label: t(STATUS_LABEL_KEYS[value]),
+                    count: counts[value] ?? 0,
+                  })}
                 </option>
               ))}
             </Select>
@@ -465,11 +476,11 @@ export default function AppointmentsPage() {
               4 select ~40px'e çöküp "Tü…", "En…" diye kırpılıyordu (AP-008 T9). */}
           <div className="!min-w-[8.5rem] max-w-48 flex-1">
             <Select
-              aria-label="Salon"
+              aria-label={t("appointments.page.salonFilter")}
               value={query.salonId}
               onChange={(e) => updateFilter({ salonId: e.target.value })}
             >
-              <option value="">Tüm salonlar</option>
+              <option value="">{t("appointments.page.allSalons")}</option>
               {salonOptions.map((salon) => (
                 <option key={salon.id} value={salon.id}>
                   {salon.name}
@@ -479,11 +490,11 @@ export default function AppointmentsPage() {
           </div>
           <div className="!min-w-[8.5rem] max-w-48 flex-1">
             <Select
-              aria-label="Personel"
+              aria-label={t("appointments.page.staffFilter")}
               value={query.staffId}
               onChange={(e) => updateFilter({ staffId: e.target.value })}
             >
-              <option value="">Tüm personel</option>
+              <option value="">{t("appointments.page.allStaff")}</option>
               {staffOptions.map((member) => (
                 <option key={member.id} value={member.id}>
                   {member.fullName}
@@ -493,20 +504,20 @@ export default function AppointmentsPage() {
           </div>
           <div className="!min-w-[8.5rem] max-w-48 flex-1">
             <Select
-              aria-label="Tarih"
+              aria-label={t("appointments.page.dateFilter")}
               value={query.date}
               onChange={(e) => updateFilter({ date: e.target.value as AppointmentsQueryState["date"] })}
             >
               {DATE_PRESET_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t(option.labelKey)}
                 </option>
               ))}
             </Select>
           </div>
           <div className="!min-w-[8.5rem] max-w-48 flex-1">
             <Select
-              aria-label="Sıralama"
+              aria-label={t("appointments.page.sortFilter")}
               value={`${query.sort}:${query.order}`}
               onChange={(e) => {
                 const option = APPOINTMENT_SORT_OPTIONS.find((item) => item.value === e.target.value);
@@ -515,7 +526,7 @@ export default function AppointmentsPage() {
             >
               {APPOINTMENT_SORT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t(option.labelKey)}
                 </option>
               ))}
             </Select>
@@ -526,11 +537,16 @@ export default function AppointmentsPage() {
           chips={activeChips(query, { salon: selectedSalonName, staff: selectedStaffName }).map(
             (chip) => ({
               key: chip.key,
-              label: chip.label,
+              // Çip metni iki anahtardan kurulur: şablon + (varsa) değer anahtarı.
+              label: t(chip.labelKey, {
+                ...chip.vars,
+                ...(chip.valueKey ? { label: t(chip.valueKey) } : null),
+              }),
               onRemove: () => updateFilter(chip.patch),
             })
           )}
           onClearAll={clearFilters}
+          clearLabel={t("appointments.chips.clear")}
         />
       </div>
 
@@ -554,9 +570,13 @@ export default function AppointmentsPage() {
         loading={loading}
         actions={rowActions}
         minWidthClass="min-w-[52rem]"
-        emptyTitle={hasFilters ? "Eşleşme yok" : "Randevu yok"}
+        emptyTitle={
+          hasFilters ? t("appointments.empty.filteredTitle") : t("appointments.empty.noneTitle")
+        }
         emptyDescription={
-          hasFilters ? "Filtreleri temizleyip tekrar deneyin." : "Henüz randevu bulunmuyor."
+          hasFilters
+            ? t("appointments.empty.filteredDescription")
+            : t("appointments.empty.noneDescription")
         }
       />
 
@@ -578,12 +598,12 @@ export default function AppointmentsPage() {
       <Dialog
         open={confirmTarget !== null}
         onClose={() => setConfirmTarget(null)}
-        title={confirmConfig?.title ?? "Randevu"}
+        title={confirmConfig ? t(`${confirmConfig.keyPrefix}.title`) : t("appointments.confirm.defaultTitle")}
         size="sm"
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirmTarget(null)} disabled={pending !== null}>
-              Vazgeç
+              {t("appointments.confirm.back")}
             </Button>
             <Button
               variant={confirmConfig?.variant ?? "primary"}
@@ -593,7 +613,7 @@ export default function AppointmentsPage() {
               }}
             >
               {pending !== null ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-              {confirmConfig?.confirmLabel ?? "Onayla"}
+              {confirmConfig ? t(`${confirmConfig.keyPrefix}.label`) : t("appointments.actions.confirm")}
             </Button>
           </>
         }

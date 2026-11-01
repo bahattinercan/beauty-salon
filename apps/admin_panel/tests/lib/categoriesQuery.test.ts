@@ -17,8 +17,10 @@ import assert from 'node:assert/strict';
 import {
   CATEGORIES_PAGE_SIZES,
   CATEGORY_MEDIA_FILTERS,
+  CATEGORY_MEDIA_FILTER_LABEL_KEYS,
   CATEGORY_SORT_OPTIONS,
   CATEGORY_STATUS_FILTERS,
+  CATEGORY_STATUS_FILTER_LABEL_KEYS,
   DEFAULT_CATEGORIES_QUERY,
   DEFAULT_PAGE_SIZE,
   PAGE_SIZE_STORAGE_KEY,
@@ -88,6 +90,28 @@ test('sabitler: sayfa boyutları, varsayılan ve localStorage anahtarı', () => 
     CATEGORY_SORT_OPTIONS.map((option) => option.value),
     ['sortOrder:asc', 'name:asc', 'name:desc', 'serviceCount:desc', 'createdAt:desc']
   );
+  // Sıralama etiketleri de metin değil sözlük anahtarıdır.
+  assert.deepEqual(
+    CATEGORY_SORT_OPTIONS.map((option) => option.labelKey),
+    [
+      'categories.filter.sortDefault',
+      'categories.filter.sortNameAsc',
+      'categories.filter.sortNameDesc',
+      'categories.filter.sortServiceCountDesc',
+      'categories.filter.sortNewest',
+    ]
+  );
+  assert.deepEqual(Object.keys(CATEGORY_STATUS_FILTER_LABEL_KEYS), [
+    'tümü',
+    'aktif',
+    'pasif',
+  ]);
+  assert.deepEqual(Object.keys(CATEGORY_MEDIA_FILTER_LABEL_KEYS), [
+    'tümü',
+    'görselli',
+    'videolu',
+    'medyasız',
+  ]);
 });
 
 test('parseCategoriesQuery: boş arama varsayılan durumu döner', () => {
@@ -369,15 +393,30 @@ test('activeChips: durum → medya → ikon → arama → sıralama sırası ve 
     chips.map((chip) => chip.key),
     ['status', 'media', 'icon', 'q', 'sort']
   );
+  // Modül metin taşımaz: chip sözlük anahtarı + yer tutucu değerleri döndürür.
   assert.deepEqual(
-    chips.map((chip) => chip.label),
+    chips.map((chip) => chip.labelKey),
     [
-      'Durum: Aktif',
-      'Medya: Videolu',
-      'İkon: spa',
-      'Arama: "masaj"',
-      'Sıralama: İsim (Z-A)',
+      'categories.chips.status',
+      'categories.chips.media',
+      'categories.chips.icon',
+      'categories.chips.q',
+      'categories.chips.sort',
     ]
+  );
+  assert.deepEqual(
+    chips.map((chip) => chip.valueKey),
+    [
+      'categories.statusFilter.active',
+      'categories.mediaFilter.withVideo',
+      undefined,
+      undefined,
+      'categories.filter.sortNameDesc',
+    ]
+  );
+  assert.deepEqual(
+    chips.map((chip) => chip.vars),
+    [undefined, undefined, { icon: 'spa' }, { q: 'masaj' }, undefined]
   );
   assert.deepEqual(chips[0].patch, { status: 'tümü' });
   assert.deepEqual(chips[1].patch, { media: 'tümü' });

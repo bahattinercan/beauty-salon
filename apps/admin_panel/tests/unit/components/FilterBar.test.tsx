@@ -12,20 +12,32 @@ import userEvent from '@testing-library/user-event';
 
 import FilterBar from '@/components/ui/FilterBar';
 
+import LocaleProvider from '@/providers/LocaleProvider';
+import type { ReactElement } from 'react';
+
+/**
+ * Bileşen kendi sabit metinlerini sözlükten (`ui.*`) basar; testler bugünkü
+ * Türkçe kopyayı görsün diye her render `LocaleProvider initialMode="tr"` ile
+ * sarmalanır (jsdom `navigator.language` = 'en-US' olduğu için 'system' modu
+ * İngilizceye düşerdi).
+ */
+const renderTr = (ui: ReactElement) =>
+  render(<LocaleProvider initialMode="tr">{ui}</LocaleProvider>);
+
 describe('FilterBar', () => {
   test('kontrolleri varsayılan erişilebilir adla tek grup altında toplar', () => {
-    render(<FilterBar leading={<input aria-label="Ara" />} />);
+    renderTr(<FilterBar leading={<input aria-label="Ara" />} />);
     expect(screen.getByRole('group', { name: 'Filtre çubuğu' })).toBeTruthy();
   });
 
   test('ariaLabel özelleştirilebilir (aynı sayfada ikinci çubuk ayrışsın diye)', () => {
-    render(<FilterBar ariaLabel="Görünüm kontrolleri" trailing={<button type="button">Kartlar</button>} />);
+    renderTr(<FilterBar ariaLabel="Görünüm kontrolleri" trailing={<button type="button">Kartlar</button>} />);
     expect(screen.getByRole('group', { name: 'Görünüm kontrolleri' })).toBeTruthy();
     expect(screen.queryByRole('group', { name: 'Filtre çubuğu' })).toBeNull();
   });
 
   test('leading → children → trailing sırası korunur', () => {
-    render(
+    renderTr(
       <FilterBar
         leading={<button type="button">arama</button>}
         trailing={<button type="button">gorunum</button>}
@@ -41,7 +53,7 @@ describe('FilterBar', () => {
   });
 
   test('daralma sözleşmesi: leading flex-1 + min-w-[12rem], trailing shrink-0', () => {
-    const { container } = render(
+    const { container } = renderTr(
       <FilterBar
         leading={<input aria-label="Ara" />}
         trailing={<button type="button">Kartlar</button>}
@@ -61,7 +73,7 @@ describe('FilterBar', () => {
   });
 
   test('children sarmalanmaz: wrap modunda her kontrol kendi kendine sarayabilir', () => {
-    const { container } = render(
+    const { container } = renderTr(
       <FilterBar>
         <button type="button">bir</button>
         <button type="button">iki</button>
@@ -73,7 +85,7 @@ describe('FilterBar', () => {
   });
 
   test('verilmeyen yuvalar boş sarmalayıcı üretmez', () => {
-    const { container } = render(<FilterBar leading={<input aria-label="Ara" />} />);
+    const { container } = renderTr(<FilterBar leading={<input aria-label="Ara" />} />);
     const bar = container.firstElementChild as HTMLElement;
     expect(bar.children.length).toBe(1);
   });
@@ -81,7 +93,7 @@ describe('FilterBar', () => {
   test('className kabuğa eklenir, içerideki düğmeler tıklanabilir kalır', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
-    const { container } = render(
+    const { container } = renderTr(
       <FilterBar className="mb-3" trailing={<button type="button" onClick={onClick}>Kartlar</button>} />
     );
     expect((container.firstElementChild as HTMLElement).className).toContain('mb-3');

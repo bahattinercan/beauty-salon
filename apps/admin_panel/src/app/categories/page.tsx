@@ -35,8 +35,10 @@ import { cx } from "@/lib/cx";
 import {
   CATEGORIES_PAGE_SIZES,
   CATEGORY_MEDIA_FILTERS,
+  CATEGORY_MEDIA_FILTER_LABEL_KEYS,
   CATEGORY_SORT_OPTIONS,
   CATEGORY_STATUS_FILTERS,
+  CATEGORY_STATUS_FILTER_LABEL_KEYS,
   DEFAULT_CATEGORIES_QUERY,
   PAGE_SIZE_STORAGE_KEY,
   activeChips,
@@ -48,11 +50,11 @@ import {
   parseCategoriesQuery,
   sortCategories,
   type CategoriesQueryState,
-  type CategoryMediaFilter,
   type CategoryRow,
   type CategoryStatusFilter,
   type CategoryView,
 } from "@/lib/categoriesQuery";
+import { useI18n } from "@/providers/LocaleProvider";
 
 interface ApiCategory {
   id: string;
@@ -100,27 +102,14 @@ const ICON_MAP: Record<string, typeof Scissors> = {
 
 const getIcon = (iconName: string) => ICON_MAP[iconName] ?? Scissors;
 
-const iconOptions: { value: string; label: string }[] = [
-  { value: "content_cut", label: "Saç" },
-  { value: "brush", label: "Tırnak" },
-  { value: "face", label: "Cilt Bakımı" },
-  { value: "palette", label: "Makyaj" },
-  { value: "spa", label: "Epilasyon" },
-  { value: "self_improvement", label: "SPA & Masaj" },
+const iconOptions: { value: string; labelKey: string }[] = [
+  { value: "content_cut", labelKey: "categories.icons.hair" },
+  { value: "brush", labelKey: "categories.icons.nail" },
+  { value: "face", labelKey: "categories.icons.skin" },
+  { value: "palette", labelKey: "categories.icons.makeup" },
+  { value: "spa", labelKey: "categories.icons.epilation" },
+  { value: "self_improvement", labelKey: "categories.icons.spa" },
 ];
-
-const STATUS_LABELS: Record<CategoryStatusFilter, string> = {
-  tümü: "Tümü",
-  aktif: "Aktif",
-  pasif: "Pasif",
-};
-
-const MEDIA_LABELS: Record<CategoryMediaFilter, string> = {
-  tümü: "Tümü",
-  görselli: "Görselli",
-  videolu: "Videolu",
-  medyasız: "Medyasız",
-};
 
 const EMPTY_FORM: CategoryFormData = {
   name: "",
@@ -172,6 +161,7 @@ function mapCategory(category: ApiCategory): CategoryListRow {
 
 export default function CategoriesPage() {
   const router = useRouter();
+  const { t } = useI18n();
 
   const [query, setQuery] = useState<CategoriesQueryState>(DEFAULT_CATEGORIES_QUERY);
   const [hydrated, setHydrated] = useState(false);
@@ -222,7 +212,7 @@ export default function CategoriesPage() {
         setRows(res.data.map(mapCategory));
       } catch (err) {
         if (signal.aborted) return;
-        const message = err instanceof Error ? err.message : "Kategoriler yüklenemedi";
+        const message = err instanceof Error ? err.message : t("categories.notice.loadError");
         if (message.includes("401") || message.includes("403")) {
           router.push("/login");
           return;
@@ -232,7 +222,7 @@ export default function CategoriesPage() {
         if (!signal.aborted) setLoading(false);
       }
     },
-    [router]
+    [router, t]
   );
 
   useEffect(() => {
@@ -307,7 +297,7 @@ export default function CategoriesPage() {
     const extras = Array.from(new Set(rows.map((row) => row.icon))).filter(
       (icon) => icon !== "" && !known.has(icon)
     );
-    return [...iconOptions, ...extras.map((icon) => ({ value: icon, label: icon }))];
+    return [...iconOptions, ...extras.map((icon) => ({ value: icon, labelKey: icon }))];
   }, [rows]);
 
   const handleAddClick = () => {
@@ -370,20 +360,20 @@ export default function CategoriesPage() {
       }
       handleCloseModal();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Kategori kaydedilemedi");
+      setError(err instanceof Error ? err.message : t("categories.notice.saveError"));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Bu kategoriyi silmek istediğinize emin misiniz?")) return;
+    if (!confirm(t("categories.confirm.delete"))) return;
     try {
       setError(null);
       await apiFetch(`/categories/${id}`, { method: "DELETE" });
       setRows((prev) => prev.filter((row) => row.id !== id));
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Kategori silinemedi");
+      setError(err instanceof Error ? err.message : t("categories.notice.deleteError"));
     }
   };
 
@@ -391,13 +381,13 @@ export default function CategoriesPage() {
     <div className="flex items-center gap-2">
       <Button variant="outline" size="sm" onClick={() => handleEditClick(category)}>
         <Edit2 className="h-4 w-4" aria-hidden />
-        Düzenle
+        {t("categories.actions.edit")}
       </Button>
       <Button
         variant="danger"
         size="icon-sm"
         onClick={() => void handleDelete(category.id)}
-        aria-label="Kategoriyi sil"
+        aria-label={t("categories.actions.delete")}
       >
         <Trash2 className="h-4 w-4" aria-hidden />
       </Button>
@@ -407,7 +397,7 @@ export default function CategoriesPage() {
   const columns: Column<CategoryListRow>[] = [
     {
       key: "name",
-      header: "Kategori",
+      header: t("categories.columns.name"),
       mobile: "primary",
       cell: (category) => {
         const Icon = getIcon(category.icon);
@@ -432,7 +422,7 @@ export default function CategoriesPage() {
     },
     {
       key: "description",
-      header: "Açıklama",
+      header: t("categories.columns.description"),
       block: true,
       cell: (category) =>
         category.description ? (
@@ -443,7 +433,7 @@ export default function CategoriesPage() {
     },
     {
       key: "media",
-      header: "Medya",
+      header: t("categories.columns.media"),
       cell: (category) => {
         const image = hasMedia(category.imageUrl) ? category.imageUrl : null;
         const video = hasMedia(category.videoUrl);
@@ -461,7 +451,7 @@ export default function CategoriesPage() {
             {video ? (
               <Badge tone="neutral">
                 <Video className="h-3.5 w-3.5" aria-hidden />
-                Video
+                {t("categories.cells.video")}
               </Badge>
             ) : null}
           </div>
@@ -470,7 +460,7 @@ export default function CategoriesPage() {
     },
     {
       key: "serviceCount",
-      header: "Hizmet",
+      header: t("categories.columns.serviceCount"),
       align: "right",
       cell: (category) => (
         <span className="tnum font-semibold text-fg">{category.serviceCount}</span>
@@ -478,13 +468,17 @@ export default function CategoriesPage() {
     },
     {
       key: "status",
-      header: "Durum",
+      header: t("categories.columns.status"),
       cell: (category) =>
-        category.isActive ? <Badge tone="success">Aktif</Badge> : <Badge tone="neutral">Pasif</Badge>,
+        category.isActive ? (
+          <Badge tone="success">{t("categories.statusFilter.active")}</Badge>
+        ) : (
+          <Badge tone="neutral">{t("categories.statusFilter.passive")}</Badge>
+        ),
     },
     {
       key: "actions",
-      header: "İşlemler",
+      header: t("categories.columns.actions"),
       align: "right",
       mobile: false,
       cell: (category) => rowActions(category),
@@ -494,7 +488,7 @@ export default function CategoriesPage() {
   const createButton = (
     <Button size="sm" onClick={handleAddClick}>
       <Plus className="h-4 w-4" aria-hidden />
-      İlk kategoriyi oluştur
+      {t("categories.empty.createFirst")}
     </Button>
   );
 
@@ -524,14 +518,14 @@ export default function CategoriesPage() {
                   {category.name}
                 </h3>
                 {category.isActive ? (
-                  <Badge tone="success">Aktif</Badge>
+                  <Badge tone="success">{t("categories.statusFilter.active")}</Badge>
                 ) : (
-                  <Badge tone="neutral">Pasif</Badge>
+                  <Badge tone="neutral">{t("categories.statusFilter.passive")}</Badge>
                 )}
                 {video ? (
                   <Badge tone="neutral">
                     <Video className="h-3.5 w-3.5" aria-hidden />
-                    Video
+                    {t("categories.cells.video")}
                   </Badge>
                 ) : null}
               </div>
@@ -540,26 +534,26 @@ export default function CategoriesPage() {
               ) : null}
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                 <span className="tnum text-xs font-semibold text-fg-muted">
-                  {category.serviceCount} hizmet
+                  {t("categories.card.serviceCount", { count: category.serviceCount })}
                 </span>
                 <div className="flex items-center gap-2">
                   {image ? (
                     // eslint-disable-next-line @next/next/no-img-element -- API göreli /uploads yolu veriyor; next/image konfigürasyonu kapsam dışı
                     <img
                       src={mediaUrl(image)}
-                      alt={`${category.name} görseli`}
+                      alt={t("categories.card.imageAlt", { name: category.name })}
                       className="h-10 w-10 rounded-field object-cover"
                     />
                   ) : null}
                   <Button variant="outline" size="sm" onClick={() => handleEditClick(category)}>
                     <Edit2 className="h-4 w-4" aria-hidden />
-                    Düzenle
+                    {t("categories.actions.edit")}
                   </Button>
                   <Button
                     variant="danger"
                     size="icon-sm"
                     onClick={() => void handleDelete(category.id)}
-                    aria-label="Kategoriyi sil"
+                    aria-label={t("categories.actions.delete")}
                   >
                     <Trash2 className="h-4 w-4" aria-hidden />
                   </Button>
@@ -575,28 +569,31 @@ export default function CategoriesPage() {
   return (
     <>
       <PageHeader
-        title="Kategori Yönetimi"
+        title={t("pages.categories.title")}
         // Toplam filtrelenmiş sonuçtan, "aktif" sayısı filtrelerden bağımsız veriden.
-        subtitle={`${paged.total} kategori · ${counts.aktif} aktif`}
+        subtitle={t("pages.categories.subtitle", {
+          count: paged.total,
+          active: counts.aktif,
+        })}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {/* Görünüm seçimi filtre değil sunum kontrolü (salons deseni). */}
             <Tabs<CategoryView>
-              ariaLabel="Görünüm"
+              ariaLabel={t("categories.filter.view")}
               className="mx-0 -mb-1 [&>button]:px-2.5"
               value={query.view}
               onChange={(view) => setQuery((prev) => normalizeQuery({ ...prev, view }))}
               items={[
-                { value: "tablo", label: "Tablo" },
-                { value: "kartlar", label: "Kartlar" },
+                { value: "tablo", label: t("categories.filter.viewTable") },
+                { value: "kartlar", label: t("categories.filter.viewCards") },
               ]}
             />
             <Button variant="outline" size="sm" onClick={() => setReloadKey((key) => key + 1)}>
-              Yenile
+              {t("categories.filter.refresh")}
             </Button>
             <Button size="sm" onClick={handleAddClick}>
               <Plus className="h-4 w-4" aria-hidden />
-              Yeni kategori
+              {t("categories.filter.newCategory")}
             </Button>
           </div>
         }
@@ -612,8 +609,8 @@ export default function CategoriesPage() {
                 icon={Search}
                 value={query.q}
                 onChange={(e) => updateFilter({ q: e.target.value })}
-                placeholder="Kategori adı veya açıklamada ara"
-                aria-label="Kategori ara"
+                placeholder={t("categories.filter.searchPlaceholder")}
+                aria-label={t("categories.filter.search")}
               />
             </div>
           }
@@ -621,13 +618,13 @@ export default function CategoriesPage() {
           {/* Sekme sayaçları filtrelerden bağımsız global sayımlardan gelir. */}
           <div className="max-w-full shrink-0">
             <Tabs<CategoryStatusFilter>
-              ariaLabel="Durum filtresi"
+              ariaLabel={t("categories.filter.status")}
               className="mx-0 -mb-1 [&>button]:px-2 [&>button]:gap-1 [&_span]:px-1"
               value={query.status}
               onChange={(status) => updateFilter({ status })}
               items={CATEGORY_STATUS_FILTERS.map((status) => ({
                 value: status,
-                label: STATUS_LABELS[status],
+                label: t(CATEGORY_STATUS_FILTER_LABEL_KEYS[status]),
                 count: counts[status],
               }))}
             />
@@ -636,7 +633,7 @@ export default function CategoriesPage() {
               `min-w-*` tabanını eziyor (aynı özgüllük, sonra gelen kazanıyor). */}
           <div className="!min-w-[8.5rem] max-w-48 flex-1">
             <Select
-              aria-label="Medya filtresi"
+              aria-label={t("categories.filter.media")}
               value={query.media}
               onChange={(e) => {
                 const media = CATEGORY_MEDIA_FILTERS.find((item) => item === e.target.value);
@@ -645,28 +642,28 @@ export default function CategoriesPage() {
             >
               {CATEGORY_MEDIA_FILTERS.map((media) => (
                 <option key={media} value={media}>
-                  {MEDIA_LABELS[media]}
+                  {t(CATEGORY_MEDIA_FILTER_LABEL_KEYS[media])}
                 </option>
               ))}
             </Select>
           </div>
           <div className="!min-w-[8.5rem] max-w-48 flex-1">
             <Select
-              aria-label="İkon filtresi"
+              aria-label={t("categories.filter.icon")}
               value={query.icon}
               onChange={(e) => updateFilter({ icon: e.target.value })}
             >
-              <option value="">Tüm ikonlar</option>
+              <option value="">{t("categories.filter.iconAll")}</option>
               {iconChoices.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {option.labelKey === option.value ? option.value : t(option.labelKey)}
                 </option>
               ))}
             </Select>
           </div>
           <div className="!min-w-[8.5rem] max-w-48 flex-1">
             <Select
-              aria-label="Sıralama"
+              aria-label={t("categories.filter.sort")}
               value={`${query.sort}:${query.order}`}
               onChange={(e) => {
                 const option = CATEGORY_SORT_OPTIONS.find((item) => item.value === e.target.value);
@@ -675,7 +672,7 @@ export default function CategoriesPage() {
             >
               {CATEGORY_SORT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t(option.labelKey)}
                 </option>
               ))}
             </Select>
@@ -686,7 +683,10 @@ export default function CategoriesPage() {
         <FilterChips
           chips={activeChips(query).map((chip) => ({
             key: chip.key,
-            label: chip.label,
+            label: t(chip.labelKey, {
+              ...chip.vars,
+              ...(chip.valueKey ? { label: t(chip.valueKey) } : {}),
+            }),
             onRemove: () => updateFilter(chip.patch),
           }))}
           onClearAll={clearFilters}
@@ -701,8 +701,8 @@ export default function CategoriesPage() {
         !loading && !filtersActive && noRowsAtAll ? (
           <Card>
             <EmptyState
-              title="Kategori yok"
-              description="Hizmetlerin bağlanacağı kategorileri oluşturun."
+              title={t("categories.empty.noneTitle")}
+              description={t("categories.empty.noneDescription")}
               action={createButton}
             />
           </Card>
@@ -714,11 +714,15 @@ export default function CategoriesPage() {
             loading={loading}
             actions={rowActions}
             minWidthClass="min-w-[44rem]"
-            emptyTitle={filtersActive ? "Eşleşme yok" : "Kategori yok"}
+            emptyTitle={
+              filtersActive
+                ? t("categories.empty.filteredTitle")
+                : t("categories.empty.noneTitle")
+            }
             emptyDescription={
               filtersActive
-                ? "Filtreleri temizleyip tekrar deneyin."
-                : "Hizmetlerin bağlanacağı kategorileri oluşturun."
+                ? t("categories.empty.filteredDescription")
+                : t("categories.empty.noneDescription")
             }
           />
         )
@@ -731,14 +735,17 @@ export default function CategoriesPage() {
       ) : noRowsAtAll && !filtersActive ? (
         <Card>
           <EmptyState
-            title="Kategori yok"
-            description="Hizmetlerin bağlanacağı kategorileri oluşturun."
+            title={t("categories.empty.noneTitle")}
+            description={t("categories.empty.noneDescription")}
             action={createButton}
           />
         </Card>
       ) : paged.rows.length === 0 ? (
         <Card>
-          <EmptyState title="Eşleşme yok" description="Filtreleri temizleyip tekrar deneyin." />
+          <EmptyState
+            title={t("categories.empty.filteredTitle")}
+            description={t("categories.empty.filteredDescription")}
+          />
         </Card>
       ) : (
         cardGrid
@@ -757,36 +764,38 @@ export default function CategoriesPage() {
       <Dialog
         open={isModalOpen}
         onClose={handleCloseModal}
-        title={editingId ? "Kategoriyi düzenle" : "Yeni kategori"}
+        title={
+          editingId ? t("categories.dialog.editTitle") : t("categories.dialog.createTitle")
+        }
         footer={
           <>
             <Button variant="ghost" size="sm" onClick={handleCloseModal}>
-              Vazgeç
+              {t("categories.actions.cancel")}
             </Button>
             {/* Form dışındaki düğme `form` ile bağlanır: alanlar kaydırılırken
                 Kaydet/Vazgeç görünür kalır (alan sayısı medya ile arttı). */}
             <Button variant="primary" size="sm" type="submit" form="category-form" disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-              {editingId ? "Kaydet" : "Oluştur"}
+              {editingId ? t("categories.actions.save") : t("categories.actions.create")}
             </Button>
           </>
         }
       >
         <form id="category-form" onSubmit={handleSubmit} className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
-          <Field label="Kategori adı" htmlFor="cat-name" required>
+          <Field label={t("categories.dialog.nameLabel")} htmlFor="cat-name" required>
             <Input
               id="cat-name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Örn. Saç"
+              placeholder={t("categories.dialog.namePlaceholder")}
               required
             />
           </Field>
 
           <Field
-            label="Açıklama"
+            label={t("categories.dialog.descriptionLabel")}
             htmlFor="cat-desc"
-            hint="Müşteri uygulamasında kısa metin olarak görünür."
+            hint={t("categories.dialog.descriptionHint")}
           >
             <Textarea
               id="cat-desc"
@@ -796,7 +805,7 @@ export default function CategoriesPage() {
             />
           </Field>
 
-          <Field label="İkon" htmlFor="cat-icon">
+          <Field label={t("categories.dialog.iconLabel")} htmlFor="cat-icon">
             <Select
               id="cat-icon"
               value={formData.icon}
@@ -804,7 +813,7 @@ export default function CategoriesPage() {
             >
               {iconOptions.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t(option.labelKey)}
                 </option>
               ))}
             </Select>
@@ -812,24 +821,24 @@ export default function CategoriesPage() {
 
           <div className="flex items-center justify-between gap-3 rounded-field border border-border bg-surface-variant p-3">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-fg">Aktif</p>
-              <p className="text-xs text-fg-muted">Pasif kategori müşteri uygulamasında görünmez.</p>
+              <p className="text-sm font-semibold text-fg">{t("categories.dialog.activeLabel")}</p>
+              <p className="text-xs text-fg-muted">{t("categories.dialog.activeHint")}</p>
             </div>
             <Toggle
               checked={formData.isActive}
               onChange={(next) => setFormData({ ...formData, isActive: next })}
-              label="Kategori aktif"
+              label={t("categories.dialog.activeToggle")}
             />
           </div>
 
           <ImageField
-            label="Kategori görseli"
+            label={t("categories.dialog.imageLabel")}
             value={formData.imageUrl}
             onChange={(imageUrl) => setFormData({ ...formData, imageUrl })}
           />
 
           <VideoField
-            label="Kategori videosu"
+            label={t("categories.dialog.videoLabel")}
             value={formData.videoUrl}
             onChange={(videoUrl) => setFormData({ ...formData, videoUrl })}
           />

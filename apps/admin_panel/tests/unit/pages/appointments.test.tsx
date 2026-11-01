@@ -30,6 +30,7 @@ vi.mock('next/navigation', () => {
 });
 
 import AppointmentsPage from '@/app/appointments/page';
+import LocaleProvider from '@/providers/LocaleProvider';
 
 const baseAppointment = {
   date: '2026-09-30',
@@ -107,6 +108,18 @@ const localDate = (offsetDays = 0): string => {
   ).padStart(2, '0')}`;
 };
 
+/**
+ * Sayfa `useI18n()` ile çevrilir; jsdom'un `navigator.language` değeri 'en-US'
+ * olduğu için varsayılan çözümleme İngilizceye düşer. Testler bugünkü Türkçe
+ * kopyayı doğruladığından dil `initialMode="tr"` ile sabitlenir.
+ */
+const renderPage = () =>
+  render(
+    <LocaleProvider initialMode="tr">
+      <AppointmentsPage />
+    </LocaleProvider>
+  );
+
 describe('AppointmentsPage', () => {
   beforeEach(() => {
     localStorage.setItem('access_token', 'tok-123');
@@ -118,7 +131,7 @@ describe('AppointmentsPage', () => {
   });
 
   test('ilk yüklemede istek varsayılanlarla gider ve tablo satırları basılır', async () => {
-    render(<AppointmentsPage />);
+    renderPage();
 
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
     const params = lastParams();
@@ -142,7 +155,7 @@ describe('AppointmentsPage', () => {
   });
 
   test('arama 300ms debounce edilir: yazarken değil, sonra tek istek', async () => {
-    render(<AppointmentsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     await userEvent.type(screen.getByLabelText('Randevu ara'), 'zeynep');
@@ -155,7 +168,7 @@ describe('AppointmentsPage', () => {
   });
 
   test('durum filtresi status olarak gider ve sayfayı 1e döndürür', async () => {
-    render(<AppointmentsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     await userEvent.click(screen.getByLabelText('Sonraki sayfa'));
@@ -168,7 +181,7 @@ describe('AppointmentsPage', () => {
   });
 
   test('salon, personel ve tarih presetleri sunucu parametrelerine dönüşür', async () => {
-    render(<AppointmentsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     await userEvent.selectOptions(screen.getByLabelText('Salon'), 'salon-2');
@@ -184,7 +197,7 @@ describe('AppointmentsPage', () => {
   });
 
   test('chip kaldırma filtreyi düşürür, Temizle tüm filtreleri sıfırlar (router.replace)', async () => {
-    render(<AppointmentsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     await userEvent.selectOptions(screen.getByLabelText('Durum'), 'COMPLETED');
@@ -210,7 +223,7 @@ describe('AppointmentsPage', () => {
   });
 
   test('sayfa boyutu limit olarak gider ve localStoragea yazılır', async () => {
-    render(<AppointmentsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     fireEvent.change(screen.getByLabelText('Sayfa başına kayıt'), { target: { value: '50' } });
@@ -221,7 +234,7 @@ describe('AppointmentsPage', () => {
   });
 
   test('satır aksiyonları duruma göre değişir (Detay her satırda)', async () => {
-    render(<AppointmentsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     const rows = tableRows();
@@ -236,7 +249,7 @@ describe('AppointmentsPage', () => {
   });
 
   test('Detay randevu bilgileriyle diyaloğu açar', async () => {
-    render(<AppointmentsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     await userEvent.click(within(tableRows()[0]).getByRole('button', { name: 'Detay' }));
@@ -250,7 +263,7 @@ describe('AppointmentsPage', () => {
   });
 
   test('İptal önce onay ister; Vazgeç PATCH atmaz, onay CANCELLED gönderir', async () => {
-    render(<AppointmentsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     await userEvent.click(within(tableRows()[2]).getByRole('button', { name: 'İptal' }));
@@ -282,7 +295,7 @@ describe('AppointmentsPage', () => {
   });
 
   test('meta.counts değerleri durum seçeneklerinde ve alt başlıkta görünür', async () => {
-    render(<AppointmentsPage />);
+    renderPage();
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
 
     const statusSelect = screen.getByLabelText('Durum');
@@ -295,9 +308,49 @@ describe('AppointmentsPage', () => {
     expect(screen.getByText('45 randevu · 12 bekliyor')).toBeTruthy();
   });
 
+  test('dil en olunca tüm metinler, tarih ve tutar İngilizceye döner (t() ve locale bağlantısı)', async () => {
+    render(
+      <LocaleProvider initialMode="en">
+        <AppointmentsPage />
+      </LocaleProvider>
+    );
+    await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
+
+    // Arama, yenile, başlık sayaçları, filtre etiketleri, rozet ve aksiyonlar.
+    expect(screen.getByLabelText('Search appointments')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeTruthy();
+    expect(screen.getByText('45 appointments · 12 pending')).toBeTruthy();
+    expect(screen.getByLabelText('Status')).toBeTruthy();
+    expect(screen.getByLabelText('Date')).toBeTruthy();
+    expect(
+      within(screen.getByLabelText('Status')).getByRole('option', { name: 'Pending (12)' })
+    ).toBeTruthy();
+    const table = screen.getByRole('table');
+    expect(within(table).getByText('Completed')).toBeTruthy();
+    expect(within(table).getByText(/Sep 30, 2026/)).toBeTruthy();
+    expect(within(table).queryByText(/30 Eyl 2026/)).toBeNull();
+    const enMoney = new Intl.NumberFormat('en', {
+      style: 'currency',
+      currency: 'TRY',
+      maximumFractionDigits: 0,
+    }).format(750);
+    const trMoney = new Intl.NumberFormat('tr', {
+      style: 'currency',
+      currency: 'TRY',
+      maximumFractionDigits: 0,
+    }).format(750);
+    expect(tableRows()[0].textContent).toContain(enMoney);
+    expect(tableRows()[0].textContent).not.toContain(trMoney);
+    expect(within(tableRows()[1]).getByRole('button', { name: 'Confirm' })).toBeTruthy();
+
+    await userEvent.click(within(tableRows()[2]).getByRole('button', { name: 'Cancel' }));
+    const dialog = screen.getByRole('dialog', { name: 'Cancel appointment' });
+    expect(dialog.textContent).toContain('Oct 02, 2026');
+  });
+
   test('tablo boş + filtre etkin ise "Eşleşme yok" gösterir', async () => {
     respond([], { ...meta, total: 0, totalPages: 1 });
-    render(<AppointmentsPage />);
+    renderPage();
 
     await waitFor(() => expect(screen.getByText('Randevu yok')).toBeTruthy());
 

@@ -16,12 +16,16 @@ import assert from 'node:assert/strict';
 
 import {
   DEFAULT_SALONS_QUERY,
+  SALON_SORT_OPTIONS,
+  SALON_STATUS_CHIP_LABEL_KEYS,
+  SALON_STATUS_FILTER_LABEL_KEYS,
   activeChips,
   buildSalonsQuery,
   normalizeQuery,
   parseSalonsQuery,
   toApiSearchParams,
 } from '../../src/lib/salonsQuery.ts';
+import { LOCALES, translate } from '../../src/lib/i18n/index.ts';
 
 test('parseSalonsQuery: boş arama varsayılan durumu döner', () => {
   assert.deepEqual(parseSalonsQuery(''), DEFAULT_SALONS_QUERY);
@@ -130,10 +134,20 @@ test('activeChips: durum → şehir → puan → arama sırası ve kaldırma yam
     chips.map((chip) => chip.key),
     ['status', 'city', 'minRating', 'q']
   );
+  // Modül metin değil ANAHTAR döndürür: metni sayfa `t(labelKey, vars)` ile basar.
   assert.deepEqual(
-    chips.map((chip) => chip.label),
-    ['Durum: Onaylı', 'Şehir: İstanbul', 'Puan: 4+', 'Arama: "kuaför"']
+    chips.map((chip) => chip.labelKey),
+    [
+      'salons.chips.statusApproved',
+      'salons.chips.city',
+      'salons.chips.minRating',
+      'salons.chips.q',
+    ]
   );
+  assert.equal(chips[0].vars, undefined);
+  assert.deepEqual(chips[1].vars, { city: 'İstanbul' });
+  assert.deepEqual(chips[2].vars, { rating: 4 });
+  assert.deepEqual(chips[3].vars, { q: 'kuaför' });
   assert.deepEqual(chips[0].patch, { status: 'tümü' });
   assert.deepEqual(chips[1].patch, { city: '' });
   assert.deepEqual(chips[2].patch, { minRating: null });
@@ -202,4 +216,62 @@ test('toApiSearchParams: durum seçiliyken status parametresi eklenir', () => {
   assert.equal(params.get('status'), 'pasif');
   assert.equal(params.has('search'), false);
   assert.equal(params.has('city'), false);
+});
+
+/* ---------- i18n: anahtarlar sözlükte çözümleniyor (tr kopyası birebir) ---------- */
+
+test('chip/sekme/sıralama anahtarları iki dilde de çözümlenir', () => {
+  const keys = [
+    ...SALON_SORT_OPTIONS.map((option) => option.labelKey),
+    ...Object.values(SALON_STATUS_FILTER_LABEL_KEYS),
+    ...Object.values(SALON_STATUS_CHIP_LABEL_KEYS),
+    'salons.chips.city',
+    'salons.chips.minRating',
+    'salons.chips.q',
+  ];
+
+  for (const key of keys) {
+    assert.equal(
+      key.startsWith('salons.'),
+      true,
+      `salons.* anahtarı bekleniyor (metin değil): ${key}`
+    );
+    for (const locale of LOCALES) {
+      assert.notEqual(translate(locale, key), key, `${locale}: ${key} sözlükte yok`);
+    }
+  }
+});
+
+test('çözümlenen chip metinleri bugünkü Türkçe kopyayla birebir aynı', () => {
+  const chips = activeChips({
+    ...DEFAULT_SALONS_QUERY,
+    q: 'kuaför',
+    status: 'onaylı',
+    city: 'İstanbul',
+    minRating: 4,
+  });
+
+  assert.deepEqual(
+    chips.map((chip) => translate('tr', chip.labelKey, chip.vars)),
+    ['Durum: Onaylı', 'Şehir: İstanbul', 'Puan: 4+', 'Arama: "kuaför"']
+  );
+  assert.equal(translate('en', chips[0].labelKey), 'Status: Approved');
+});
+
+test('sıralama seçenekleri tr etiketleri bugünkü kopyayla aynı, value/sort değişmedi', () => {
+  assert.deepEqual(
+    SALON_SORT_OPTIONS.map((option) => translate('tr', option.labelKey)),
+    ['En yeni', 'En eski', 'İsim (A-Z)', 'Puan (yüksek)']
+  );
+  assert.deepEqual(
+    SALON_SORT_OPTIONS.map((option) => `${option.value}|${option.sort}|${option.order}`),
+    ['createdAt:desc|createdAt|desc', 'createdAt:asc|createdAt|asc', 'name:asc|name|asc', 'rating:desc|rating|desc']
+  );
+});
+
+test('durum filtresi etiketleri tr kopyasıyla aynı', () => {
+  assert.deepEqual(
+    Object.values(SALON_STATUS_FILTER_LABEL_KEYS).map((key) => translate('tr', key)),
+    ['Tümü', 'Onaylı', 'Bekliyor', 'Pasif']
+  );
 });

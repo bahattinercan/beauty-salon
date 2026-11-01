@@ -1,13 +1,19 @@
 'use client';
 
+import { useMemo } from 'react';
 import Dialog from '@/components/ui/Dialog';
 import Button from '@/components/ui/Button';
 import { StatusBadge, APPOINTMENT_STATUS } from '@/components/ui/Badge';
+import type { Locale } from '@/lib/i18n';
+import { useI18n } from '@/providers/LocaleProvider';
 
 /**
  * Randevu detay modalı **salt okunurdur**: ağ çağrısı, form ve kaydet yoktur.
  * Veri zaten tablo satırından gelir (`GET /admin/appointments` satırı), bu yüzden
  * diyalog kendi fetch'ini yapmaz.
+ *
+ * Etiketler `appointments.detail.*`, durum rozeti `appointments.status.*`
+ * anahtarlarından çevrilir; renk tonu paylaşılan `APPOINTMENT_STATUS` map'inde kalır.
  */
 export interface AppointmentDetail {
   id: string;
@@ -26,8 +32,8 @@ export interface AppointmentDetail {
 
 const EMPTY = '—';
 
-function money(value: number): string {
-  return new Intl.NumberFormat('tr-TR', {
+function money(value: number, locale: Locale = 'tr'): string {
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: 'TRY',
     maximumFractionDigits: 0,
@@ -38,13 +44,13 @@ function money(value: number): string {
  * DATEONLY alanları (`YYYY-MM-DD`) **yerel** güne çevrilir: `new Date('2026-09-30')`
  * UTC gece yarısı okur ve negatif saat dilimlerinde bir gün geriye kayar.
  */
-function formatDate(value: string): string {
+function formatDate(value: string, locale: Locale = 'tr'): string {
   const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   const date = dateOnly
     ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
     : new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' });
+  return date.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -65,21 +71,34 @@ export default function AppointmentDetailDialog({
   appointment: AppointmentDetail | null;
   onClose: () => void;
 }) {
+  const { locale, t } = useI18n();
+  // Rozet etiketi aktif dile çevrilir, ton paylaşılan map'ten gelir (Badge değişmez).
+  const statusMap = useMemo(
+    () => ({
+      PENDING: { ...APPOINTMENT_STATUS.PENDING, label: t('appointments.status.PENDING') },
+      CONFIRMED: { ...APPOINTMENT_STATUS.CONFIRMED, label: t('appointments.status.CONFIRMED') },
+      COMPLETED: { ...APPOINTMENT_STATUS.COMPLETED, label: t('appointments.status.COMPLETED') },
+      CANCELLED: { ...APPOINTMENT_STATUS.CANCELLED, label: t('appointments.status.CANCELLED') },
+      NO_SHOW: { ...APPOINTMENT_STATUS.NO_SHOW, label: t('appointments.status.NO_SHOW') },
+    }),
+    [t]
+  );
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      title="Randevu detayı"
+      title={t('appointments.detail.title')}
       size="md"
       footer={
         <Button variant="ghost" onClick={onClose}>
-          Kapat
+          {t('appointments.detail.close')}
         </Button>
       }
     >
       {appointment ? (
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
-          <Row label="Müşteri">
+          <Row label={t('appointments.detail.customer')}>
             {appointment.customer ? (
               <>
                 <span>{appointment.customer.fullName}</span>
@@ -91,24 +110,24 @@ export default function AppointmentDetailDialog({
               EMPTY
             )}
           </Row>
-          <Row label="Salon">{appointment.salon?.name ?? EMPTY}</Row>
-          <Row label="Hizmet">{appointment.service?.name ?? EMPTY}</Row>
-          <Row label="Personel">{appointment.staff?.fullName ?? EMPTY}</Row>
-          <Row label="Tarih / Saat">
-            {`${formatDate(appointment.date)} ${appointment.startTime.slice(0, 5)}–${appointment.endTime.slice(0, 5)}`}
+          <Row label={t('appointments.detail.salon')}>{appointment.salon?.name ?? EMPTY}</Row>
+          <Row label={t('appointments.detail.service')}>{appointment.service?.name ?? EMPTY}</Row>
+          <Row label={t('appointments.detail.staff')}>{appointment.staff?.fullName ?? EMPTY}</Row>
+          <Row label={t('appointments.detail.when')}>
+            {`${formatDate(appointment.date, locale)} ${appointment.startTime.slice(0, 5)}–${appointment.endTime.slice(0, 5)}`}
           </Row>
-          <Row label="Tutar">
-            {typeof appointment.service?.price === 'number' ? money(appointment.service.price) : EMPTY}
+          <Row label={t('appointments.detail.price')}>
+            {typeof appointment.service?.price === 'number' ? money(appointment.service.price, locale) : EMPTY}
           </Row>
-          <Row label="Durum">
-            <StatusBadge map={APPOINTMENT_STATUS} value={appointment.status} />
+          <Row label={t('appointments.detail.status')}>
+            <StatusBadge map={statusMap} value={appointment.status} />
           </Row>
-          <Row label="Not">{appointment.note ?? EMPTY}</Row>
+          <Row label={t('appointments.detail.note')}>{appointment.note ?? EMPTY}</Row>
           {appointment.status === 'CANCELLED' ? (
-            <Row label="İptal nedeni">{appointment.cancellationReason ?? EMPTY}</Row>
+            <Row label={t('appointments.detail.cancellationReason')}>{appointment.cancellationReason ?? EMPTY}</Row>
           ) : null}
-          <Row label="Oluşturma">
-            {appointment.createdAt ? formatDate(appointment.createdAt) : EMPTY}
+          <Row label={t('appointments.detail.createdAt')}>
+            {appointment.createdAt ? formatDate(appointment.createdAt, locale) : EMPTY}
           </Row>
         </dl>
       ) : null}

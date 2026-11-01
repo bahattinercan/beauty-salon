@@ -13,7 +13,11 @@ const DEFAULTS = {
   newSalonNotificationsEnabled: true,
   newReviewNotificationsEnabled: true,
   maintenanceModeEnabled: false,
+  language: 'system',
 };
+
+// language için kabul edilen değerler
+const ALLOWED_LANGUAGES = ['tr', 'en', 'system'];
 
 // GET /settings (Admin)
 const getSettings = async (req, res, next) => {
@@ -31,6 +35,18 @@ const getSettings = async (req, res, next) => {
 const updateSettings = async (req, res, next) => {
   try {
     const entries = Object.entries(req.body || {});
+
+    // language zorunlu değil; gelirse yalnızca izinli değerlerden biri olmalı
+    if (entries.some(([key]) => key === 'language')) {
+      const { language } = req.body;
+      if (!ALLOWED_LANGUAGES.includes(language)) {
+        return res.status(400).json({
+          success: false,
+          message: "Geçersiz dil; 'tr', 'en' veya 'system' olmalı",
+        });
+      }
+    }
+
     for (const [key, value] of entries) {
       await Setting.upsert({ key, value });
     }

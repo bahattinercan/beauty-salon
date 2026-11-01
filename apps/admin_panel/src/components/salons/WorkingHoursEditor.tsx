@@ -2,6 +2,7 @@
 
 import { cx } from '@/lib/cx';
 import { Input, Toggle } from '@/components/ui/Field';
+import { useI18n } from '@/providers/LocaleProvider';
 
 export type WorkingDay =
   | 'monday'
@@ -24,14 +25,19 @@ export interface DayHours {
  */
 export type WorkingHours = Partial<Record<WorkingDay, DayHours>>;
 
-export const WORKING_DAYS: { key: WorkingDay; label: string }[] = [
-  { key: 'monday', label: 'Pazartesi' },
-  { key: 'tuesday', label: 'Salı' },
-  { key: 'wednesday', label: 'Çarşamba' },
-  { key: 'thursday', label: 'Perşembe' },
-  { key: 'friday', label: 'Cuma' },
-  { key: 'saturday', label: 'Cumartesi' },
-  { key: 'sunday', label: 'Pazar' },
+/**
+ * Gün listesi: `key` veri anahtarı (API/seed), `labelKey` görünen adın sözlük anahtarı
+ * (`salons.workingHours.days.*`). Metin bileşende `t()` ile basılır; `SalonEditDialog`
+ * doğrulama mesajları da aynı anahtarı kullanır.
+ */
+export const WORKING_DAYS: { key: WorkingDay; labelKey: string }[] = [
+  { key: 'monday', labelKey: 'salons.workingHours.days.monday' },
+  { key: 'tuesday', labelKey: 'salons.workingHours.days.tuesday' },
+  { key: 'wednesday', labelKey: 'salons.workingHours.days.wednesday' },
+  { key: 'thursday', labelKey: 'salons.workingHours.days.thursday' },
+  { key: 'friday', labelKey: 'salons.workingHours.days.friday' },
+  { key: 'saturday', labelKey: 'salons.workingHours.days.saturday' },
+  { key: 'sunday', labelKey: 'salons.workingHours.days.sunday' },
 ];
 
 /** Anahtarı yeni açılan günün varsayılanı (plan §5.1). */
@@ -62,19 +68,22 @@ export default function WorkingHoursEditor({
     onChange(copy);
   };
 
+  const { t } = useI18n();
+
   return (
     <div
       role="group"
-      aria-label="Çalışma saatleri"
+      aria-label={t('salons.workingHours.group')}
       className={cx('space-y-1', className)}
     >
       <div className="flex items-center gap-2 px-1 text-xs font-semibold text-fg-muted">
-        <span className="min-w-0 flex-1">Gün</span>
-        <span className="w-14 text-center">Açık</span>
-        <span className={cx(TIME_COLUMN, 'text-center')}>Açılış</span>
-        <span className={cx(TIME_COLUMN, 'text-center')}>Kapanış</span>
+        <span className="min-w-0 flex-1">{t('salons.workingHours.day')}</span>
+        <span className="w-14 text-center">{t('salons.workingHours.open')}</span>
+        <span className={cx(TIME_COLUMN, 'text-center')}>{t('salons.workingHours.opens')}</span>
+        <span className={cx(TIME_COLUMN, 'text-center')}>{t('salons.workingHours.closes')}</span>
       </div>
-      {WORKING_DAYS.map(({ key, label }) => {
+      {WORKING_DAYS.map(({ key, labelKey }) => {
+        const label = t(labelKey);
         const hours = value[key];
         const open = Boolean(hours);
         return (
@@ -83,12 +92,12 @@ export default function WorkingHoursEditor({
             <Toggle
               checked={open}
               onChange={(next) => patchDay(key, next ? (hours ?? DEFAULT_DAY_HOURS) : null)}
-              label={`${label} açık`}
+              label={t('salons.workingHours.dayToggle', { day: label })}
             />
             <Input
               type="time"
               className={TIME_COLUMN}
-              aria-label={`${label} açılış saati`}
+              aria-label={t('salons.workingHours.openTime', { day: label })}
               value={hours?.open ?? ''}
               disabled={!open}
               onChange={(e) => patchDay(key, { open: e.target.value, close: hours?.close ?? DEFAULT_DAY_HOURS.close })}
@@ -96,7 +105,7 @@ export default function WorkingHoursEditor({
             <Input
               type="time"
               className={TIME_COLUMN}
-              aria-label={`${label} kapanış saati`}
+              aria-label={t('salons.workingHours.closeTime', { day: label })}
               value={hours?.close ?? ''}
               disabled={!open}
               onChange={(e) => patchDay(key, { open: hours?.open ?? DEFAULT_DAY_HOURS.open, close: e.target.value })}

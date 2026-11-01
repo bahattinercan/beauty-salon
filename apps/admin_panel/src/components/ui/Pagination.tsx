@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cx } from '@/lib/cx';
 import { Select } from '@/components/ui/Field';
 import Button from '@/components/ui/Button';
+import { useI18n } from '@/providers/LocaleProvider';
 
 /** AP-007 H3: varsayılan sayfa boyutu 20, seçenekler 20/50/100 (API `limit` ≤100). */
 export const PAGE_SIZE_OPTIONS = [20, 50, 100];
@@ -40,6 +41,7 @@ export default function Pagination({
   pageSizeOptions?: number[];
   onPageSize?: (size: number) => void;
 }) {
+  const { t } = useI18n();
   const hasSizeControl = typeof onPageSize === 'function' && pageSizeOptions.length > 0;
   const hasRange = typeof total === 'number' && typeof pageSize === 'number';
   // Eski sözleşme: tek sayfa varsa hiç render yok. Yeni kontrollerden biri
@@ -54,15 +56,15 @@ export default function Pagination({
     <div className={cx('flex flex-wrap items-center justify-between gap-3 pt-4', className)}>
       <span className="tnum text-sm text-fg-muted">
         {hasRange
-          ? `${from}–${to} / ${total}`
+          ? t('ui.pagination.range', { from, to, total: total ?? 0 })
           : typeof total === 'number'
-            ? `${total} kayıt`
-            : `Sayfa ${page} / ${totalPages}`}
+            ? t('ui.pagination.total', { count: total })
+            : t('ui.pagination.pageOf', { page, totalPages })}
       </span>
       <div className="flex items-center gap-2">
         {hasSizeControl ? (
           <Select
-            aria-label="Sayfa başına kayıt"
+            aria-label={t('ui.pagination.pageSize')}
             className="w-[7.5rem]"
             value={size}
             onChange={(e) => onPageSize(Number(e.target.value))}
@@ -79,7 +81,7 @@ export default function Pagination({
           size="icon"
           disabled={page <= 1}
           onClick={() => onPage(page - 1)}
-          aria-label="Önceki sayfa"
+          aria-label={t('ui.pagination.previous')}
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
         </Button>
@@ -88,7 +90,7 @@ export default function Pagination({
           size="icon"
           disabled={page >= totalPages}
           onClick={() => onPage(page + 1)}
-          aria-label="Sonraki sayfa"
+          aria-label={t('ui.pagination.next')}
         >
           <ChevronRight className="h-4 w-4" aria-hidden />
         </Button>

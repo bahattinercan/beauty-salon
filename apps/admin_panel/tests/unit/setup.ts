@@ -1,4 +1,4 @@
-import { afterEach } from 'vitest';
+import { afterEach, beforeEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
 /**
@@ -21,6 +21,23 @@ if (typeof window.matchMedia !== 'function') {
     dispatchEvent: () => false,
   })) as unknown as typeof window.matchMedia;
 }
+
+/**
+ * Testlerin varsayılan dili Türkçedir — panelin varsayılan dili de Türkçe.
+ *
+ * Neden `navigator.language` (localStorage değil): `LocaleProvider` çözümleme
+ * sırası localStorage → `initialMode` → varsayılan. Depoya 'tr' yazmak, açıkça
+ * `initialMode="en"` kuran testleri (AppointmentActions, appointments sayfası)
+ * ve "depolama boş" sözleşmesini ezerdi; tarayıcı dilini 'tr-TR' yapmak yalnız
+ * `system` modunun varsayılanını Türkçeye çeker, açık seçimlere dokunmaz.
+ * Test kendi dilini `Object.defineProperty` ile sabitlerse o değer geçerlidir.
+ */
+beforeEach(() => {
+  Object.defineProperty(window.navigator, 'language', {
+    configurable: true,
+    get: () => 'tr-TR',
+  });
+});
 
 afterEach(() => {
   cleanup();

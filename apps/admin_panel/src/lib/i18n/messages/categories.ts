@@ -1,0 +1,236 @@
+/**
+ * `categories.*` — Kategori Yönetimi ekranının tüm görünen metinleri
+ * (`src/app/categories/page.tsx`, `src/components/categories/VideoField.tsx` ve
+ * `src/lib/categoriesQuery.ts` içindeki `labelKey`'ler).
+ *
+ * `tr` metinleri bugünkü arayüz kopyasından BİREBİR alınmıştır; sayfa kopyası
+ * değişirse önce burası güncellenir. `en: typeof tr` iki dilde aynı anahtar
+ * ağacını derleme zamanında zorlar. Yer tutucular `{count}`, `{label}`, `{q}`
+ * gibi süslü parantezle yazılır (bkz. `translate`).
+ *
+ * Kural: `categoriesQuery.ts` SAF kalır — metin değil ANAHTAR döndürür; metin
+ * sayfada `t(labelKey, vars)` ile basılır.
+ */
+export const tr = {
+  filter: {
+    view: 'Görünüm',
+    viewTable: 'Tablo',
+    viewCards: 'Kartlar',
+    refresh: 'Yenile',
+    newCategory: 'Yeni kategori',
+    searchPlaceholder: 'Kategori adı veya açıklamada ara',
+    search: 'Kategori ara',
+    status: 'Durum filtresi',
+    media: 'Medya filtresi',
+    icon: 'İkon filtresi',
+    iconAll: 'Tüm ikonlar',
+    sort: 'Sıralama',
+    sortDefault: 'Sıra (varsayılan)',
+    sortNameAsc: 'İsim (A-Z)',
+    sortNameDesc: 'İsim (Z-A)',
+    sortServiceCountDesc: 'Hizmet sayısı (çok)',
+    sortNewest: 'En yeni',
+  },
+  statusFilter: {
+    all: 'Tümü',
+    active: 'Aktif',
+    passive: 'Pasif',
+  },
+  mediaFilter: {
+    all: 'Tümü',
+    withImage: 'Görselli',
+    withVideo: 'Videolu',
+    withoutMedia: 'Medyasız',
+  },
+  chips: {
+    status: 'Durum: {label}',
+    media: 'Medya: {label}',
+    icon: 'İkon: {icon}',
+    q: 'Arama: "{q}"',
+    sort: 'Sıralama: {label}',
+  },
+  columns: {
+    name: 'Kategori',
+    description: 'Açıklama',
+    media: 'Medya',
+    serviceCount: 'Hizmet',
+    status: 'Durum',
+    actions: 'İşlemler',
+  },
+  cells: {
+    video: 'Video',
+  },
+  card: {
+    serviceCount: '{count} hizmet',
+    imageAlt: '{name} görseli',
+  },
+  empty: {
+    noneTitle: 'Kategori yok',
+    noneDescription: 'Hizmetlerin bağlanacağı kategorileri oluşturun.',
+    filteredTitle: 'Eşleşme yok',
+    filteredDescription: 'Filtreleri temizleyip tekrar deneyin.',
+    createFirst: 'İlk kategoriyi oluştur',
+  },
+  actions: {
+    edit: 'Düzenle',
+    delete: 'Kategoriyi sil',
+    save: 'Kaydet',
+    create: 'Oluştur',
+    cancel: 'Vazgeç',
+  },
+  dialog: {
+    editTitle: 'Kategoriyi düzenle',
+    createTitle: 'Yeni kategori',
+    nameLabel: 'Kategori adı',
+    namePlaceholder: 'Örn. Saç',
+    descriptionLabel: 'Açıklama',
+    descriptionHint: 'Müşteri uygulamasında kısa metin olarak görünür.',
+    iconLabel: 'İkon',
+    activeLabel: 'Aktif',
+    activeHint: 'Pasif kategori müşteri uygulamasında görünmez.',
+    activeToggle: 'Kategori aktif',
+    imageLabel: 'Kategori görseli',
+    videoLabel: 'Kategori videosu',
+  },
+  icons: {
+    hair: 'Saç',
+    nail: 'Tırnak',
+    skin: 'Cilt Bakımı',
+    makeup: 'Makyaj',
+    epilation: 'Epilasyon',
+    spa: 'SPA & Masaj',
+  },
+  confirm: {
+    delete: 'Bu kategoriyi silmek istediğinize emin misiniz?',
+  },
+  notice: {
+    loadError: 'Kategoriler yüklenemedi',
+    saveError: 'Kategori kaydedilemedi',
+    deleteError: 'Kategori silinemedi',
+  },
+  videoField: {
+    hint: 'MP4, WebM, OGG veya MOV — en fazla 50 MB',
+    noVideo: '{label}: video yok',
+    chooseFile: 'Dosya seç',
+    remove: 'Kaldır',
+    removeLabel: '{label} videosunu kaldır',
+    urlLabel: '{label} URL',
+    urlPlaceholder: '/uploads/… veya https://…',
+    useUrl: 'URL kullan',
+    uploading: 'Video yükleniyor',
+    missingUrl: 'Yükleme yanıtında video yolu yok',
+    uploadError: 'Video yüklenemedi',
+  },
+};
+
+export const en: typeof tr = {
+  filter: {
+    view: 'View',
+    viewTable: 'Table',
+    viewCards: 'Cards',
+    refresh: 'Refresh',
+    newCategory: 'New category',
+    searchPlaceholder: 'Search by category name or description',
+    search: 'Search categories',
+    status: 'Status filter',
+    media: 'Media filter',
+    icon: 'Icon filter',
+    iconAll: 'All icons',
+    sort: 'Sort',
+    sortDefault: 'Order (default)',
+    sortNameAsc: 'Name (A-Z)',
+    sortNameDesc: 'Name (Z-A)',
+    sortServiceCountDesc: 'Service count (high)',
+    sortNewest: 'Newest',
+  },
+  statusFilter: {
+    all: 'All',
+    active: 'Active',
+    passive: 'Passive',
+  },
+  mediaFilter: {
+    all: 'All',
+    withImage: 'With image',
+    withVideo: 'With video',
+    withoutMedia: 'No media',
+  },
+  chips: {
+    status: 'Status: {label}',
+    media: 'Media: {label}',
+    icon: 'Icon: {icon}',
+    q: 'Search: "{q}"',
+    sort: 'Sort: {label}',
+  },
+  columns: {
+    name: 'Category',
+    description: 'Description',
+    media: 'Media',
+    serviceCount: 'Services',
+    status: 'Status',
+    actions: 'Actions',
+  },
+  cells: {
+    video: 'Video',
+  },
+  card: {
+    serviceCount: '{count} services',
+    imageAlt: '{name} image',
+  },
+  empty: {
+    noneTitle: 'No categories',
+    noneDescription: 'Create categories to attach services to.',
+    filteredTitle: 'No matches',
+    filteredDescription: 'Clear the filters and try again.',
+    createFirst: 'Create the first category',
+  },
+  actions: {
+    edit: 'Edit',
+    delete: 'Delete category',
+    save: 'Save',
+    create: 'Create',
+    cancel: 'Cancel',
+  },
+  dialog: {
+    editTitle: 'Edit category',
+    createTitle: 'New category',
+    nameLabel: 'Category name',
+    namePlaceholder: 'e.g. Hair',
+    descriptionLabel: 'Description',
+    descriptionHint: 'Shown as a short text in the customer app.',
+    iconLabel: 'Icon',
+    activeLabel: 'Active',
+    activeHint: 'Passive categories are hidden in the customer app.',
+    activeToggle: 'Category active',
+    imageLabel: 'Category image',
+    videoLabel: 'Category video',
+  },
+  icons: {
+    hair: 'Hair',
+    nail: 'Nails',
+    skin: 'Skin Care',
+    makeup: 'Makeup',
+    epilation: 'Hair Removal',
+    spa: 'SPA & Massage',
+  },
+  confirm: {
+    delete: 'Are you sure you want to delete this category?',
+  },
+  notice: {
+    loadError: 'Categories could not be loaded',
+    saveError: 'Category could not be saved',
+    deleteError: 'Category could not be deleted',
+  },
+  videoField: {
+    hint: 'MP4, WebM, OGG or MOV — up to 50 MB',
+    noVideo: '{label}: no video',
+    chooseFile: 'Choose file',
+    remove: 'Remove',
+    removeLabel: 'Remove {label} video',
+    urlLabel: '{label} URL',
+    urlPlaceholder: '/uploads/… or https://…',
+    useUrl: 'Use URL',
+    uploading: 'Uploading video',
+    missingUrl: 'Upload response does not include a video path',
+    uploadError: 'Video could not be uploaded',
+  },
+};

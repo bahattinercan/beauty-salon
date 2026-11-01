@@ -11,10 +11,22 @@ import userEvent from '@testing-library/user-event';
 
 import Pagination from '@/components/ui/Pagination';
 
+import LocaleProvider from '@/providers/LocaleProvider';
+import type { ReactElement } from 'react';
+
+/**
+ * Bileşen kendi sabit metinlerini sözlükten (`ui.*`) basar; testler bugünkü
+ * Türkçe kopyayı görsün diye her render `LocaleProvider initialMode="tr"` ile
+ * sarmalanır (jsdom `navigator.language` = 'en-US' olduğu için 'system' modu
+ * İngilizceye düşerdi).
+ */
+const renderTr = (ui: ReactElement) =>
+  render(<LocaleProvider initialMode="tr">{ui}</LocaleProvider>);
+
 describe('Pagination', () => {
   test('totalPages <= 1 iken hiçbir şey render etmez', () => {
     for (const totalPages of [1, 0, -3]) {
-      const { container, unmount } = render(
+      const { container, unmount } = renderTr(
         <Pagination page={1} totalPages={totalPages} onPage={() => {}} />
       );
       expect(container.innerHTML).toBe('');
@@ -23,14 +35,14 @@ describe('Pagination', () => {
   });
 
   test('sayfa sayacını ve iki gezinme düğmesini erişilebilir adlarıyla basar', () => {
-    render(<Pagination page={2} totalPages={5} onPage={() => {}} />);
+    renderTr(<Pagination page={2} totalPages={5} onPage={() => {}} />);
     expect(screen.getByText('Sayfa 2 / 5')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Önceki sayfa' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Sonraki sayfa' })).toBeTruthy();
   });
 
   test('ilk sayfada "önceki" devre dışı, "sonraki" etkin', () => {
-    render(<Pagination page={1} totalPages={5} onPage={() => {}} />);
+    renderTr(<Pagination page={1} totalPages={5} onPage={() => {}} />);
     expect(
       screen.getByRole('button', { name: 'Önceki sayfa' }).hasAttribute('disabled')
     ).toBe(true);
@@ -40,7 +52,7 @@ describe('Pagination', () => {
   });
 
   test('son sayfada "sonraki" devre dışı kalır (sayfa taşması yok)', () => {
-    render(<Pagination page={5} totalPages={5} onPage={() => {}} />);
+    renderTr(<Pagination page={5} totalPages={5} onPage={() => {}} />);
     expect(
       screen.getByRole('button', { name: 'Sonraki sayfa' }).hasAttribute('disabled')
     ).toBe(true);
@@ -49,7 +61,7 @@ describe('Pagination', () => {
   test('tıklamalar komşu sayfayı bildirir (page-1 / page+1)', async () => {
     const onPage = vi.fn();
     const user = userEvent.setup();
-    render(<Pagination page={3} totalPages={5} onPage={onPage} />);
+    renderTr(<Pagination page={3} totalPages={5} onPage={onPage} />);
 
     await user.click(screen.getByRole('button', { name: 'Sonraki sayfa' }));
     await user.click(screen.getByRole('button', { name: 'Önceki sayfa' }));

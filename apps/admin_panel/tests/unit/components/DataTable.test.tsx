@@ -32,7 +32,7 @@ const COLUMNS: Column<Row>[] = [
 ];
 
 function renderTable(props: Partial<React.ComponentProps<typeof DataTable<Row>>> = {}) {
-  return render(
+  return renderTr(
     <DataTable<Row>
       rows={ROWS}
       columns={COLUMNS}
@@ -41,6 +41,18 @@ function renderTable(props: Partial<React.ComponentProps<typeof DataTable<Row>>>
     />
   );
 }
+
+import LocaleProvider from '@/providers/LocaleProvider';
+import type { ReactElement } from 'react';
+
+/**
+ * Bileşen kendi sabit metinlerini sözlükten (`ui.*`) basar; testler bugünkü
+ * Türkçe kopyayı görsün diye her render `LocaleProvider initialMode="tr"` ile
+ * sarmalanır (jsdom `navigator.language` = 'en-US' olduğu için 'system' modu
+ * İngilizceye düşerdi).
+ */
+const renderTr = (ui: ReactElement) =>
+  render(<LocaleProvider initialMode="tr">{ui}</LocaleProvider>);
 
 describe('DataTable — yükleme ve boş durum', () => {
   test('loading=true iken tablo yerine yükleme bloğu basılır', () => {

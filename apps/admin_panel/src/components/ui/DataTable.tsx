@@ -3,6 +3,7 @@
 import { cx } from '@/lib/cx';
 import { Card } from '@/components/ui/Card';
 import { EmptyState, LoadingBlock } from '@/components/ui/States';
+import { useI18n } from '@/providers/LocaleProvider';
 
 export interface Column<T> {
   key: string;
@@ -35,7 +36,7 @@ export default function DataTable<T>({
   columns,
   rowKey,
   loading = false,
-  emptyTitle = 'Kayıt yok',
+  emptyTitle,
   emptyDescription,
   actions,
   minWidthClass = 'min-w-[38rem]',
@@ -51,6 +52,8 @@ export default function DataTable<T>({
   minWidthClass?: string;
   className?: string;
 }) {
+  const { t } = useI18n();
+
   if (loading) {
     return (
       <Card className="p-6">
@@ -62,7 +65,7 @@ export default function DataTable<T>({
   if (!rows.length) {
     return (
       <Card>
-        <EmptyState title={emptyTitle} description={emptyDescription} />
+        <EmptyState title={emptyTitle ?? t('ui.dataTable.emptyTitle')} description={emptyDescription} />
       </Card>
     );
   }

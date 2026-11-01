@@ -5,6 +5,7 @@ import { ImageOff, Trash2, Upload } from 'lucide-react';
 import { Field, Input } from '@/components/ui/Field';
 import Button from '@/components/ui/Button';
 import { uploadFile } from '@/lib/api';
+import { useI18n } from '@/providers/LocaleProvider';
 
 /**
  * Yüklenen yol görelidir (`/uploads/<uuid>.png`) ve API tarafından servis
@@ -39,14 +40,16 @@ export default function ImageField({
   value,
   onChange,
   className,
-  hint = 'JPG, PNG, WebP veya GIF — en fazla 5 MB',
+  hint,
 }: {
   label: string;
   value?: string | null;
   onChange: (url: string | null) => void;
   className?: string;
+  /** Verilmezse sözlükteki genel ipucu (`salons.image.hint`) basılır. */
   hint?: string;
 }) {
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,12 +66,12 @@ export default function ImageField({
       const res = await uploadFile('/upload/single', file);
       const url = res?.data?.url;
       if (!url) {
-        setError('Yükleme yanıtında görsel yolu yok');
+        setError(t('salons.image.uploadNoUrl'));
         return;
       }
       onChange(url);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Görsel yüklenemedi');
+      setError(e instanceof Error ? e.message : t('salons.image.uploadFailed'));
     } finally {
       setBusy(false);
       // Aynı dosyayı tekrar seçebilmek için girişi sıfırla (change tetiklenmezdi).
@@ -92,11 +95,15 @@ export default function ImageField({
             // eslint-disable-next-line @next/next/no-img-element -- API göreli /uploads yolu veriyor; next/image konfigürasyonu kapsam dışı
             <img
               src={mediaUrl(value)}
-              alt={`${label} önizleme`}
+              alt={t('salons.image.preview', { label })}
               className="h-full w-full object-cover"
             />
           ) : (
-            <div role="img" aria-label={`${label}: görsel yok`} className="text-fg-subtle">
+            <div
+              role="img"
+              aria-label={t('salons.image.noImage', { label })}
+              className="text-fg-subtle"
+            >
               <ImageOff className="h-6 w-6" aria-hidden />
             </div>
           )}
@@ -119,7 +126,7 @@ export default function ImageField({
           disabled={busy}
         >
           <Upload className="h-4 w-4" aria-hidden />
-          Dosya seç
+          {t('salons.image.chooseFile')}
         </Button>
         <Button
           variant="ghost"
@@ -129,19 +136,19 @@ export default function ImageField({
             onChange(null);
           }}
           disabled={!value || busy}
-          aria-label={`${label} görselini kaldır`}
+          aria-label={t('salons.image.removeAria', { label })}
         >
           <Trash2 className="h-4 w-4" aria-hidden />
-          Kaldır
+          {t('salons.image.remove')}
         </Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <Input
-          aria-label={`${label} URL`}
+          aria-label={t('salons.image.urlAria', { label })}
           className="min-w-[12rem] flex-1"
           value={draft}
-          placeholder="/uploads/… veya https://…"
+          placeholder={t('salons.image.urlPlaceholder')}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -151,7 +158,7 @@ export default function ImageField({
           }}
         />
         <Button variant="ghost" size="sm" onClick={applyDraft} disabled={!draft.trim()}>
-          URL kullan
+          {t('salons.image.useUrl')}
         </Button>
       </div>
 
@@ -161,7 +168,7 @@ export default function ImageField({
         aria-busy={busy}
         className="text-sm text-fg-muted"
       >
-        {busy ? 'Görsel yükleniyor' : hint}
+        {busy ? t('salons.image.uploading') : (hint ?? t('salons.image.hint'))}
       </span>
       {error ? (
         <p role="alert" className="text-sm text-error">

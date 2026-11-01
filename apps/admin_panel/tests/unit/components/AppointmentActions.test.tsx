@@ -10,6 +10,9 @@
  * - Uçuşta buton metni DEĞİŞMEZ; ikon Loader2'ye döner ve yalnız O buton
  *   `disabled` olur (Diğer butonlar, özellikle `Detay`, tıklanabilir kalır).
  * - İkonlar `aria-hidden`: erişilebilir ad yalnız metinden gelir.
+ *
+ * Sayfa `useI18n()` ile çevrilir; testler bugünkü Türkçe kopyayı doğruladığından
+ * dil `initialMode="tr"` ile sabitlenir (jsdom `navigator.language` = 'en-US').
  */
 import { describe, expect, test, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -18,6 +21,13 @@ import userEvent from '@testing-library/user-event';
 import AppointmentActions, {
   type AppointmentActionStatus,
 } from '@/components/appointments/AppointmentActions';
+import LocaleProvider from '@/providers/LocaleProvider';
+import type { ReactElement } from 'react';
+
+/** Bileşen `t()` kullanır: her render Türkçe locale ile sarılır. */
+function renderTr(node: ReactElement) {
+  return render(<LocaleProvider initialMode="tr">{node}</LocaleProvider>);
+}
 
 /** Altı zorunlu prop; testte yalnız `status`/`pending` değişir. */
 function actions() {
@@ -32,7 +42,7 @@ function actions() {
 
 function renderRow(status: AppointmentActionStatus, pending?: null | 'cancel' | 'complete' | 'confirm' | 'noShow') {
   const handlers = actions();
-  const view = render(<AppointmentActions status={status} pending={pending} {...handlers} />);
+  const view = renderTr(<AppointmentActions status={status} pending={pending} {...handlers} />);
   return { ...view, handlers };
 }
 
@@ -168,8 +178,18 @@ describe('AppointmentActions', () => {
     expect(buttonNames()).toEqual(['Detay', 'Tamamla', 'Gelmedi', 'İptal']);
   });
 
+  test('dil en olunca buton metinleri İngilizceye döner (t() bağlantısı)', () => {
+    render(
+      <LocaleProvider initialMode="en">
+        <AppointmentActions status="CONFIRMED" {...actions()} />
+      </LocaleProvider>
+    );
+    expect(buttonNames()).toEqual(['Details', 'Complete', 'No-show', 'Cancel']);
+    expect(isDisabled('Details')).toBe(false);
+  });
+
   test('className kok alana eklenir (tablo hücresi hizalaması ezilebilir)', () => {
-    const { container } = render(
+    const { container } = renderTr(
       <AppointmentActions
         status="COMPLETED"
         className="justify-start"
