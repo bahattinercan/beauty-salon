@@ -11,6 +11,7 @@
 | 4 | [plan-4](plan-4-notification-controller.md) | `/notifications` controller + route | ✅ tamam |
 | 5 | [plan-5](plan-5-test-missing.md) | Test eksikleri | ✅ tamam (o tarihte 243 test) |
 | 6 | [plan-6](plan-6-error-handling.md) | Global hata yönetimi | ✅ tamam |
+| 7 | [DB-001](DB-001-postgres-gecis.md) | SQLite → PostgreSQL geçişi | 📋 PLAN (2026-11-01) |
 
 ## Gerçek durum (2026-10-23 ölçümü)
 
