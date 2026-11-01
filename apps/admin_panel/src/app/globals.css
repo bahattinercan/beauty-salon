@@ -12,85 +12,87 @@
 
 /* ---------- Light ---------- */
 :root {
-  --background: #F1F0F7;      /* surface ile 1.13:1 — kartlar sayfadan ayrılıyor */
-  --surface: #FFFFFF;
-  --surface-variant: #EFEDF7;
-  --border: #DDD8EA;          /* hairline 1.39:1 */
-  --border-strong: #C3BCD9;   /* 1.82:1 */
-  --fg: #1E1B2E;
-  --fg-muted: #5A5370;        /* 7.23:1 */
-  --fg-subtle: #6E6785;       /* 5.33:1 — eski #9CA3AF 2.54'te kalıyordu */
+  --background: #F4EEE3;      /* surface ile 1.14:1 — kartlar sayfadan ayrılıyor */
+  --surface: #FFFDF8;
+  --surface-variant: #F1E9DC;
+  --border: #DFD5C4;          /* hairline 1.43:1 */
+  --border-strong: #C6B9A3;   /* 1.90:1 */
+  --divider: #E3D9C7;
+  --fg: #1A1815;
+  --fg-muted: #5C5449;        /* 7.33:1 */
+  --fg-subtle: #736959;       /* 5.31:1 */
 
-  --primary: #7C5CBF;
-  --primary-dark: #5A42A0;
-  --primary-light: #9D82D4;
+  --primary: #6B4FB8;
+  --primary-dark: #43307F;
+  --primary-light: #9A82D0;
   /* Dolgu (buton / aktif öğe): üstündeki metin her zaman --on-primary'dir. */
-  --primary-solid: #6A4CB4;   /* on-primary 6.35:1 (AA) */
-  --primary-solid-hover: #5A42A0;
+  --primary-solid: #4E3893;   /* on-primary 9.09:1 (AAA) */
+  --primary-solid-hover: #43307F;
   --on-primary: #FFFFFF;
-  --secondary: #F0EBF8;
-  --accent: #B39DDB;
+  --secondary: #EFE6D8;
+  --accent: #C9B79A;
 
-  /* Lime YALNIZCA dolgudur (CTA, "Yeni" rozeti, aktif gezinme işareti).
-     Metin/ikon olarak kullanılamaz: #C9F04F beyaz üstü 1.31:1. */
-  --accent-lime: #C9F04F;
-  --on-accent-lime: #12131F;  /* 14.10:1 */
+  /* Şampanya YALNIZCA dolgudur (CTA, "Yeni" rozeti, aktif gezinme işareti).
+     Metin/ikon olarak kullanılamaz: #C6A664 kırık beyaz üstü 2.29:1. */
+  --accent-lime: #C6A664;
+  --on-accent-lime: #1A1815;  /* 7.63:1 */
 
   /* Koyu gezinme rayı (mobil pill nav'ın web karşılığı). */
-  --nav-pill: #17131F;
-  --on-nav-pill: #FFFFFF;     /* 18.27:1 */
-  --on-nav-pill-muted: #A9A3B8;
+  --nav-pill: #1A1815;
+  --on-nav-pill: #F4EEE3;     /* 15.34:1 */
+  --on-nav-pill-muted: #B7AC99; /* 7.91:1 */
 
   /* Promo / özet yüzeyi (mobil heroSurface). */
-  --hero-surface: #E8E5FA;
-  --banner-from: #9B7FE0;     /* mobil primaryGradient */
-  --banner-to: #6644B8;
+  --hero-surface: #EFE6D8;
+  --banner-from: #4E3893;     /* mobil primaryGradient */
+  --banner-to: #2A1F52;
 
-  /* Durum renkleri METİN olarak da okunabilir (eski #7CB69D 2.32'deydi). */
-  --success: #2F7D57;         /* 5.01:1 */
-  --error: #B32B38;           /* 6.33:1 */
-  --warning: #8A5A00;         /* 6.55:1 */
-  --info: #1F5FA8;            /* 6.42:1 */
+  /* Durum renkleri METİN olarak da okunabilir. */
+  --success: #2F6B4F;         /* 6.19:1 */
+  --error: #A8323C;           /* 6.48:1 */
+  --warning: #7A5200;         /* 6.81:1 */
+  --info: #2A5A8C;            /* 7.03:1 */
 
   --ring: color-mix(in srgb, var(--primary) 35%, transparent);
 }
 
 /* ---------- Dark (.dark :root'tan SONRA gelmeli) ---------- */
 .dark {
-  --background: #0F0D17;
-  --surface: #1C1828;
-  --surface-variant: #2A2440;
-  --border: #332E4C;
-  --border-strong: #4A4368;
-  --fg: #F0ECFF;
-  --fg-muted: #A79FC0;
-  --fg-subtle: #8B84A8;
+  --background: #14110D;
+  --surface: #221C16;
+  --surface-variant: #2C241C;
+  --border: #3D3327;
+  --border-strong: #5A4C3B;
+  --divider: #332B22;
+  --fg: #F4EDE1;
+  --fg-muted: #BDB2A0;
+  --fg-subtle: #9A8F7C;
 
-  --primary: #A88BDD;
-  --primary-dark: #7C5CBF;
-  --primary-light: #C4B0EA;
+  --primary: #B29AE8;
+  --primary-dark: #9C82DC;
+  --primary-light: #C9B6F0;
   /* Dark'ta marka açılır; üstündeki metin koyu kalmazsa okunmaz. */
-  --primary-solid: #9D82D4;   /* on-primary 5.43:1 */
-  --primary-solid-hover: #B49BE4;
-  --on-primary: #1C1828;
-  --secondary: #2A2440;
-  --accent: #B39DDB;
+  --primary-solid: #9C82DC;   /* on-primary 5.95:1 */
+  --primary-solid-hover: #8F72D8;
+  --on-primary: #14110D;
+  --secondary: #2C241C;
+  --accent: #D8C6A4;
 
-  --accent-lime: #C9F04F;
-  --on-accent-lime: #12131F;
+  --accent-lime: #D8B872;
+  --on-accent-lime: #14110D;
 
-  --nav-pill: #0A0912;
-  --on-nav-pill: #F0ECFF;     /* 17.11:1 */
-  --on-nav-pill-muted: #8B84A8;
+  --nav-pill: #0E0B08;
+  --on-nav-pill: #F4EDE1;     /* 16.87:1 */
+  --on-nav-pill-muted: #A79C88; /* 7.25:1 */
 
-  --hero-surface: #2A2440;
-  --banner-from: #6A5298;
-  --banner-to: #4A3779;
+  --hero-surface: #2C241C;
+  --banner-from: #3A2A6E;
+  --banner-to: #1E1440;
 
-  --success: #7CCBA2;
-  --error: #F28B82;
-  --warning: #FDD663;
-  --info: #8AB4F8;
+  --success: #6FC08F;
+  --error: #F08A8A;
+  --warning: #E0B060;
+  --info: #8AB4E8;
 
   --ring: color-mix(in srgb, var(--primary) 45%, transparent);
 }

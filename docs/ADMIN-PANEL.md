@@ -111,20 +111,35 @@ Sayfalar **semantic token** kullanır; tema `dark:` yazmadan otomatik döner.
 
 | Token | Light | Dark |
 |---|---|---|
-| `background` | `#FAFAFA` | `#131013` |
-| `surface` | `#FFFFFF` | `#1C181B` |
-| `surface-variant` | `#F5F5F5` | `#262023` |
-| `border` | `#E5E7EB` | `#332B2F` |
-| `fg` | `#2D2D2D` | `#F0ECEE` |
-| `fg-muted` | `#6B7280` | `#B0A6AB` |
-| `fg-subtle` | `#9CA3AF` | `#7C7276` |
-| `primary` | `#B76E79` | `#D9959F` |
-| `on-primary` | `#FFFFFF` | `#1C181B` |
-| `secondary` | `#F5E6E8` | `#2B2226` |
-| `success` / `error` / `warning` / `info` | `#7CB69D` / `#E57373` / `#FFB74D` / `#64B5F6` | `#7CCBA2` / `#F28B82` / `#FDD663` / `#8AB4F8` |
+| `background` | `#F4EEE3` | `#14110D` |
+| `surface` | `#FFFDF8` | `#221C16` |
+| `surface-variant` | `#F1E9DC` | `#2C241C` |
+| `border` | `#DFD5C4` | `#3D3327` |
+| `border-strong` | `#C6B9A3` | `#5A4C3B` |
+| `divider` | `#E3D9C7` | `#332B22` |
+| `fg` | `#1A1815` | `#F4EDE1` |
+| `fg-muted` | `#5C5449` | `#BDB2A0` |
+| `fg-subtle` | `#736959` | `#9A8F7C` |
+| `primary` | `#6B4FB8` | `#B29AE8` |
+| `primary-dark` | `#43307F` | `#9C82DC` |
+| `primary-light` | `#9A82D0` | `#C9B6F0` |
+| `primary-solid` / `primary-solid-hover` | `#4E3893` / `#43307F` | `#9C82DC` / `#8F72D8` |
+| `on-primary` | `#FFFFFF` | `#14110D` |
+| `secondary` | `#EFE6D8` | `#2C241C` |
+| `accent` | `#C9B79A` | `#D8C6A4` |
+| `accent-lime` / `on-accent-lime` | `#C6A664` / `#1A1815` | `#D8B872` / `#14110D` |
+| `nav-pill` / `on-nav-pill` | `#1A1815` / `#F4EEE3` | `#0E0B08` / `#F4EDE1` |
+| `on-nav-pill-muted` | `#B7AC99` | `#A79C88` |
+| `hero-surface` | `#EFE6D8` | `#2C241C` |
+| `banner-from` / `banner-to` | `#4E3893` / `#2A1F52` | `#3A2A6E` / `#1E1440` |
+| `success` / `error` / `warning` / `info` | `#2F6B4F` / `#A8323C` / `#7A5200` / `#2A5A8C` | `#6FC08F` / `#F08A8A` / `#E0B060` / `#8AB4E8` |
+
+Palet kaynağı (LX-001, “lux editorial”): `plans/admin/AP-012-lux-editorial-tokens.md`.
 
 `fg-subtle` yalnızca ikon/ipucu içindir; gövde metni `fg-muted` kullanır.
 `on-primary`, `bg-primary` üzerindeki metin/ikon içindir (dark'ta beyaz okunmaz).
+`accent-lime` artık **şampanya** altını: yalnızca dolgu / kenarlık / hairline / ikon olarak kullanılır, **metin rengi olamaz** (`#C6A664` açık yüzeyde 2.29:1). Metin gerekiyorsa `fg` kullanılır.
+Kontrast matrisi: `node scripts/wcag_tokens.js --scope admin --strict` (çıkış 0 olmalı).
 
 ### Kalıcılık
 
@@ -165,7 +180,9 @@ Tekrar eden rozet stilleri `globals.css` içinde utility olarak tanımlıdır:
 | GET | `/admin/dashboard` | ADMIN | Dashboard (stats, recent appointments, reviews) |
 | GET | `/admin/salons` | ADMIN | Tüm salonlar (verified filter, sayfalı) |
 | GET | `/admin/appointments` | ADMIN | Tüm randevular (status filter, sayfalı) |
-| GET | `/admin/reviews` | ADMIN | Tüm yorumlar (sayfalı) |
+| GET | `/admin/reviews` | ADMIN | Tüm yorumlar (sayfalı; `search`/`rating`/`visibility`/`replied`/`salonId`/`dateFrom`/`dateTo`/`sort`/`order` + `meta.counts`/`ratings`/`salons`) |
+| PATCH | `/admin/reviews/:id/reply` | ADMIN | Admin yanıtı yazar (`salonReply` + `salonReplyAt`) |
+| DELETE | `/admin/reviews/:id` | ADMIN | Yorumu siler + salonun `ratingAvg`/`reviewCount` değerini yeniden hesaplar |
 | POST | `/upload/video` | ADMIN | Video yükleme (mp4/webm/ogg/quicktime, ≤50 MB) |
 
 ---
@@ -282,13 +299,144 @@ Panel listeyi tek `GET /categories` çağrısıyla çeker; sıralama/filtreleme/
 
 ---
 
+## Yorum Yönetimi — filtre çubuğu, chip'ler ve kart işlemleri (AP-010)
+
+`apps/admin_panel/src/app/reviews/page.tsx` + `src/lib/reviewsQuery.ts` (saf mantık) + `components/reviews/{Stars,ReviewActions,ReviewDetailDialog}.tsx`. Plan: `plans/admin/AP-010-reviews-filter-actions.md`.
+
+Kart ızgarası (`grid-cols-1 lg:grid-cols-2`) **korundu**, tabloya çevrilmedi. Filtreleme **sunucu tarafında**: istemci filtresi (`reviews.filter(...)`) kaldırıldı, çünkü yalnız o anki sayfa dilimini süzüyor ve başlıktaki global toplamla çelişiyordu.
+
+### Filtre kontrolleri (tek satır, ≥1024px)
+
+| Sıra | Kontrol | Tür | Seçenekler / kural |
+|---|---|---|---|
+| 1 | Arama | `Input` (`leading`, `flex-1`) | müşteri adı, salon adı veya yorum metni (`q` ≤100) |
+| 2 | Görünüm | `Select` | `Tümü (9)` · `Görünür (7)` · `Gizli (2)` — sayaçlar `meta.counts`'tan, **global** |
+| 3 | Puan | `Select` | `Tüm puanlar` · `5..1 yıldız (n)` — sayaçlar `meta.ratings["n"]`'ten |
+| 4 | Yanıt | `Select` | `Tümü` · `Yanıtlı (n)` · `Yanıtsız (n)` — `meta.counts` |
+| 5 | Salon | `Select` | `Tüm salonlar` + `meta.salons` (yorumu olan salonlar, ada göre artan) |
+| 6 | Tarih | `Select` | `Tüm tarihler` · bugün · yarın · bu hafta · bu ay · geçmiş · gelecek |
+
+Sıralama **UI'da yok** (sabit `createdAt:desc`; `sirala=rating:desc` gibi derin bağlantı lib tarafından desteklenir) — 7. select 1280px'te tek satır ölçütünü riske atıyordu (AP-008 R1 ölçümü).
+
+Sarmalayıcı sınıfları AP-007/AP-008 ile aynı: genişlik **sarmalayıcıda**, select'ler `!min-w-[8.5rem] max-w-48 flex-1` (`!` şart — `FilterBar` kökündeki `[&>*]:min-w-0` tabanı eziyor), arama yuvası `min-w-[10rem] flex-1 overflow-hidden`.
+
+### Chip satırı
+
+`FilterChips` filtre çubuğundan **ayrı blokta**. Sıra sabit: **Görünüm → Puan → Yanıt → Salon → Tarih → Arama**; her chip **yalnız kendi** filtresini sıfırlar + `page=1`, **Temizle** hepsini sıfırlar. `aria-live` bölgesi "N filtre etkin" der ve **0 filtrede de DOM'da kalır**.
+
+### Sayfalama ve URL parametreleri
+
+Sayfa boyutu **20 / 50 / 100**, varsayılan **20**; tercih `localStorage` anahtarı **`reviews_page_size`**'te, boyut değişince `page=1`. Varsayılanlar URL'e yazılmaz, geçersiz değer `normalizeQuery` ile varsayılana döner (hata atılmaz).
+
+| Parametre | Anlamı | Değer kümesi / varsayılan |
+|---|---|---|
+| `q` | arama metni | boş = filtre yok |
+| `gorunum` | görünürlük | `tümü` (var.) · `görünür` · `gizli`; eski `?filter=visible\|hidden` alias |
+| `puan` | puan | `tümü` (var.) · `1`..`5` |
+| `yanit` | yanıt durumu | `tümü` (var.) · `yanıtlı` · `yanıtsız` |
+| `salon` | salon kimliği | boş = tüm salonlar |
+| `tarih` | tarih önceli | `tümü` (var.) · `bugün` · `yarın` · `bu-hafta` · `bu-ay` · `geçmiş` · `gelecek` |
+| `sayfa` | sayfa numarası | `1` (var.), `<1` → `1` |
+| `limit` | sayfa boyutu | `20` (var.) · `50` · `100` |
+| `sirala` | `<sort>:<order>` | `createdAt:desc` (var.) · `rating:desc` · `rating:asc` |
+
+### Kart işlemleri
+
+Kart alt satırı (`border-t`) sağa hizalı `ReviewActions` ile dolar — boş işlem alanı **yok**. Sıra sabit:
+
+| Sıra | Buton | Görsel | Akış |
+|---|---|---|---|
+| 1 | **Detay** | `outline`, `Eye` | `ReviewDetailDialog` — **ağ isteği yok** |
+| 2 | **Yanıtla** / **Yanıtı düzenle** | `outline`, `MessageSquare` | `Dialog` + `Textarea` (1..2000) → `PATCH /admin/reviews/:id/reply` |
+| 3 | **Görünür yap** / **Gizle** | `outline`, `Eye`/`EyeOff` | `PATCH /reviews/:id/toggle-visibility` (mevcut uç), optimistik |
+| 4 | **Sil** | `danger`, `Trash2` | onay `Dialog`'u → `DELETE /admin/reviews/:id` → `fetchReviews()` |
+
+Onay yalnız **Sil**'de (geri dönüşü yok). Uçuşta buton metni değişmez; `Loader2` + `disabled`. Başarı/hata `<p role="status" aria-live="polite">` ile duyurulur (`alert()` kullanılmaz).
+
+### API sözleşmesi (özet)
+
+`GET /api/v1/admin/reviews` parametreleri: `page`, `limit`, `search` (müşteri adı / salon adı / yorum metni, büyük-küçük harf duyarsız), `rating` (1..5), `visibility` (`all|visible|hidden`), `replied` (`all|replied|unreplied`), `salonId`, `dateFrom`, `dateTo`, `sort` (`createdAt|rating`), `order` (`asc|desc`). Geçersiz değer **400**; `limit>100` kırpılır (hata değil).
+
+```json
+"meta": {
+  "total": 9, "page": 1, "limit": 20, "totalPages": 1,
+  "counts": { "all": 9, "visible": 7, "hidden": 2, "replied": 4, "unreplied": 5 },
+  "ratings": { "1": 0, "2": 0, "3": 0, "4": 4, "5": 5 },
+  "salons": [ { "id": "uuid", "name": "Zen SPA & Masaj" } ]
+}
+```
+
+`counts` / `ratings` / `salons` **filtrelerden bağımsız (global)**: select seçenekleri filtre uygulanınca daralmaz. `ratings` anahtarları **string**, eksik puan `0`. `salons` tekil ve ada göre artan.
+
+| Uç | Gövde | Yanıt |
+|---|---|---|
+| `PATCH /admin/reviews/:id/reply` | `{ "reply": "..." }` (trim, 1..2000) | `200 { id, salonReply, salonReplyAt }` · `400` validator · `404 "Yorum bulunamadı"` |
+| `DELETE /admin/reviews/:id` | — | `200 { id, salonId, ratingAvg, reviewCount }` · `404` |
+
+`DELETE` tek transaction'da siler ve salonun `ratingAvg`/`reviewCount` değerini **yalnız `isVisible:true` yorumlar** üzerinden yeniden hesaplar (`ratingAvg` 1 ondalık; yorum kalmadıysa `0/0`). Admin yanıtı salon yanıtının **üzerine yazar** (`salonReply` + `salonReplyAt`); ayrı `adminReply` alanı yok.
+
+### Kanıt (harness, 2026-10-28)
+
+`ADMIN_BASE=http://127.0.0.1:3011 API_BASE=http://127.0.0.1:3000 CDP_PORT=9456 node screenshots/_harness/drive.js screenshots/_harness/plan-admin-reviews-filters.js`
+(production `next start -p 3011`, API :3000 canlı; hedef `/reviews?puan=5&yanit=yanıtlı&tarih=bu-ay`, ekran görüntüsü **kart geldikten sonra**).
+
+| Genişlik | `scrollWidth/clientWidth` | Tek satır | Çubuk | Kontrol | `minSelectWidth` | Chip satırı |
+|---|---|---|---|---|---|---|
+| 1440 | 1440/1440 → taşma **0** | evet (merkez 1) | 44px | 6 (arama + 5 select) | **178** | 3 chip, örtüşme **0** |
+| 1280 | 1265/1265 → taşma **0** | evet (merkez 1) | 44px | 6 | **143** | 3 chip, örtüşme **0** |
+| 390 | 375/375 → taşma **0** | hayır (3 satır, 148px — kabul istisnası) | 148px | 6 | 143 | liste kendi içinde kayar (`403/343`), özet **alt satırda**, örtüşme **0** |
+
+Ek: 1440/1280'de `selectsClipped false`, `selectsTextFits true` (select metinleri kırpılmıyor); arama input'u ile ilk select arasında **8px** boşluk (kesişim yok). Her kartta **4** işlem butonu (`Detay`, `Yanıtı düzenle`, `Gizle`, `Sil`), boş işlem alanı **0**. Konsol hatası / JS hatası **0**, başarısız ağ isteği **0**.
+
+Kanıt görselleri: `screenshots/admin-reviews-filters-{1440,1280,390}.png`.
+
+### Kapı / kalan risk
+
+| Kapı | Sonuç |
+|---|---|
+| `npm run typecheck` | temiz (exit 0) |
+| `npm run lint` | exit 0, **0 uyarı** |
+| `npm test` | **110 `node:test` + 260 vitest** (30 dosya) |
+| `cd apps/api && npm test` | **354 passing / 0 failing** |
+
+- **Tarih sınırı (düzeltildi):** API `dateFrom`/`dateTo` değerlerini artık offset'siz (**sunucu yerel takvimi**) parse eder; panelin yerel takvim tarihiyle aynı gün sınırı kullanılır (önceki UTC sınırı UTC+3'te 3 saat kayıyordu). Sınır davranışı `apps/api/tests/admin.test.js` içindeki gün sınırı testiyle kilitli.
+- **Seed'de gizli yorum yok** (`counts.hidden = 0`): `Gizli` filtresi ve `Gizli` rozeti **gerçek veriyle doğrulanmadı**.
+
+---
+
 ## Test kapısı
 
 | Adım | Komut | Beklenen sonuç |
 |---|---|---|
 | Tip kontrolü | `npm run typecheck` | hatasız (`tsc --noEmit`) |
 | Lint | `npm run lint` | hatasız (`eslint`) |
-| Test | `npm test` | **302 test** yeşil (84 `node:test` + 218 vitest) |
+| Test | `npm test` | **370 test** yeşil (110 `node:test` + 260 vitest) |
 | Build | `npm run build` | T1 ölçümü: 11 statik route, build **exit 0** |
 
-`npm test` sırasıyla `npm run test:node` (`node --test`, 84 test) ve `npm run test:unit` (vitest, 218 test) çalıştırır; toplam **302 test**.
+`npm test` sırasıyla `npm run test:node` (`node --test`, 110 test) ve `npm run test:unit` (vitest, 260 test) çalıştırır; toplam **370 test**.
+
+---
+
+## Dil sistemi (i18n)
+
+Panel iki dilde çalışır: **`tr`** ve **`en`**. Dış bir i18n paketi (next-intl / react-i18next) **kurulmadı** — çekirdek kendi içinde, bağımlılıksızdır. Ayrıntı ve ölçülmüş kapsam tablosu: `plans/admin/AP-011-i18n-language.md`.
+
+**Dosyalar**
+
+| Yol | İçerik |
+|---|---|
+| `apps/admin_panel/src/lib/i18n/index.ts` (122 satır) | Saf TS çekirdek: `Locale`, `LocaleMode`, `LOCALE_STORAGE_KEY = 'app_locale_mode'`, `MESSAGES` (11 namespace), `detectSystemLocale`, `parseLocaleMode`, `resolveLocale`, `translate`. Eksik anahtar hata atmaz, anahtarın kendisi döner; `{ad}` yer tutucuları `vars` ile dolar |
+| `apps/admin_panel/src/lib/i18n/messages/*.ts` (11 dosya, 1838 satır) | `common, nav, shell, settings, dashboard, pages, salons, appointments, categories, reviews, ui`. Her dosya `{ tr, en }` export eder; `tr` mevcut arayüz kopyasının birebir aynısıdır |
+| `apps/admin_panel/src/providers/LocaleProvider.tsx` (126 satır) | `useI18n()` → `{ locale, mode, setMode, t, systemLocale }`. `<html lang>` günceller, `languagechange` olayını izler, `localStorage` kapalıysa state ile devam eder |
+| `apps/admin_panel/src/app/layout.tsx` | `localeInitScript`: ilk boyamadan önce `localStorage`/tarayıcı dilinden `<html lang>` yazar (tema script'iyle aynı desen); `LocaleProvider` kabukta `ThemeProvider`'ın üstünde sarar |
+
+**Davranış**
+
+- Dil modu üç değerli: **`system` (varsayılan) / `tr` / `en`**; `system` tarayıcı dilini izler (`tr` veya `tr-*` → `tr`, diğer/boş → `en`).
+- Öncelik sırası: **`localStorage['app_locale_mode']` > sunucu `language` (yalnız yerel tercih yokken) > sistem dili.** Mod değişimi anında etkilidir, sayfa yenileme gerektirmez.
+- Sayfalar `t('ns.anahtar')` ile basar; filtre/etiket üreten saf modüller (`src/lib/*Query.ts`, `src/lib/nav.ts`, `components/ui/Badge.tsx`) çeviri **anahtarı** taşır, metni sayfa çözer.
+- Paylaşılan taşıyıcı bileşen `components/salons/ImageField.tsx` hem salon hem kategori diyaloğunda kullanıldığı için metinleri `salons.*` namespace'inden gelir.
+
+**Ayarlar > Dil kartı:** `settings.sections.language` kartındaki `Select` (`system` / `tr` / `en`) seçimi anında uygulanır ve kaydetmede `PUT /settings` gövdesine `language` olarak yazılır. API tarafı `apps/api/src/controllers/settings.controller.js`: `language` varsayılanı `system`, izinli değerler `tr` / `en` / `system`, geçersiz değer `400` döner ve hiçbir ayar yazılmaz (`apps/api/tests/settings.test.js`).
+
+**Bilinen sınırlar:** `Intl` / `toLocaleDateString` çağrıları hâlâ `tr-TR` sabittir (tarih/para `en` modunda da Türkçe biçimlenir); ilk boyama cookie okumadığı için `system` + `en` tarayıcıda dil ikinci render'da oturur; API'den gelen rol/durum enum adları sayfa içi haritalarla lokalize edilir (yeni enum eklenince harita güncellenmeli).
