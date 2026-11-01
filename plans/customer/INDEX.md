@@ -34,6 +34,10 @@
 | [CA-010](CA-010-review-pagination.md) | Review pagination | ✅ uygulandı (2026-07-27, `ReviewPage` + `AsyncNotifier.family` + load-more) |
 | [CA-013](CA-013-email-change.md) | Email change | ✅ uygulandı (2026-07-27 — backend zaten hazırdı, `EmailChangeSection` widget'ı + 2 use case) |
 | [CA-020](CA-020-shadow-star-tokens.md) | Gölge + puan tokenları (SA-001 paritesi) | ✅ uygulandı (2026-10-21 — 20 `Colors.black` → 0, `starFilled` 1.76→3.47:1) |
+| [CA-021](CA-021-lux-editorial-palette.md) | Luxury Editorial paleti (LX-001) | ✅ uygulandı (2026-10-21) |
+| [CA-022](CA-022-lux-editorial-typography.md) | Luxury Editorial tipografi + radius (LX-001) | ✅ uygulandı (2026-10-21) |
+| [CA-023](CA-023-radius-normalize.md) | Radius normalizasyonu (LX-002) | ✅ uygulandı (2026-10-29) |
+| [CA-024](CA-024-font-fallback.md) | Font fallback zinciri (LX-002) | ✅ uygulandı (2026-10-29) |
 
 ---
 

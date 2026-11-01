@@ -94,7 +94,13 @@ const SEPARATION_TARGETS = {
   'border-strong vs surface': 1.4,
 };
 // Bilinçli olarak eşiğin altında kalması beklenen çiftler (kuralı belgelemek için matriste tutulur):
-const EXPECTED_FAIL = new Set(['accent-lime on surface (lime METİN)']);
+// `accentLime on surface (YASAK metin)` — CA-021/LX-001: accentLime artık şampanya altını
+// (#C6A664). Yalnızca dolgu/kenarlık/ikon olarak kullanılır; metin olarak AA altı kalması
+// bilinçlidir, kural ihlali değil.
+const EXPECTED_FAIL = new Set([
+  'accent-lime on surface (lime METİN)',
+  'accentLime on surface (YASAK metin)',
+]);
 
 const MOBILE_PAIRS = [
   ['textPrimary on background', 'textPrimary', 'background'],
