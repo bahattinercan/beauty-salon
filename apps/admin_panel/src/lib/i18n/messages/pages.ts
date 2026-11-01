@@ -28,6 +28,8 @@ export const tr = {
   users: {
     title: 'Kullanıcı Yönetimi',
     subtitle: '{count} kullanıcı',
+    subtitle_one: '{count} kullanıcı',
+    subtitle_other: '{count} kullanıcı',
     refresh: 'Yenile',
     searchPlaceholder: 'İsim, e-posta veya telefon ara…',
     searchAriaLabel: 'Kullanıcı ara',
@@ -60,10 +62,14 @@ export const tr = {
   salons: {
     title: 'Salon Yönetimi',
     subtitle: '{count} salon · {pending} onay bekliyor',
+    subtitle_one: '{count} salon · {pending} onay bekliyor',
+    subtitle_other: '{count} salon · {pending} onay bekliyor',
   },
   appointments: {
     title: 'Randevu Yönetimi',
     subtitle: '{count} randevu · {pending} bekliyor',
+    subtitle_one: '{count} randevu · {pending} bekliyor',
+    subtitle_other: '{count} randevu · {pending} bekliyor',
   },
   categories: {
     title: 'Kategori Yönetimi',
@@ -89,6 +95,8 @@ export const en: typeof tr = {
   users: {
     title: 'User Management',
     subtitle: '{count} users',
+    subtitle_one: '{count} user',
+    subtitle_other: '{count} users',
     refresh: 'Refresh',
     searchPlaceholder: 'Search by name, email or phone…',
     searchAriaLabel: 'Search users',
@@ -121,10 +129,14 @@ export const en: typeof tr = {
   salons: {
     title: 'Salon Management',
     subtitle: '{count} salons · {pending} awaiting approval',
+    subtitle_one: '{count} salon · {pending} awaiting approval',
+    subtitle_other: '{count} salons · {pending} awaiting approval',
   },
   appointments: {
     title: 'Appointment Management',
     subtitle: '{count} appointments · {pending} pending',
+    subtitle_one: '{count} appointment · {pending} pending',
+    subtitle_other: '{count} appointments · {pending} pending',
   },
   categories: {
     title: 'Category Management',

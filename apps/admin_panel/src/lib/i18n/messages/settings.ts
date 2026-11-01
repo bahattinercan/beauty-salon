@@ -41,6 +41,10 @@ export const tr = {
     maxLoginAttempts: 'Maksimum giriş denemesi',
     tokenDuration: 'Token süresi (dakika)',
     tokenDurationOption: '{value} dakika',
+    // Çoğul (AP-011 K4): `count` yalnız varyantı seçer, sayıyı `{value}` basar
+    // (taban anahtarın yer tutucusu geriye dönük uyum için korunur).
+    tokenDurationOption_one: '{value} dakika',
+    tokenDurationOption_other: '{value} dakika',
     rateLimiting: 'Rate limiting',
     rateLimitingDescription: 'Aşırı isteklerde bulunan istemcileri sınırla.',
     emailNotifications: 'E-posta bildirimleri',
@@ -91,6 +95,8 @@ export const en: typeof tr = {
     maxLoginAttempts: 'Maximum login attempts',
     tokenDuration: 'Token lifetime (minutes)',
     tokenDurationOption: '{value} minutes',
+    tokenDurationOption_one: '{value} minute',
+    tokenDurationOption_other: '{value} minutes',
     rateLimiting: 'Rate limiting',
     rateLimitingDescription: 'Throttle clients that send too many requests.',
     emailNotifications: 'Email notifications',

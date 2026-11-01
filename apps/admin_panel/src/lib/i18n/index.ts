@@ -42,6 +42,10 @@ export const LOCALE_COOKIE_MAX_AGE = 31_536_000;
 /** Sözlük ağacı: yapraklar çeviri metni, dallar namespace. */
 export type MessageTree = { readonly [key: string]: string | MessageTree };
 export type TranslateVars = Record<string, string | number>;
+/** Sözlük kaynağı — `translate` varsayılan olarak `MESSAGES`'ı kullanır. */
+export type MessageSource = Record<Locale, MessageTree>;
+/** tr/en için `Intl.PluralRules` yalnız bu iki kategoriyi üretir. */
+export type PluralCategory = 'one' | 'other';
 
 /**
  * Namespace'ler: common, nav, shell, settings, dashboard, pages, reviews, salons,
@@ -145,9 +149,9 @@ export function resolveLocale(
 }
 
 /** Nokta yolunu ('nav.aria.main') ağaçta gezer; yaprak değilse `null`. */
-function lookup(locale: Locale, key: string): string | null {
+function lookup(tree: MessageTree, key: string): string | null {
   const segments = key.split('.');
-  let node: string | MessageTree | undefined = MESSAGES[locale];
+  let node: string | MessageTree | undefined = tree;
 
   for (const segment of segments) {
     if (segment === '' || typeof node !== 'object') return null;
@@ -158,12 +162,61 @@ function lookup(locale: Locale, key: string): string | null {
 }
 
 /**
+ * Çoğul (plural) çözümlemesi — `Intl.PluralRules` yerleşik, ek bağımlılık YOK.
+ *
+ * Sözleşme: sözlükte `key_one` / `key_other` varsa ve `vars.count` sayıysa kategori
+ * seçilir; `_one`/`_other` yoksa anahtar bugünkü gibi (yalnız yer tutucu değiştirme)
+ * çözülür. tr ve en'in ikisi de yalnız `one`/`other` üretir; başka bir kategori
+ * (ör. `few`) `_other`'a düşer, böylece yeni bir locale sessizce yanlış çoğul basmaz.
+ */
+const PLURAL_RULES: Record<Locale, Intl.PluralRules> = {
+  tr: new Intl.PluralRules('tr'),
+  en: new Intl.PluralRules('en'),
+};
+
+const PLURAL_SUFFIX: Record<PluralCategory, string> = { one: '_one', other: '_other' };
+
+/** `Intl.PluralRules` kategorisini `_one` / `_other` ikilisine indirger. */
+export function pluralCategory(locale: Locale, count: number): PluralCategory {
+  return PLURAL_RULES[locale].select(count) === 'one' ? 'one' : 'other';
+}
+
+/**
+ * Şablonu sözlükten çözer; çoğul sırası `key_<kategori>` → `key_other` → `key`.
+ * Hiçbiri yoksa `null` döner (çağıran anahtarın kendisini basar). `messages`
+ * parametresi çözümleme sırasının sentetik sözlükle test edilebilmesi içindir.
+ */
+export function resolveTemplate(
+  messages: MessageSource,
+  locale: Locale,
+  key: string,
+  vars?: TranslateVars
+): string | null {
+  const tree = messages[locale];
+  const count = vars?.count;
+
+  if (typeof count === 'number' && Number.isFinite(count)) {
+    const exact = lookup(tree, key + PLURAL_SUFFIX[pluralCategory(locale, count)]);
+    if (exact !== null) return exact;
+
+    // `_one` var `_other` yok gibi eksik çiftlerde güvenli iniş: genel varyant.
+    const generic = lookup(tree, key + PLURAL_SUFFIX.other);
+    if (generic !== null) return generic;
+  }
+
+  return lookup(tree, key);
+}
+
+/**
  * Anahtarı metne çevirir. Eksik anahtar HATA ATMAZ: anahtarın kendisi döner, böylece
  * eksik çeviri arayüzde görünür olur ve sayfa çökmez. `{ad}` yer tutucuları `vars`
  * ile değiştirilir; verilmeyen yer tutucu olduğu gibi kalır.
+ *
+ * Çoğul: `vars.count` sayıysa ve sözlükte `key_one` / `key_other` varsa kategori
+ * seçilir (bkz. `resolveTemplate`); ikisi yoksa davranış eskisiyle birebir aynıdır.
  */
 export function translate(locale: Locale, key: string, vars?: TranslateVars): string {
-  const template = lookup(locale, key);
+  const template = resolveTemplate(MESSAGES, locale, key, vars);
   if (template === null) return key;
   if (!vars) return template;
 

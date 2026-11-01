@@ -62,6 +62,8 @@ export const tr = {
   },
   card: {
     serviceCount: '{count} hizmet',
+    serviceCount_one: '{count} hizmet',
+    serviceCount_other: '{count} hizmet',
     imageAlt: '{name} görseli',
   },
   empty: {
@@ -174,6 +176,8 @@ export const en: typeof tr = {
   },
   card: {
     serviceCount: '{count} services',
+    serviceCount_one: '{count} service',
+    serviceCount_other: '{count} services',
     imageAlt: '{name} image',
   },
   empty: {

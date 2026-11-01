@@ -187,7 +187,8 @@ test('reviews: çip şablonları {label}/{rating}/{name}/{query} yer tutucuları
 
 test('reviews: yer tutucular sayaç/puan/karakter/kapat ile doluyor', () => {
   assert.equal(translate('tr', 'reviews.page.subtitle', { count: 9 }), '9 yorum');
-  assert.equal(translate('en', 'reviews.page.subtitle', { count: 1 }), '1 reviews');
+  // AP-011 K4: EN'de çoğul varyant (`reviews.page.subtitle_one`) devreye girer.
+  assert.equal(translate('en', 'reviews.page.subtitle', { count: 1 }), '1 review');
   assert.equal(
     translate('tr', 'reviews.option', { label: translate('tr', 'reviews.rating.stars', { rating: 5 }), count: 5 }),
     '5 yıldız (5)'

@@ -12,6 +12,8 @@ export const tr = {
     statusPending: 'Onay bekliyor',
     statusClear: 'Gündem yok',
     pendingHeadline: '{count} salon başvurusu onay bekliyor',
+    pendingHeadline_one: '{count} salon başvurusu onay bekliyor',
+    pendingHeadline_other: '{count} salon başvurusu onay bekliyor',
     clearHeadline: 'Bekleyen salon başvurusu yok',
     pendingDescription:
       'Onaylanan salonlar müşteri uygulamada hemen görünür; sırayı bozmamak için bugünkü başvuruları gözden geçirin.',
@@ -51,6 +53,8 @@ export const en: typeof tr = {
     statusPending: 'Awaiting approval',
     statusClear: 'Nothing on the agenda',
     pendingHeadline: '{count} salon applications are awaiting approval',
+    pendingHeadline_one: '{count} salon application is awaiting approval',
+    pendingHeadline_other: '{count} salon applications are awaiting approval',
     clearHeadline: 'No salon applications awaiting approval',
     pendingDescription:
       'Approved salons appear in the customer app right away; review today’s applications so the queue keeps moving.',

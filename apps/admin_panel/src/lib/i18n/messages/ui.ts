@@ -19,6 +19,8 @@ export const tr = {
     next: 'Sonraki sayfa',
     range: '{from}–{to} / {total}',
     total: '{count} kayıt',
+    total_one: '{count} kayıt',
+    total_other: '{count} kayıt',
     pageOf: 'Sayfa {page} / {totalPages}',
   },
   filterBar: {
@@ -69,6 +71,8 @@ export const en: typeof tr = {
     next: 'Next page',
     range: '{from}–{to} / {total}',
     total: '{count} records',
+    total_one: '{count} record',
+    total_other: '{count} records',
     pageOf: 'Page {page} / {totalPages}',
   },
   filterBar: {

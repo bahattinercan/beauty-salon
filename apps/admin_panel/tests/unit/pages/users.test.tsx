@@ -68,7 +68,8 @@ describe('UsersPage i18n ve tarih biçimlendirmesi', () => {
 
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(1));
     expect(screen.getByRole('heading', { name: 'User Management' })).toBeTruthy();
-    expect(screen.getByText('1 users')).toBeTruthy();
+    // AP-011 K4: tek kayıtta EN çoğul varyantı (`pages.users.subtitle_one`) devreye girer.
+    expect(screen.getByText('1 user')).toBeTruthy();
 
     const table = screen.getByRole('table');
     expect(within(table).getByText('Zeynep Kaya')).toBeTruthy();

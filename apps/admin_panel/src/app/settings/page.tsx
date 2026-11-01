@@ -272,7 +272,7 @@ export default function SettingsPage() {
                 >
                   {['15', '30', '60', '120'].map((v) => (
                     <option key={v} value={v}>
-                      {t('settings.fields.tokenDurationOption', { value: v })}
+                      {t('settings.fields.tokenDurationOption', { value: v, count: Number(v) })}
                     </option>
                   ))}
                 </Select>

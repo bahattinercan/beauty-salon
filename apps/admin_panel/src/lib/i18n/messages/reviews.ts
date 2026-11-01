@@ -19,6 +19,9 @@ export const tr = {
   page: {
     title: 'Yorum Yönetimi',
     subtitle: '{count} yorum',
+    // Çoğul (AP-011 K4): TR'de tekil/çoğul aynı metin — iki varyant bilinçli olarak eşit.
+    subtitle_one: '{count} yorum',
+    subtitle_other: '{count} yorum',
     refresh: 'Yenile',
     searchPlaceholder: 'Müşteri, salon veya yorum metni ara…',
     searchAriaLabel: 'Yorum ara',
@@ -129,6 +132,8 @@ export const en: typeof tr = {
   page: {
     title: 'Review Management',
     subtitle: '{count} reviews',
+    subtitle_one: '{count} review',
+    subtitle_other: '{count} reviews',
     refresh: 'Refresh',
     searchPlaceholder: 'Search by customer, salon or review text…',
     searchAriaLabel: 'Search reviews',
