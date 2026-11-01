@@ -31,6 +31,14 @@ export const LOCALE_MODES: readonly LocaleMode[] = ['system', 'tr', 'en'];
 export const LOCALE_STORAGE_KEY = 'app_locale_mode';
 export const DEFAULT_LOCALE_MODE: LocaleMode = 'system';
 
+/**
+ * Cookie adı — `LOCALE_STORAGE_KEY` ile **bilinçli olarak aynı** ad: aynı tercih iki
+ * yerde durur, sunucu (`next/headers`) ve inline init script aynı anahtarı okur.
+ */
+export const LOCALE_COOKIE_NAME = LOCALE_STORAGE_KEY;
+/** Cookie ömrü (saniye) — 1 yıl; localStorage gibi kalıcı tercih. */
+export const LOCALE_COOKIE_MAX_AGE = 31_536_000;
+
 /** Sözlük ağacı: yapraklar çeviri metni, dallar namespace. */
 export type MessageTree = { readonly [key: string]: string | MessageTree };
 export type TranslateVars = Record<string, string | number>;
@@ -82,6 +90,50 @@ export function detectSystemLocale(navigatorLanguage: string | null | undefined)
 export function parseLocaleMode(value: string | null | undefined): LocaleMode | null {
   const raw = (value ?? '').trim();
   return (LOCALE_MODES as readonly string[]).includes(raw) ? (raw as LocaleMode) : null;
+}
+
+/**
+ * Cookie/localStorage değerini moda indirger: geçerli değer kendisi, geçersiz/boş
+ * değer `DEFAULT_LOCALE_MODE`. Sunucu (`src/lib/i18n/server.ts`) ve istemci
+ * (`LocaleProvider`) aynı fonksiyonu kullanır, böylece ikisi aynı varsayılana düşer.
+ */
+export function normalizeLocaleMode(value: string | null | undefined): LocaleMode {
+  return parseLocaleMode(value) ?? DEFAULT_LOCALE_MODE;
+}
+
+/**
+ * Dil modu cookie'sinin `Set-Cookie` eşdeğeri metni — **tek yazım noktası**
+ * (`LocaleProvider` `setMode` bu metni `document.cookie`'ye atar). `httpOnly` yok:
+ * istemci de aynı değeri okuyup yazabilsin (localStorage birincil kaynak kalır).
+ */
+export function localeModeCookie(mode: LocaleMode): string {
+  return `${LOCALE_COOKIE_NAME}=${mode}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax`;
+}
+
+/**
+ * `Accept-Language` başlığından locale türetir — sunucunun `system` modu için
+ * tarayıcı dili tahmini. `q` ağırlığına göre sıralanır (desteklenmeyen diller de
+ * sıralamaya girer, ilk etiket yine de `detectSystemLocale` ile indirgenir).
+ * Boş/bozuk başlık → `detectSystemLocale(null)` = `'en'`.
+ */
+export function detectSystemLocaleFromAcceptLanguage(
+  acceptLanguage: string | null | undefined
+): Locale {
+  const header = (acceptLanguage ?? '').trim();
+  if (header === '') return detectSystemLocale(null);
+
+  const ranked = header
+    .split(',')
+    .map((entry, index) => {
+      const [tag = '', ...params] = entry.split(';');
+      const qParam = params.map((p) => p.trim()).find((p) => p.startsWith('q='));
+      const weight = qParam === undefined ? 1 : Number.parseFloat(qParam.slice(2));
+      return { tag: tag.trim(), weight: Number.isFinite(weight) ? weight : 0, index };
+    })
+    .filter((entry) => entry.tag !== '' && entry.weight > 0)
+    .sort((a, b) => (b.weight === a.weight ? a.index - b.index : b.weight - a.weight));
+
+  return detectSystemLocale(ranked[0]?.tag ?? null);
 }
 
 /** Modu somut locale'e indirger: 'system' tarayıcı diline bakar, diğerleri kendisidir. */
