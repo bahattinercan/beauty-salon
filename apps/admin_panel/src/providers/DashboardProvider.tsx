@@ -25,18 +25,19 @@ interface RecentReview {
   createdAt: string;
 }
 
-interface DashboardStats {
+export interface DashboardStats {
   totalUsers: number;
   totalSalons: number;
   totalAppointments: number;
   pendingSalons: number;
   recentAppointments: number;
   newUsersThisWeek: number;
-  totalRevenue: string;
+  // API (`GET /admin/dashboard`) bu alanı number döndürür (#14)
+  totalRevenue: number;
   completedAppointments: number;
 }
 
-interface DashboardData {
+export interface DashboardData {
   stats: DashboardStats;
   appointmentsByStatus: AppointmentStatus[];
   monthlyAppointments: MonthlyAppointment[];

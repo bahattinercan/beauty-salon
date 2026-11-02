@@ -33,10 +33,13 @@ vi.mock('recharts', () => {
 });
 
 import DashboardPage from '@/app/page';
+import type { DashboardData } from '@/providers/DashboardProvider';
 import LocaleProvider from '@/providers/LocaleProvider';
 import ThemeProvider from '@/providers/ThemeProvider';
 
-const dashboardFixture = {
+// Fixture, API sözleşmesine (`GET /admin/dashboard`) bağlıdır: tip uyuşmazlığı
+// `tsc --noEmit` ile yakalanır (#14).
+const dashboardFixture: DashboardData = {
   stats: {
     totalUsers: 120,
     totalSalons: 15,
@@ -44,7 +47,7 @@ const dashboardFixture = {
     pendingSalons: 2,
     recentAppointments: 28,
     newUsersThisWeek: 9,
-    totalRevenue: '12500',
+    totalRevenue: 12500,
     completedAppointments: 290,
   },
   appointmentsByStatus: [{ name: 'COMPLETED', value: 290, color: '#2F6B4F' }],
@@ -53,6 +56,13 @@ const dashboardFixture = {
 };
 
 describe('DashboardPage i18n ve tarih/para biçimlendirmesi', () => {
+  // #14 — API `totalRevenue` alanını number döndürür; istemci tipi de number olmalı.
+  test('sözleşme: totalRevenue number tipinde olmalı (#14)', () => {
+    const revenue: number = dashboardFixture.stats.totalRevenue;
+    expect(typeof revenue).toBe('number');
+    expect(Number.isFinite(revenue)).toBe(true);
+  });
+
   test('tr modunda Türkçe başlık, bugünün Türkçe tarihi ve ₺ biçimli gelir basılır', () => {
     useDashboardMock.mockReturnValue({
       data: dashboardFixture,

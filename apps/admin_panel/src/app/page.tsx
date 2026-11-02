@@ -34,8 +34,9 @@ import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import StatCard from '@/components/ui/StatCard';
 import { Skeleton, ErrorState, EmptyState } from '@/components/ui/States';
 
-function money(value: string, locale: Locale = 'tr') {
-  const n = Number.parseFloat(value || '0');
+// API `totalRevenue` alanını number döndürür (#14); biçimlendirme çıktısı değişmez.
+function money(value: number, locale: Locale = 'tr') {
+  const n = Number(value);
   return new Intl.NumberFormat(locale, { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(
     Number.isFinite(n) ? n : 0
   );

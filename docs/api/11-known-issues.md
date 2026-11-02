@@ -26,10 +26,8 @@
 |---|---|---|
 | 22 | `sharp`, `swagger-jsdoc`, `swagger-ui-express` kullanılmıyor; `pg`/`pg-hstore` **runtime sürücüsüdür** (Postgres, aktif); `sqlite3` yalnız `DB_DIALECT=sqlite` geri dönüşünde; `cookie-parser` **aktiftir** (`src/app.js:8`, `src/app.js:83`) | Kısmen ölü bağımlılık |
 | 25 | **Kapatıldı (DB-001 P1):** `ensureColumns()`, `dropBackupTables()`, `sync()` çağrıları kaldırıldı | Şema yalnız migration'lardan; eksik migration `seed`/`test`'te açık hata verir (sessiz onarım yok) |
-| 26 | **Kapatıldı (DB-001 P1–P3):** runtime Postgres; `DB_DIALECT=sqlite` geri dönüşünde dosya `DB_STORAGE` veya `src/*.sqlite` | `.sqlite` dosyaları yalnız geri dönüş penceresi; varsayılan runtime değil |
 | 27 | `UPLOAD_DEST` cwd'e göre çözülür | Farklı çalışma diziminde farklı `uploads/` klasörüne yazılır |
 | 28 | **Kapatıldı (DB-001 P2):** migration ↔ model uyuşmazlığı yeni migration'larla giderildi (`…14` settings tablosu, `…15` 11 kolon, `…16` salon JSON→TEXT, `…17` staff_services timestamps) | Postgres şeması modelle hizalı; drift `information_schema` ile doğrulandı |
-| 29 | `staff_services` composite PK yok → duplicate join kaydı engellenmez | `bulkCreate` ile aynı bağ iki kez eklenebilir |
 | 30 | User e-posta değişikliği `password_reset_token` alanını paylaşıyor | İki akış birbirini bozabilir |
 | 33 | `src/app.js` statik `/uploads` route'u ile upload middleware'i `UPLOAD_DEST`'u iki ayrı yerde okuyor | İkisi de cwd'ye göre çözülüyor ve davranış tutarlı, ama tek kaynak olmalı → küçük teknik borç |
 
@@ -200,3 +198,28 @@
 - `eşik aşılınca 429 + Türkçe gövde döner (yalnız bu testte açık)` — kapalıyken 3 istek 429 **değil**; `RATE_LIMIT_AUTH_MAX=2` + `setRateLimitEnabled(true)` iken 3. istek **429** ve gövde `{ success: false, message: 'Çok fazla giriş denemesi, lütfen 1 dakika bekleyiniz' }`; `finally` bloğunda limit kapatılır, env geri alınır ve store anahtarı sıfırlanır.
 
 **Kapı (Dalga 3: #10/#14/#21/#32):** `cd apps/api && bash scripts/db-ready.sh && npm test` → **381 passing, 0 failing** (baseline 378, +3 yeni test; hiçbir test silinmedi/zayıflatılmadı).
+
+## Kapatılanlar — kayıt temizliği (2026-11-02)
+
+### #26 · runtime Postgres / SQLite geri dönüşü — kapatıldı (DB-001 P1–P3)
+
+**Sorun:** Kayıt açık tabloda duruyordu ve "SQLite mı Postgres mi" belirsizliğini canlı bir borç gibi taşıyordu.
+
+**Çözüm:** DB-001 P1–P3 ile runtime **Postgres**'e sabitlendi; `sqlite` yalnız `DB_DIALECT=sqlite` **açıkça** verilirse devreye giren, bakımı durdurulmuş geri dönüş yoludur. Dosya adı `DB_STORAGE` ile veya varsayılan `src/*.sqlite` olarak çözülür. `sync()` / `ensureColumns()` / `dropBackupTables()` kod tabanından kaldırıldı; şema yalnız migration'lardan gelir.
+
+**Kanıt:** `apps/api/src/config/database.js:4-5` (`SUPPORTED_DIALECTS`), `:27` ("SQLite yalnızca geri dönüş yolu"), `:35` (`process.env.DB_DIALECT || 'postgres'`), `:45` (`DB_STORAGE`), `:68` (sqlite dalı yalnız storage çözer) · `docs/api/01-overview.md:54` (`sync()`/`ensureColumns()`/`dropBackupTables()` yok — DB-001 P1) · `docs/api/09-seed-and-migrations.md:80` (P1/P3).
+
+**Neden tablodan çıkarıldı:** Kayıt zaten **"Kapatıldı (DB-001 P1–P3)"** olarak işaretliydi ama açık kayıt tablosunda duruyordu; açık kayıt sayısını şişiriyordu. Hüküm: kapalı (tarih: DB-001 P1–P3 kapanışı, kayıt temizliği 2026-11-02).
+
+## Bayat kayıtlar (2026-11-02)
+
+### #29 · `staff_services` composite PK yok → duplicate join kaydı engellenmez — bayat (SQLite dönemi hata sınıfı)
+
+**Kayıt:** `staff_services` tablosunda composite primary key olmadığı, `bulkCreate` ile aynı (staff, service) bağının iki kez eklenebileceği iddia ediliyordu.
+
+**Ölçüm (2026-11-02, Postgres):** İddia geçersiz — bileşik PK **tanımlı**:
+- `apps/api/src/database/migrations/20240101000006-create-staff-services.js:6-21` → `staff_id` **ve** `service_id` ikisi de `primaryKey: true` (Postgres'te composite `PRIMARY KEY`).
+- `apps/api/src/models/StaffService.js:4-21` → aynı tanım (`staffId` / `serviceId` `primaryKey: true`, `timestamps: false`).
+- Bu hata sınıfı **SQLite**'a özgüydü: SQLite'ta "her kolon ayrı PK" yorumu tek tek unique üretiyordu; aynı desen `20240101000012-fix-favorites-primary-key.js:5-11` yorumunda birebir tarif edilmiş. Runtime Postgres olduğu için sınıf ortadan kalktı.
+
+**Kalan risk notu (kapatılmadı, ayrı iş):** `apps/api/src/controllers/staff.controller.js:36` ve `:66` `StaffService.bulkCreate(records)` çağrılarında `ignoreDuplicates` (ya da `upsert`) kullanmıyor. Aynı bağ iki kez gönderilirse çift kayıt **sessizce** oluşmaz; Postgres unique ihlali fırlar ve istek 500 döner. Yani veri bozulması yok, ama uç **idempotent değil** — istenirse `ignoreDuplicates: true` ile düzeltilir.
