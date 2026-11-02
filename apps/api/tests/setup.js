@@ -1,11 +1,21 @@
 const path = require('path');
 const { sequelize } = require('../src/config/database');
 const models = require('../src/models');
+const { ensureTestSchema, truncateAllTables } = require('./helpers/migrator');
 
-// Sync all models
+// Şema tek doğruluk kaynağından gelir: migration'lar (DB-001 P4).
+// Eski drop + force-sync hazırlığı kaldırıldı: enum tipleri drop ile silinmediği için
+// "type already exists" hatası doğuyordu. Migration'lar bir kez koşar (SequelizeMeta),
+// her test dosyası öncesi tablolar `TRUNCATE ... CASCADE` ile boşaltılır.
 const syncDB = async () => {
-  await sequelize.drop();
-  await sequelize.sync({ force: true });
+  if (sequelize.getDialect() !== 'postgres') {
+    throw new Error(
+      `Testler Postgres gerektirir (DB_DIALECT=postgres); şu an: ${sequelize.getDialect()}. ` +
+        'Hazırlık: node tests/helpers/ensure-test-db.js'
+    );
+  }
+  await ensureTestSchema(sequelize);
+  await truncateAllTables(sequelize);
 };
 
 // Seed test data

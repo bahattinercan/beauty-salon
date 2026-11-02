@@ -261,6 +261,43 @@ Sequelize `INSERT` tüm model kolonlarını listeler → `salons.price_range` yo
   Postgres'te **0 failing** — hem `TZ=UTC` hem `TZ=Europe/Istanbul` ile; ikinci koşum (DB dolu) da
   yeşil (temizlik kanıtı).
 - **Bağımlılık:** P2'ye bağımlı; P3 ile **paralel** yürüyebilir (ayrı test DB'si kullanır).
+- **UYGULANDI (2026-11-02):** `tests/setup.js` `drop()+sync({force:true})` yerine **migration + truncate**: yeni
+  `tests/helpers/migrator.js` (`src/database/migrations/**` dosyalarını in-process koşar, uygulananları
+  `SequelizeMeta`'ya yazar — sequelize-cli ile aynı sözleşme; yeni npm bağımlılığı yok) + her test dosyası
+  öncesi tek `TRUNCATE TABLE … RESTART IDENTITY CASCADE` (SequelizeMeta hariç; enum tipleri silinmediği için
+  "type already exists" doğmaz). Yeni `tests/helpers/ensure-test-db.js`: `node tests/helpers/ensure-test-db.js`
+  → `.env.test` yüklenir, `beauty_salon_test` yoksa `CREATE DATABASE` (varsa atlar), tüm migration'ları koşar,
+  `DROP DATABASE` yapmaz, dev `beauty_salon`'a dokunmaz. `.env.test` artık `DB_DIALECT=postgres` +
+  `DB_NAME=DB_NAME_TEST=beauty_salon_test` (gitignored); `.env.example`'a `DB_NAME_TEST` + yardımcı komut notu
+  eklendi. `package.json`'a **dokunulmadı** (P3'te). Kanıt: `ensure-test-db` → 17/17 migration; `TZ=UTC` ve
+  `TZ=Europe/Istanbul` **339 passing / 18 failing** (iki koşum aynı), arka arkaya ikinci koşum da 339/18;
+  koşum sırasında canlı sorgu → `current_database()=beauty_salon_test`, `inet_server_addr()=172.19.0.2`
+  (docker), `users=7`, `salons=2` = testler gerçekten Postgres'e vuruyor; tam koşum ~60 sn (5 dk sınırının
+  çok altında); `grep -n "sync(\|drop()" apps/api/tests/setup.js` → 0 eşleşme.
+- **P4b (ayrı görev) — Postgres davranış farklarından kalan 18 kırılma.** P4 altyapısı yeşil olduğu hâlde
+  testler **339/357**: kırılmaların tamamı P4 sahipliği dışındaki dosyalarda ve gerçek üretim hataları
+  (test tarafında normalizasyonla **maskelenmedi**). Kategoriler (her satır: kırılan test → kök neden → sahip):
+  1. **admin dashboard 500 (3 test)** — `tests/admin.test.js:59`, `:74`, `tests/service-staff.test.js:280` →
+     `src/controllers/admin.controller.js:101,110` `strftime('%Y-%m', Appointment.date)` (PG'de fonksiyon yok) +
+     tırnaksız `Appointment` alias'ı (`missing FROM-clause entry for table "appointment"`); `date_trunc('month', …)`
+     + alias düzeltmesi. Risk **R2**, kapsam **P6** (§3 P6 `strftime` notu).
+  2. **NUMERIC/DECIMAL string (9 test)** — `admin.test.js:248,273,1009,1029`, `product.test.js:110`,
+     `review.test.js:165`, `salon.test.js:84,105`, `service-staff.test.js:142` → PG `NUMERIC` `'5.00'` (string)
+     döndürüyor, SQLite sayı dönüyordu: `salons.rating_avg`, `services.price`, `products.price`. Model getter
+     (`parseFloat`) veya `pg` type parser (OID 1700) kararı. Risk **R5** — API sözleşmesi (Flutter/admin_panel
+     `num` parse'ı) bu yüzden açık.
+  3. **TIME formatı (2 test)** — `appointment.test.js:82,342` → PG `time` `'10:00:00'`, SQLite `'10:00'`;
+     `Appointment.startTime/endTime` için `HH:mm` getter/normalizasyon gerekir. Risk **R3**.
+  4. **Geçersiz UUID → 500 (2 test)** — `app.test.js:61`, `appointment.test.js:619` → PG `invalid input syntax
+     for type uuid` 500 üretiyor, beklenen 404; param doğrulaması (`src/validators/**` veya route middleware)
+     gerekir. Risk **R2** (dialect'e özgü kaçak).
+  5. **`reviews.appointment_id` UNIQUE (2 test)** — `review.test.js:256,303` → test, `Appointment.findOne({status:
+     'COMPLETED'})` ile **zaten yorumlanmış** randevuyu seçip ikinci yorum yazıyor; PG'de `UNIQUE` (migration
+     `008`) doğru şekilde reddediyor, SQLite'ta kısıt yoktu. Düzeltme **test verisi** tarafında
+     (`tests/review.test.js` yorumsuz randevu seçmeli), üretim kodu doğru. Risk **R1**.
+  Önerilen dosya sahipliği (P4b): `src/controllers/admin.controller.js`, `src/models/{Salon,Service,Product,
+  Appointment}.js` (veya `src/config/database.js`'te pg type parser), `src/validators/**`+`src/routes/**`,
+  `tests/review.test.js`.
 
 ### P5 — Veri taşıma (SQLite dev verisi gerekli mi?)
 
