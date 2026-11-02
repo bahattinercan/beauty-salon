@@ -3,6 +3,7 @@ const { expect } = require('chai');
 const app = require('../src/app');
 const { syncDB, seedTestData, teardownDB } = require('./setup');
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-unit-tests-only-32chars!';
 
@@ -29,6 +30,21 @@ async function newCompletedAppointment(customer, salon, staff, service) {
     endTime: '12:45:00',
     status: 'COMPLETED',
   });
+}
+
+// `reviews.appointment_id` UNIQUE (migration 008): yorumu olan bir randevuya ikinci yorum
+// yazılamaz. Bu yüzden aday olarak yalnız henüz yorumlanmamış randevular filtrelenir; seed'de
+// yorumsuz COMPLETED randevu kalmadığı için taze bir COMPLETED randevu üretilir.
+async function unreviewedCompletedAppointment(customer, salon, staff, service) {
+  const { Appointment, Review } = require('../src/models');
+  const reviewed = await Review.findAll({ attributes: ['appointmentId'], raw: true });
+  const reviewedIds = reviewed.map((r) => r.appointmentId).filter(Boolean);
+  const where = { status: 'COMPLETED' };
+  // Boş `Op.notIn` Postgres'te `NOT IN (NULL)` üretip tüm satırları eler; filtre o zaman eklenmez.
+  if (reviewedIds.length > 0) where.id = { [Op.notIn]: reviewedIds };
+  const existing = await Appointment.findOne({ where });
+  if (existing) return existing;
+  return newCompletedAppointment(customer, salon, staff, service);
 }
 
 describe('Review API', () => {
@@ -249,8 +265,8 @@ describe('Review API', () => {
     });
 
     it('should only return visible reviews', async () => {
-      const { Review, Appointment } = require('../src/models');
-      const appt = await Appointment.findOne({ where: { status: 'COMPLETED' } });
+      const { Review } = require('../src/models');
+      const appt = await unreviewedCompletedAppointment(customer, salon1, data.staff.staff1, data.services.service1);
 
       // Create a review and hide it
       await Review.create({
@@ -296,8 +312,8 @@ describe('Review API', () => {
     });
 
     it('should order reviews by most recent first', async () => {
-      const { Review, Appointment } = require('../src/models');
-      const appt = await Appointment.findOne({ where: { status: 'COMPLETED' } });
+      const { Review } = require('../src/models');
+      const appt = await unreviewedCompletedAppointment(customer, salon1, data.staff.staff1, data.services.service1);
 
       // Create a new review
       await Review.create({

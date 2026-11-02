@@ -5,7 +5,12 @@ const serviceController = require('../controllers/service.controller');
 const productController = require('../controllers/product.controller');
 const { authenticate, authorize, optionalAuth } = require('../middlewares/auth');
 const { createSalonValidator, querySalonValidator, nearbyValidator, updateSalonValidator } = require('../validators/salon.validator');
+const { uuidParam } = require('../validators/uuid.validator');
 const validate = require('../middlewares/validate');
+
+// Geçersiz UUID -> 404 (Postgres uuid kolonunda 500'e düşmesin)
+router.param('id', uuidParam('Salon bulunamadı'));
+router.param('salonId', uuidParam('Salon bulunamadı'));
 
 // Public salon endpoints
 router.get('/', querySalonValidator, validate, salonController.getAll);

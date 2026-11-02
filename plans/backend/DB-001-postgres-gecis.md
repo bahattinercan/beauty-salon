@@ -298,6 +298,29 @@ Sequelize `INSERT` tüm model kolonlarını listeler → `salons.price_range` yo
   Önerilen dosya sahipliği (P4b): `src/controllers/admin.controller.js`, `src/models/{Salon,Service,Product,
   Appointment}.js` (veya `src/config/database.js`'te pg type parser), `src/validators/**`+`src/routes/**`,
   `tests/review.test.js`.
+- **KAPATILDI (2026-11-02) — P4b uygulandı.** `TZ=UTC` ve `TZ=Europe/Istanbul` **357 passing / 0 failing**;
+  arka arkaya ikinci koşum (dolu DB) da 357. Kategori kategori yapılanlar:
+  1. `src/controllers/admin.controller.js:46-54` (kullanım `:108` ve `:117`) — dialect'e göre tek aylık ifade (`sqlite` →
+     `strftime('%Y-%m', col)`, `postgres` → `date_trunc('month', col)`), kolon `sequelize.col` ile verildi
+     (ham literal'de tırnaksız `Appointment.date` PG'de `missing FROM-clause entry` üretiyordu); `attributes`
+     ve `order` aynı ifadeyi kullanıyor.
+  2. `src/config/database.js:7-26,95` — NUMERIC/DECIMAL tek noktadan `parseFloat`: `pg` OID 1700 parser'ı **+**
+     `DataTypes.postgres.DECIMAL.parse` (Sequelize bağlantıda kendi DECIMAL parser'ını kaydedip `pg`'ninkini
+     gölgeliyor; `numeric[]` de aynı static'i kullanır). Böylece `raw: true` sorguları da sayı döner; API
+     sözleşmesi (`double.parse`/`Number()`) korunur, istemci değişikliği gerekmedi. Yuvarlama yapılmaz.
+  3. `src/models/Appointment.js:4-11,43-55` — `startTime`/`endTime` getter'ı `HH:mm`'e indirger (DB'de
+     saklanan değer bozulmaz, yalnız okunan değer normalize edilir; validator zaten `HH:MM` bekliyor).
+  4. `src/validators/uuid.validator.js` (yeni) + `src/routes/salon.routes.js:12-13`,
+     `src/routes/appointment.routes.js:9-10` — `router.param` ile UUID biçim kontrolü; biçimsiz id
+     controller'a gitmeden mevcut 404 sözleşmesiyle yanıtlanır (400 değil).
+  5. `tests/review.test.js:34-47,269,316` — yorumsuz COMPLETED randevu seçimi (`Op.notIn` ile yorumlanmışlar
+     elenir; seed'de yorumsuz kalmadığı için taze randevu üretilir). Üretim kodu (`UNIQUE`) doğruydu,
+     test zayıflatılmadı.
+  SQLite geri dönüş yolu: `DB_DIALECT=sqlite` + geçici dosya ile duman testi → `strftime` dalı,
+  `TIME` getter'ı `10:00`, dashboard 200 ve aylık seri doğru. **Not:** `DB_DIALECT=sqlite npm test` yeşil
+  değil — P4'te `tests/setup.js:11-17` testler için Postgres zorunluluğu koyuyor (kasıtlı, P4b sahipliği
+  dışında); geri dönüş kanıtı bu yüzden duman testiyle alındı. `DB_DIALECT=postgres npm run seed` iki kez →
+  satır sayıları değişmedi (idempotent). Commit: `apps/api` tek commit, push yok.
 
 ### P5 — Veri taşıma (SQLite dev verisi gerekli mi?)
 

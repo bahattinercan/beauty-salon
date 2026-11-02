@@ -43,6 +43,14 @@ const getDashboard = async (req, res, next) => {
 
     const Op = require('sequelize').Op;
 
+    // Aylık gruplama ifadesi dialect'e göre: SQLite'ta strftime, Postgres'te date_trunc.
+    // Kolon referansı sequelize.col ile verilir; ham literal'e `Appointment.date` yazmak
+    // Postgres'te tırnaksız kaldığı için "missing FROM-clause entry for table \"appointment\"" üretiyordu.
+    const appointmentMonth =
+      sequelize.getDialect() === 'sqlite'
+        ? sequelize.fn('strftime', '%Y-%m', sequelize.col('Appointment.date'))
+        : sequelize.fn('date_trunc', 'month', sequelize.col('Appointment.date'));
+
     const [
       totalUsers,
       totalSalons,
@@ -97,8 +105,7 @@ const getDashboard = async (req, res, next) => {
       // Monthly appointment counts for the last 6 months
       Appointment.findAll({
         attributes: [
-          // SQLite'ta DATE_TRUNC yok; strftime kullanılıyor
-          [sequelize.literal("strftime('%Y-%m', Appointment.date)"), 'month'],
+          [appointmentMonth, 'month'],
           [sequelize.fn('COUNT', sequelize.col('Appointment.id')), 'count'],
         ],
         where: {
@@ -107,7 +114,7 @@ const getDashboard = async (req, res, next) => {
           },
         },
         group: ['month'],
-        order: [[sequelize.literal("strftime('%Y-%m', Appointment.date)"), 'ASC']],
+        order: [[appointmentMonth, 'ASC']],
         raw: true,
       }),
     ]);

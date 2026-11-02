@@ -4,6 +4,26 @@ const path = require('path');
 // Tek doğruluk kaynağı: dialect env'den gelir (varsayılan postgres).
 const SUPPORTED_DIALECTS = ['postgres', 'sqlite'];
 
+// Postgres `NUMERIC`/`DECIMAL` (OID 1700) `pg` tarafından string ('5.00') dönüyor;
+// SQLite aynı kolonlar için sayı dönüyordu. API sözleşmesi (Flutter `double.parse`/`num`,
+// admin_panel `Number()`) sayı beklediği için tek noktadan parseFloat uygulanır — model
+// getter'ı yerine sürücü seviyesinde çözülür ki `raw: true` sorguları (revenue, admin
+// listeleri) da aynı tipi döndürsün.
+//
+// Dikkat: Sequelize bağlantı kurulunca kendi DECIMAL parser'ını kaydediyor
+// (`dialects/postgres/data-types.js` → `DECIMAL.parse = value`), bu da `pg`'nin OID
+// parser'ını gölgeliyor. Bu yüzden aynı dönüşüm Sequelize'ın DECIMAL static'ine de verilir;
+// numeric[] (array) parser'ı da aynı fonksiyonu kullanır.
+const NUMERIC_OID = 1700;
+const parseNumeric = (value) => (value === null ? null : parseFloat(value));
+const enablePgNumericParsing = () => {
+  require('pg').types.setTypeParser(NUMERIC_OID, parseNumeric);
+  const { DataTypes } = require('sequelize');
+  if (DataTypes.postgres && DataTypes.postgres.DECIMAL) {
+    DataTypes.postgres.DECIMAL.parse = parseNumeric;
+  }
+};
+
 // SQLite yalnızca geri dönüş yolu: DB_DIALECT=sqlite verilmedikçe devreye girmez.
 const SQLITE_FALLBACK_FILES = {
   test: 'test-database.sqlite',
@@ -71,6 +91,8 @@ const buildSequelizeOptions = (env = process.env.NODE_ENV || 'development') => {
     },
   };
 };
+
+if (resolveDialect() === 'postgres') enablePgNumericParsing();
 
 const sequelize = new Sequelize(buildSequelizeOptions());
 
