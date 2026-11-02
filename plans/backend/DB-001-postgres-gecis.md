@@ -200,6 +200,7 @@ Sequelize `INSERT` tüm model kolonlarını listeler → `salons.price_range` yo
   → **13 eski + yeni dosyalar = 13+N, hepsi OK**; `db:migrate:undo:all` → tüm tablolar ve enum
   tipleri gider, ardından tekrar `db:migrate` **hatasız** (idempotent up/down);
   `psql \d` şemasında §1.5'teki 12 eksik kolon + `settings` **mevcut**.
+- **UYGULANDI (2026-11-02):** 3 yeni migration (`20261102000014-create-settings`, `…15-add-missing-columns` = 11 kolon, `…16-align-salon-json-columns-to-text`) + `001/007/011` `down()`'larına `DROP TYPE IF EXISTS`; `gallery_images`/`working_hours` kararı **TEXT** (model tek doğru taraf, seeder/testler değişmedi); prova `beauty_mig_scratch` DB'sinde: 16/16 migrate OK → `undo:all` (0 tablo, 0 enum tipi) → tekrar 16/16 OK, `settings` + 11 kolon şemada doğrulandı, `npm test` 357 passing, scratch DB DROP edildi. Açık kalan (P3): `staff_services`'ta migration'ın yarattığı `created_at/updated_at` NOT NULL kolonları modelde `timestamps:false` olduğu için `npm run seed`'i `23502 not-null` ile kırıyor.
 - **Bağımlılık:** P1'e bağımlı (factory yoksa cli de runtime ile aynı yolu kullanmaz).
 
 ### P3 — Seeder'ın Postgres'e taşınması (idempotentlik korunur)

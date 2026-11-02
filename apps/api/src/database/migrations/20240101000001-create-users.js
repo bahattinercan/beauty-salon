@@ -67,5 +67,10 @@ module.exports = {
 
   async down(queryInterface) {
     await queryInterface.dropTable('users');
+    // PostgreSQL ENUM tipi tablo ile birlikte silinmez; bırakılırsa tekrar up()
+    // "type already exists" ile patlar (DB-001 P2).
+    if (queryInterface.sequelize.getDialect() === 'postgres') {
+      await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_users_role"');
+    }
   },
 };

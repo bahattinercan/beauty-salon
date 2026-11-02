@@ -79,5 +79,9 @@ module.exports = {
 
   async down(queryInterface) {
     await queryInterface.dropTable('appointments');
+    // Enum tipi tablo ile silinmez; temizlenmezse tekrar up() patlar (DB-001 P2).
+    if (queryInterface.sequelize.getDialect() === 'postgres') {
+      await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_appointments_status"');
+    }
   },
 };

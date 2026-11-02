@@ -49,5 +49,9 @@ module.exports = {
 
   async down(queryInterface) {
     await queryInterface.dropTable('notifications');
+    // Enum tipi tablo ile silinmez; temizlenmezse tekrar up() patlar (DB-001 P2).
+    if (queryInterface.sequelize.getDialect() === 'postgres') {
+      await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_notifications_type"');
+    }
   },
 };
