@@ -6,7 +6,7 @@
 
 | Uygulama | Teknoloji | Kullanıcı |
 |----------|-----------|----------|
-| `apps/api` | Node.js + Express + Sequelize (SQLite) | — |
+| `apps/api` | Node.js + Express + Sequelize (PostgreSQL) | — |
 | `apps/salon_app` | **Flutter (bu doküman)** | Salon sahibi |
 | `apps/customer_app` | Flutter | Müşteri |
 | `apps/admin_panel` | Next.js | Platform admini |
