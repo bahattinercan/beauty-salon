@@ -229,7 +229,9 @@ Rol kontrolü dışında controller'larda nesne bazlı kontrol vardır:
 - Appointment status: `appointment.salon.ownerId`
 - Appointment cancel / Review create: `customerId === req.user.id`
 
-> `GET /appointments/salon/:salonId` ve `GET /admin/*` endpoint'lerinde **salon bazlı sahiplik kontrolü yoktur** — herhangi bir `SALON_OWNER` herhangi bir salonun randevularını görebilir.
+> **`GET /appointments/salon/:salonId` sahiplik kontrolü içerir (kapatıldı, `#1`):** salon yoksa **404**, `SALON_OWNER` başka salonun randevularını isterse **403** (`apps/api/src/controllers/appointment.controller.js:252-260`); route'ta `authenticate` + `authorize('SALON_OWNER','ADMIN')` var (`apps/api/src/routes/appointment.routes.js:15`).
+> **`GET /admin/*` uçlarının tamamı ADMIN'e kapalıdır:** `router.use(authenticate, authorize('ADMIN'))` (`apps/api/src/routes/admin.routes.js:13`) → `SALON_OWNER` bu uçlara hiç erişemez (403).
+> **`GET /reviews/salon/:salonId` public ve sahiplik kontrolü içermez** — kayıt `#2` açık (`apps/api/src/routes/review.routes.js:9`).
 
 ---
 
@@ -696,9 +698,9 @@ Altyapı notları:
 | # | Sorun | Etki |
 |---|---|---|
 | 1 | `GET /appointments/available-slots`'te `authenticate` yok | CLAUDE.md "required" diyor; fiilen public |
-| 2 | `GET /appointments/salon/:salonId` sahiplik kontrolü yok | Her SALON_OWNER her salonu görür |
-| 3 | Randevuda `serviceId` salon uyumu kontrol edilmiyor (staff uyumu kontrol ediliyor) | Yanlış salon kombinasyonu kabul edilebilir |
-| 4 | `workingHours` gün tanımı yoksa çalışma saati kontrolü atlanıyor | Kapalı güne randevu alınabilir |
+| 2 | `GET /appointments/salon/:salonId` sahiplik kontrolü **eksikti** | **Çözüldü (kapatıldı, `#1`)** — 404/403 kontrolü eklendi (`apps/api/src/controllers/appointment.controller.js:252-260`) |
+| 3 | Randevuda `serviceId` salon uyumu kontrol edilmiyor (staff uyumu kontrol ediliyor) | **Çözüldü (2026-11-02, commit `2b1677e`, `#7`)** — `service.salonId !== salon.id` → 400 (`apps/api/src/controllers/appointment.controller.js:41`), personel de aynı kontrolden geçiyor (`:45-46`) |
+| 4 | `workingHours` gün tanımı yoksa çalışma saati kontrolü atlanıyor | **Çözüldü (2026-11-02, commit `2b1677e`, `#9`)** — tanımsız gün "kapalı gün" sayılıyor, kontrol atlanmıyor (`apps/api/src/controllers/appointment.controller.js:51-53`) |
 | 5 | `workingHours` getter'ı çift-parse toleranslı | Çözüldü — string set edilen değerler de çalışıyor |
 | 6 | Aylık seri dialect'e göre seçilir (`date_trunc` postgres / `strftime` sqlite) | Çözüldü — `/admin/dashboard` her iki dalda 200 |
 | 7 | `twilio` bağımlılığı eksik | SMS akışı Twilio env'i ile 500 |
@@ -713,10 +715,10 @@ Altyapı notları:
 | 16 | `sync()` + `ensureColumns()` + `dropBackupTables()` çağrıları kaldırıldı (P1) | Çözüldü — şema yalnız migration'lardan |
 | 17 | Runtime DB artık Postgres (`beauty_salon`); `.sqlite` dosyaları yalnız `DB_DIALECT=sqlite` geri dönüşü | Çözüldü — şema karışıklığı kalmadı (P1–P3) |
 | 18 | `toSafeJSON()` `passwordResetToken` / expiry alanlarını çıkarmaz | Login/register yanıtlarında hassas alan sızıntısı |
-| 19 | `PATCH /users/:id/toggle-active` rol kontrolü yapar, sahiplik kontrolü yapmaz | Kullanıcı kendi aktifliğini kapatabilir |
+| 19 | `PATCH /users/:id/toggle-active` rol kontrolü yapar, sahiplik kontrolü **yapmıyordu** | **Çözüldü (2026-11-02, commit `2b1677e`, `#5`)** — admin kendi hesabını bu uçtan kapatamaz: `user.id === req.user.id` → 400 (`apps/api/src/controllers/user.controller.js:66-69`) |
 | 20 | Settings ayarları hiçbir davranışı etkilemez (`maxLoginAttempts`, `rateLimitingEnabled`, `maintenanceModeEnabled` okunmaz) | Yalnız depolanır/panelde gösterilir |
 | 21 | Review görünürlüğü değişince `ratingAvg` yeniden hesaplanmaz | Puan eski değerinde kalır |
-| 22 | `staff_services` fiili şemada PK yok | Duplicate join kaydı engellenmez |
+| 22 | `staff_services` fiili şemada PK yok | **Bayat (2026-11-02 ölçümü)** — composite PK **var**: `apps/api/src/database/migrations/20240101000006-create-staff-services.js:8,16` (`staff_id` + `service_id` ikisi de `primaryKey`) + `apps/api/src/models/StaffService.js:9,15`. Bu hata sınıfı yalnız SQLite'a özgüydü (`20240101000012-fix-favorites-primary-key.js:5-11`); runtime Postgres olduğu için çift kayıt unique ihlaline düşer |
 | 23 | `POST /salons/:id/staff`, `/services`, `/products` body doğrulanmaz | Yalnız model seviyesi zorunluluklar |
 | 24 | `querySalonValidator` `sortBy`, `priceRange`, `categoryId`, `verified` doğrulamaz | **Çözüldü (2026-11-02, commit `51076e9`)** — beyaz liste eklendi: `sortBy` ∈ `rating`\|`newest`, `priceRange` int 1–3, `categoryId` UUID, `verified` ∈ `true`\|`false`; geçersiz değer 400 (`apps/api/src/validators/salon.validator.js:26-37`) |
 | 25 | `GET /` endpoint listesi eksik (`/staff`, `/upload`, `/admin`) | **Çözüldü (2026-11-02, commit `51076e9`)** — liste ve mount'lar artık **tek kaynaktan** (`apps/api/src/routes/route-table.js` `ROUTES` tablosu) üretiliyor; 14 prefix: `/auth`, `/users`, `/salons`, `/staff`, `/services`, `/categories`, `/appointments`, `/reviews`, `/favorites`, `/upload`, `/admin`, `/notifications`, `/products`, `/settings` |

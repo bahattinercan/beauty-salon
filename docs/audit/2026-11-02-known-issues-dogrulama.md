@@ -150,3 +150,53 @@ Okunan dosyalar (hüküm dayanağı): `src/routes/{review,appointment,user,staff
 - Hiçbir test koşulmadı → test sayısı/kapsam iddiası yok. Yalnız `tests/` altında geçen metin arandı (`429`, `rateLimit`).
 - Runtime davranış ölçülmedi (istek atılmadı, DB'ye bakılmadı) → #16 bu yüzden "doğrulanmadı".
 - `docs/api/11-known-issues.md` **değiştirilmedi**; #26/#29'un işaretlenmesi o dosyanın sahibinde.
+
+---
+
+# Durum güncellemesi (2026-11-02, aynı gün)
+
+> Bu bölüm **eklendi:** aynı gün atılan `51076e9` ve `2b1677e` commit'lerinden sonra yazıldı (`git log --oneline -3` → `2b1677e`, `f62a58c`, `51076e9`). Yukarıdaki hüküm tablosu **`25a05f1` anına** aittir ve tarihsel kayıt olarak korunur; aşağıdaki tablo bugünkü durumu verir. Ölçüm yine yalnız `read`/`grep`/`git show`; test/npm/migration koşulmadı.
+
+## Hüküm tablosu nasıl değişti
+
+| Kayıtlar | Yukarıdaki ilk hüküm | Bugünkü durum |
+|---|---|---|
+| #5, #7, #8, #9 | "hâlâ geçerli" (21 içinde) | **KAPATILDI** — commit `2b1677e` |
+| #19, #20, #23, #24, #31 | "başka worker kapsamında, atlandı" | **KAPATILDI** — commit `51076e9` |
+| #26, #29 | "bayat" | **Değişmedi** — hâlâ bayat; `docs/api/11-known-issues.md` açık tablosunda duruyor (satır temizliği bekliyor) |
+| #16 | "doğrulanmadı" | **Değişmedi** — hâlâ doğrulanmadı |
+| #2, #3, #6, #10–#15, #17, #18, #21, #22, #27, #30, #32, #33 | "hâlâ geçerli" (17 kayıt) | **Değişmedi** — hâlâ açık |
+
+## Bugün kapatılan kayıtlar (kanıtla)
+
+| # | Commit | Kanıt (dosya:satır) |
+|---|---|---|
+| 5 | `2b1677e` | `apps/api/src/controllers/user.controller.js:66-69` — `user.id === req.user.id` → 400 `Kendi hesabınızı pasifleştiremezsiniz` |
+| 7 | `2b1677e` | `apps/api/src/controllers/appointment.controller.js:41` — `service.salonId !== salon.id` → 400; personel de aynı kontrolden geçiyor `:45-46` |
+| 8 | `2b1677e` | `apps/api/src/controllers/appointment.controller.js:166-185` — `staffId` verilirse `staffPool = [staffId]`, verilmezse hizmeti sunan personel havuzu; sorgu `staffId: { [Op.in]: staffPool }` |
+| 9 | `2b1677e` | `apps/api/src/controllers/appointment.controller.js:51-53` — tanımsız gün "kapalı gün" sayılır, çalışma saati kontrolü **atlanmaz** |
+| 19, 20, 23, 24, 31 | `51076e9` | Ayrıntı yukarıdaki hüküm tablosunda: `salon.validator.js:26-37`, `product.validator.js` (tek export), `routes/salon.routes.js` (optionalAuth importu yok), `errorHandler.js` (`err.type` dalı yok), `routes/route-table.js` (14 prefix) |
+
+## Hâlâ açık kayıtlar
+
+| Öncelik | Kayıtlar | Not |
+|---|---|---|
+| **P1 — davranış** | #2, #6, #10, #12, #17, #18, #21, #32 | #10 (toggle'da `ratingAvg` recompute yok) ve #17 (bildirim üreten kod yok) kullanıcıya en görünür olanlar; #18 doğrulanmayan gövde, #21 eksik `twilio`, #32 rate-limit testte kapalı |
+| **P2 — kozmetik / ölü kod** | #11, #13, #14, #15, #16, #22, #27, #33 | #16 hâlâ **doğrulanmadı** (canlı yanıt gerekir); #22 ölü bağımlılık, #27/#33 `UPLOAD_DEST` tekrarı |
+| **Karar bekleyen** | #3, #30 | Aşağıdaki "sahiplik / karar" notlarına bak |
+
+## Sahiplik / karar notları
+
+- **#30 (e-posta değişikliği ↔ şifre sıfırlama token çakışması)** — yalnız dokümanla kapatılamaz: `User` modeline **ayrı** `emailChangeToken` / `emailChangeTokenExpiry` kolonları + yeni migration gerekir. Bugün `passwordResetToken` alanı `EMAILCHANGE:<hash>:<base64>` formatıyla yeniden kullanılıyor (`apps/api/src/controllers/user.controller.js:79-80,109-110`). Karar + migration sahibi ayrı bir dispatch.
+- **#3 (`GET /appointments/available-slots` auth)** — kod bugünkü hâliyle fiilen public (`apps/api/src/routes/appointment.routes.js:14`, `authenticate` yok) ve `CLAUDE.md` "required" diyor. Hangisinin doğru olduğu **kullanıcı kararı**; doküman iki taraftan birini seçmeden kapatılmamalı.
+- **#26, #29 (bayat kayıtlar)** — `docs/api/11-known-issues.md` **açık tablosundan hâlâ çıkarılmadı**: `#26` satırı `docs/api/11-known-issues.md:32`, `#29` satırı `:35`. İkisi de içerik olarak "Kapatıldı"/bayat olduğu hâlde açık listesinde duruyor → **satır temizliği bekliyor** (o dosya başka worker'ın kapsamında).
+
+## Aynı gün doküman tarafında düzeltilenler (bu audit'in dışı, kayıt amaçlı)
+
+| Dosya:satır | Düzeltme |
+|---|---|
+| `docs/api/03-auth.md:67-70` | "`GET /appointments/salon/:salonId` sahiplik kontrolü yapmaz" iddiası kaldırıldı; 404/403 kontrolü `appointment.controller.js:252-260` kanıtıyla yazıldı. `GET /reviews/salon/:salonId` için "hâlâ public" (#2) ayrıca belirtildi |
+| `docs/BACKEND-API.md:232-234` | Aynı düzeltme + `/admin/*` için `authorize('ADMIN')` (`admin.routes.js:13`) notu |
+| `docs/BACKEND-API.md:701-703` | §16 satır 2/3/4 → #1, #7, #9 çözüldü olarak işaretlendi |
+| `docs/BACKEND-API.md:718` | §16 satır 19 → #5 çözüldü (`user.controller.js:66-69`) |
+| `docs/BACKEND-API.md:721` | §16 satır 22 → #29 **bayat** (composite PK var: `migrations/20240101000006-create-staff-services.js:8,16`) |

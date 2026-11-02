@@ -64,7 +64,11 @@ Rol kontrolü yetmez; kayıt sahipliği controller'da ayrıca kontrol edilir:
 - `Appointment` cancel: `appointment.customerId === req.user.id`
 - `Review`: `review.customerId === req.user.id` (oluşturma), `review.salon.ownerId === req.user.id` (yanıt)
 
-> **Doğrulanmış açıklar:** `GET /appointments/salon/:salonId` ve `GET /reviews/salon/:salonId` sahiplik kontrolü yapmaz — herhangi bir SALON_OWNER herhangi bir salonun randevularını okuyabilir. Canlı test: `salon@` (Elegance'ın sahibi) → `GET /appointments/salon/<Zen SPA>` → 200, 2 kayıt.
+> **Sahiplik kontrolü durumu (2026-11-02):**
+> - `GET /appointments/salon/:salonId` — **kapatıldı (#1).** Controller önce salonu `findByPk` ile okur, salon yoksa **404**; `req.user.role === 'SALON_OWNER'` ve `salon.ownerId !== req.user.id` ise **403** döner (`apps/api/src/controllers/appointment.controller.js:252-260`). ADMIN kısıtsızdır; route'ta ayrıca `authenticate` + `authorize('SALON_OWNER','ADMIN')` vardır (`apps/api/src/routes/appointment.routes.js:15`).
+> - `GET /reviews/salon/:salonId` — **hâlâ public, sahiplik kontrolü içermez** (kayıt `#2` açık): route'ta `authenticate` yok (`apps/api/src/routes/review.routes.js:9`), controller yalnız `where: { salonId, isVisible: true }` süzer (`apps/api/src/controllers/review.controller.js:78`). Gizli yorum sızmaz ama her istemci her salonun görünür yorumlarını okur.
+>
+> Doğrulama: `grep -n "ownerId !== req.user.id" apps/api/src/controllers/appointment.controller.js` → `:258`; `grep -n "reviewController.getBySalon" apps/api/src/routes/review.routes.js` → `:9` (satırda `authenticate` yok).
 
 ## Auth endpoint'leri
 
