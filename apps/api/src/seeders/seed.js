@@ -10,12 +10,49 @@ const {
   Appointment,
   Review,
 } = require('../models');
+const { sequelize } = require('../config/database');
 
 /*
  * İdempotent seed: her kayıt "var mı, yoksa oluştur" mantığıyla eklenir.
  * Seed birden fazla kez çalıştırılabilir; ayrıca eski/eksik verileri
  * (ör. category_id NULL olan hizmetler) onarır.
+ *
+ * DB-001 P3 — Postgres akışı:
+ *  - Şema **yalnız migration'lardan** gelir; seed `sync()` ÇAĞIRMAZ. Postgres'te
+ *    ilk iş `assertMigrationsApplied()`: uygulanmış migration sayısı dosya sayısından
+ *    azsa seed net bir mesajla durur (`npm run migrate`), böylece eksik şema
+ *    `42703 column does not exist` gibi anlaşılmaz bir hataya dönüşmez.
+ *  - Dialect `DB_DIALECT` env'inden gelir (varsayılan `postgres`); seed kodu
+ *    lehçe bağımsız — tek istisna reset.js'teki `TRUNCATE` dalı.
+ *  - **`settings` varsayılanları bilinçli olarak YAZILMAZ.** `GET /api/v1/settings`
+ *    (`src/controllers/settings.controller.js:25-29`) `DEFAULTS`'ı her okumada
+ *    DB'nin üzerine merge ediyor; tabloya yalnız admin'in açıkça kaydettiği
+ *    override'lar (`PUT /settings` upsert) girmeli. Varsayılanları seed'le yazmak,
+ *    "ayarlanmamış" ile "açıkça varsayılana ayarlanmış"ı ayırt edilemez kılar ve
+ *    ileride `DEFAULTS` değişse bile eski kurulumda donmuş değer kalırdı.
+ *    Sonuç: `settings` tablosu seed sonrası 0 satırdır (belgelenmiş istisna).
  */
+
+const MIGRATIONS_DIR = path.join(__dirname, '..', 'database', 'migrations');
+
+const assertMigrationsApplied = async () => {
+  if (sequelize.getDialect() !== 'postgres') return;
+
+  const expected = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.js')).length;
+  const [metaTables] = await sequelize.query(
+    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'SequelizeMeta'",
+  );
+  const applied = metaTables.length === 0
+    ? 0
+    : Number((await sequelize.query('SELECT COUNT(*) AS count FROM "SequelizeMeta"'))[0][0].count);
+
+  if (applied < expected) {
+    throw new Error(
+      `Şema eksik: ${applied}/${expected} migration uygulanmış. Önce \`npm run migrate\` çalıştırın `
+        + '(seed şema kurmaz, yalnız veri yazar).',
+    );
+  }
+};
 
 const USERS = [
   { email: 'admin@beautysalon.com', phone: null, fullName: 'Platform Admin', role: 'ADMIN' },
@@ -287,6 +324,7 @@ const findOrCreate = async (Model, where, values) => {
 
 const seed = async () => {
   console.log('Seed başlatılıyor...');
+  await assertMigrationsApplied();
 
   // ── Kullanıcılar ────────────────────────────────────────────────────────────
   const users = {};

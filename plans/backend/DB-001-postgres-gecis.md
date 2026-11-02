@@ -215,6 +215,36 @@ Sequelize `INSERT` tüm model kolonlarını listeler → `salons.price_range` yo
   her tabloda `count(*) > 0` (favorites/products/notifications/settings seed kapsamına göre
   belgelenmiş istisnalar hariç); `npm run seed:reset` → temiz + yeniden dolu DB.
 - **Bağımlılık:** P2'ye bağımlı (şema tam olmadan seed `42703` alır).
+- **UYGULANDI (2026-11-02):**
+  1. **`staff_services` çözümü — kolonlar DROP edildi** (yeni migration
+     `20261102000017-drop-staff-services-timestamps.js`; DEFAULT eklemek değil). Gerekçe: model
+     `timestamps: false` tek doğru kaynak; iki kolon bugüne kadar hiçbir INSERT'te dolmadı (PG'de 0
+     satır) ve `updated_at` DEFAULT'la da hep INSERT anında donacağı için yanıltıcı "ölü" kolon
+     olurdu; SQLite tarafında (sync + `timestamps:false`) bu kolonlar hiç oluşmadığından DROP iki
+     dialecti modelde birleştirir; `staff_services`'i okuyan tek bir sorgu timestamp istemiyor.
+     `down()` kolonları `DEFAULT now()` + `NOT NULL` olarak geri ekler (orijinal DEFAULT'suz tanım
+     dolu tabloya eklenemez); `undo` + `migrate` provası veri kaybı olmadan döndü.
+  2. **`settings` varsayılanları seed'e YAZILMAZ** (karar, `seed.js` başlığında da yazılı):
+     `GET /settings` `DEFAULTS`'ı her okumada DB'nin üzerine merge ediyor; tabloda yalnız admin'in
+     açıkça kaydettiği override'lar (`PUT /settings` upsert) durmalı. Yazılsaydı "ayarlanmamış" ile
+     "açıkça varsayılana ayarlanmış" ayırt edilemez ve `DEFAULTS` ileride değişse eski kurulumda
+     donmuş değer kalırdı → `settings` seed sonrası **0 satır** (belgelenmiş istisna).
+  3. `seed.js` `sync()` çağırmıyor; Postgres'te `assertMigrationsApplied()` uygulanmış migration
+     sayısı < dosya sayısı ise `Şema eksik: 17/18 … Önce npm run migrate` mesajıyla **exit 1** verir
+     (eksik şema anlaşılmaz `42703`'e dönüşmez). İdempotentlik korundu ("var mı, yoksa oluştur").
+  4. `reset.js`: Postgres'te tek `TRUNCATE TABLE … RESTART IDENTITY CASCADE` (FK sırası/tek tek
+     silme derdi yok, boş tabloda da hata vermez), `DB_DIALECT=sqlite` geri dönüşünde child-first
+     `DELETE`; yalnız var olan tablolara dokunur. `seed:reset` = `node src/seeders/reset.js`
+     (dotenv en üstte, hata → exit 1, pool `finally`'de kapanır).
+  5. `.env` → `DB_DIALECT=postgres` (dev akışı Postgres; geri dönüş tek satır: `DB_DIALECT=sqlite`).
+  6. **Kanıt (ölçüldü):** `db:migrate` → 17/17 up, pending 0; `npm run seed` **iki kez** → ikinci
+     koşumda 0 INSERT, tablo sayıları birebir aynı: users 4, salons 12, staff 7, service_categories 6,
+     services 16, staff_services 16, appointments 9, reviews 9; `favorites`/`products`/`notifications`/
+     `settings` **0** (seed kapsamı dışı — sırasıyla kullanıcı etkileşimi, admin ürün kataloğu, olay
+     tetiklemeli bildirim ve admin override tablosu); `seed:reset` iki kez yeşil (temiz + yeniden dolu);
+     `npm test` 357 passing (izole HEAD anlık görüntüsü + bu diff; P4 testleri aynı anda Postgres'e
+     taşıdığı için ortak çalışma ağacında test sayısı P4'ün anlık durumuna bağlı).
+- **Bağımlılık:** P2'ye bağımlı (şema tam olmadan seed `42703` alır).
 
 ### P4 — Test altyapısı (izole test DB, paralel koşum, `.env.test`)
 
