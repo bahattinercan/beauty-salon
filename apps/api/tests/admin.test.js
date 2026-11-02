@@ -65,13 +65,15 @@ describe('Admin API', () => {
       expect(stats.pendingSalons).to.be.a('number');
     });
 
-    it('gelir istatistiği ve aylık randevu listesi alanları mevcut', async () => {
+    it('gelir istatistiği ve aylık randevu listesi alanları mevcut (totalRevenue number — #14)', async () => {
       const res = await request
         .get('/api/v1/admin/dashboard')
         .set('Authorization', `Bearer ${adminToken}`);
 
       const data = res.body.data;
-      expect(data.stats.totalRevenue).to.be.a('string');
+      expect(data.stats.totalRevenue).to.be.a('number');
+      expect(Number.isNaN(data.stats.totalRevenue)).to.equal(false);
+      expect(data.stats.totalRevenue).to.be.at.least(0);
       expect(data.appointmentsByStatus).to.be.an('array');
       expect(data.monthlyAppointments).to.be.an('array');
       expect(data.recentReviews).to.be.an('array');

@@ -144,8 +144,33 @@ const toggleVisibility = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Yorum bulunamadı' });
     }
 
-    await review.update({ isVisible: !review.isVisible });
-    successResponse(res, { id: review.id, isVisible: review.isVisible });
+    // Görünürlük + salon puanının yeniden hesabı tek transaction'da
+    // (create ve admin.controller.deleteReview ile aynı desen) — #10
+    const result = await sequelize.transaction(async (t) => {
+      await review.update({ isVisible: !review.isVisible }, { transaction: t });
+
+      const rows = await Review.findAll({
+        where: { salonId: review.salonId, isVisible: true },
+        attributes: [
+          [sequelize.fn('AVG', sequelize.col('rating')), 'avgRating'],
+          [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+        ],
+        raw: true,
+        transaction: t,
+      });
+
+      const ratingAvg = Math.round((parseFloat(rows[0].avgRating) || 0) * 10) / 10;
+      const reviewCount = parseInt(rows[0].count, 10) || 0;
+
+      await Salon.update({ ratingAvg, reviewCount }, {
+        where: { id: review.salonId },
+        transaction: t,
+      });
+
+      return { id: review.id, isVisible: review.isVisible, ratingAvg, reviewCount };
+    });
+
+    successResponse(res, result);
   } catch (error) {
     next(error);
   }

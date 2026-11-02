@@ -12,11 +12,9 @@
 
 | # | Sorun | Etki |
 |---|---|---|
-| 10 | Review görünürlüğü değişince `ratingAvg` yeniden hesaplanmaz | Admin yorumu gizlerse puan eski değerinde kalır |
 | 11 | `change-password` min 6, `register` min 8 | Tutarlılık |
 | 12 | `DELETE /categories/:id` hard delete, diğerleri soft delete | Davranış tutarsızlığı |
 | 13 | `Setting` ayarları hiçbir davranışı etkilemez | Panelde gösterilir, kod okumaz |
-| 14 | `totalRevenue` string döner | İstemci sayıya çevirmeli |
 | 15 | `monthlyAppointments` ay adı verir, yıl yoktur | Yıl sonu sınırında karışık grafik |
 | 16 | `toJSON()` aynı alanı iki kez basar (`salonId` + `salon_id`) | İstemci kafa karışıklığı |
 | 17 | Notification üreten kod yok | Bildirim sistemi salt okunur |
@@ -26,7 +24,6 @@
 
 | # | Sorun | Etki |
 |---|---|---|
-| 21 | `twilio` bağımlılığı yok | Twilio env tanımlıysa `require('twilio')` throw → 500 |
 | 22 | `sharp`, `swagger-jsdoc`, `swagger-ui-express` kullanılmıyor; `pg`/`pg-hstore` **runtime sürücüsüdür** (Postgres, aktif); `sqlite3` yalnız `DB_DIALECT=sqlite` geri dönüşünde; `cookie-parser` **aktiftir** (`src/app.js:8`, `src/app.js:83`) | Kısmen ölü bağımlılık |
 | 25 | **Kapatıldı (DB-001 P1):** `ensureColumns()`, `dropBackupTables()`, `sync()` çağrıları kaldırıldı | Şema yalnız migration'lardan; eksik migration `seed`/`test`'te açık hata verir (sessiz onarım yok) |
 | 26 | **Kapatıldı (DB-001 P1–P3):** runtime Postgres; `DB_DIALECT=sqlite` geri dönüşünde dosya `DB_STORAGE` veya `src/*.sqlite` | `.sqlite` dosyaları yalnız geri dönüş penceresi; varsayılan runtime değil |
@@ -34,7 +31,6 @@
 | 28 | **Kapatıldı (DB-001 P2):** migration ↔ model uyuşmazlığı yeni migration'larla giderildi (`…14` settings tablosu, `…15` 11 kolon, `…16` salon JSON→TEXT, `…17` staff_services timestamps) | Postgres şeması modelle hizalı; drift `information_schema` ile doğrulandı |
 | 29 | `staff_services` composite PK yok → duplicate join kaydı engellenmez | `bulkCreate` ile aynı bağ iki kez eklenebilir |
 | 30 | User e-posta değişikliği `password_reset_token` alanını paylaşıyor | İki akış birbirini bozabilir |
-| 32 | Rate limit testte kapalı, production'ta açık | Testler 429 davranışını kapsamıyor |
 | 33 | `src/app.js` statik `/uploads` route'u ile upload middleware'i `UPLOAD_DEST`'u iki ayrı yerde okuyor | İkisi de cwd'ye göre çözülüyor ve davranış tutarlı, ama tek kaynak olmalı → küçük teknik borç |
 
 ## Kapatılanlar (2026-10-23)
@@ -162,3 +158,45 @@
 **Kapı (Dalga 1: #19/#20/#23/#24/#31):** `cd apps/api && bash scripts/db-ready.sh && npm test` → **372 passing, 0 failing** (baseline 357, +15 yeni test).
 
 **Kapı (Dalga 2: #5/#7/#8/#9):** `cd apps/api && bash scripts/db-ready.sh && npm test` → **378 passing, 0 failing** (baseline 372, +6 yeni test; hiçbir test silinmedi/zayıflatılmadı).
+
+### #10 · Review görünürlüğü değişince `ratingAvg` yeniden hesaplanmıyordu — kapatıldı
+
+**Sorun:** `PATCH /reviews/:id/toggle-visibility` yalnız `review.update({ isVisible })` yapıyordu; salonun `ratingAvg` / `reviewCount` alanları eski değerinde kalıyordu. Admin bir yorumu gizlediğinde puan düşmüyor, geri açtığında yükselmiyordu — `create` ve `admin.controller.deleteReview` recompute ederken yalnız toggle eksikti.
+
+**Çözüm:** `apps/api/src/controllers/review.controller.js` → `toggleVisibility`: görünürlük değişimi + salon puanının yeniden hesabı tek `sequelize.transaction` içinde, `create`/`deleteReview` ile **aynı** desen (visible yorumlar için `AVG(rating)` / `COUNT(id)`, `Math.round(avg * 10) / 10`). Yeni algoritma yazılmadı; yanıt gövdesi `{ id, isVisible }` korunur, ek olarak hesaplanan `ratingAvg`/`reviewCount` döner.
+
+**Kanıt:** `apps/api/tests/review.test.js` → `PATCH /reviews/:id/toggle-visibility` →
+- `should recompute salon ratingAvg when a review is hidden and shown again (#10)` (gizle → ortalama düşer, geri aç → eski değere döner, `reviewCount` tutarlı)
+- Mevcut test korundu: `should toggle review visibility (admin only)`
+
+### #14 · `totalRevenue` string dönüyordu (admin dashboard) — kapatıldı
+
+**Sorun:** `admin.controller.getDashboard` içinde `parseFloat(...).toFixed(2)` kullanılıyordu; `toFixed` **string** döndüğü için `stats.totalRevenue` istemciye `"250.00"` olarak gidiyor ve her istemci kendi sayıya çevirmek zorunda kalıyordu.
+
+**Çözüm:** `apps/api/src/controllers/admin.controller.js` → `totalRevenue = Math.round((parseFloat(revenueData.totalRevenue || 0) || 0) * 100) / 100` → **number** (kuruş hassasiyeti korunur). Alan adı ve yanıt yapısı değişmedi.
+
+**Kanıt:** `apps/api/tests/admin.test.js` → `GET /admin/dashboard` →
+- `gelir istatistiği ve aylık randevu listesi alanları mevcut (totalRevenue number — #14)` (`typeof === 'number'`, `NaN` değil, `>= 0`)
+- Eski testin `to.be.a('string')` beklentisi bu kaydın ta kendisiydi; string → number yönünde **sıkılaştırıldı** (test silinmedi/zayıflatılmadı)
+
+> **İstemci etkisi (bu dispatch'in kapsamı dışı):** `apps/admin_panel` hâlâ string bekliyor — `src/providers/DashboardProvider.tsx:35` (`totalRevenue: string`) ve `src/app/page.tsx:37` (`money(value: string, …)`, `Number.parseFloat`). Runtime'da JS coercion sayesinde çalışır (`parseFloat(250)`), ama `npm run typecheck` için bu iki satırın `number`'a güncellenmesi gerekir.
+
+### #21 · `twilio` bağımlılığı yokken SMS yolu 500 üretiyordu — kapatıldı
+
+**Sorun:** `src/utils/sms.js` içinde `TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN` tanımlıysa `require('twilio')` çağrılıyordu; paket `package.json`'da yok, bu yüzden `MODULE_NOT_FOUND` fırlıyor ve SMS tetikleyen akış (`POST /salons/:id/request-phone-change`, `request-email-change?verifyVia=sms`) **500** dönüyordu.
+
+**Çözüm:** `apps/api/src/utils/sms.js` → `sendSmsOtp`: env yoksa geliştirme modu (OTP loglanır, `null` döner); `require('twilio')` `try/catch` içinde, paket yoksa **uyarı loglanıp `null` dönülür**; gönderim hatası da fırlatılmaz, loglanıp `null` dönülür. Çağıran akışlar (salon.controller.js — dokunulmadı) artık 500 üretmez. Yeni bağımlılık eklenmedi, SMS sağlayıcısı değişmedi.
+
+**Kanıt:** `apps/api/tests/salon.test.js` → `Email/Phone Change OTP Flow` →
+- `should not return 500 when twilio package is missing (#21)` (`require.resolve('twilio')` throw ediyor → ortam gerçekten twilio'suz; istek 200 + `success: true`)
+
+### #32 · Rate limit testte kapalı olduğu için 429 davranışı kapsanmıyordu — kapatıldı
+
+**Sorun:** Limitler `app.js` içinde yalnız `if (!isTest)` ile mount ediliyordu; test ortamında hiç mount edilmediği için 429 davranışı (gövdesi, eşiği, hangi uçlarda sıkı limit olduğu) test edilemiyordu.
+
+**Çözüm:** Limit tanımları `apps/api/src/middlewares/rateLimiters.js` içine taşındı (tek kaynak). Ortamdan bağımsız olarak **her zaman mount** edilir; ama modül durumu (`state.enabled`, varsayılan `!isTest`) `skip` içinde **istek anında** okunur — test ortamında varsayılan olarak kapalı kalır, bir test `setRateLimitEnabled(true)` ile yalnız kendi kapsamında açar. Eşikler istek anında env'den okunur (`RATE_LIMIT_MAX`, `RATE_LIMIT_AUTH_MAX`, `RATE_LIMIT_REFRESH_MAX`), böylece o test eşiği düşürüp diğer testleri yavaşlatmaz.
+
+**Kanıt:** `apps/api/tests/app.test.js` → `rate limit (#32)` →
+- `eşik aşılınca 429 + Türkçe gövde döner (yalnız bu testte açık)` — kapalıyken 3 istek 429 **değil**; `RATE_LIMIT_AUTH_MAX=2` + `setRateLimitEnabled(true)` iken 3. istek **429** ve gövde `{ success: false, message: 'Çok fazla giriş denemesi, lütfen 1 dakika bekleyiniz' }`; `finally` bloğunda limit kapatılır, env geri alınır ve store anahtarı sıfırlanır.
+
+**Kapı (Dalga 3: #10/#14/#21/#32):** `cd apps/api && bash scripts/db-ready.sh && npm test` → **381 passing, 0 failing** (baseline 378, +3 yeni test; hiçbir test silinmedi/zayıflatılmadı).

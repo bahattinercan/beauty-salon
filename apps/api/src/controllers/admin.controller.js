@@ -137,9 +137,9 @@ const getDashboard = async (req, res, next) => {
         : '#FFB74D',
     }));
 
-    // Calculate revenue
+    // Calculate revenue — istemci string'e çevirmesin diye number döner (#14)
     const revenueData = revenueStats.length > 0 ? revenueStats[0] : { totalRevenue: 0, completedCount: 0 };
-    const totalRevenue = parseFloat(revenueData.totalRevenue || 0).toFixed(2);
+    const totalRevenue = Math.round((parseFloat(revenueData.totalRevenue || 0) || 0) * 100) / 100;
 
     // Format monthly data
     const monthlyData = monthlyAppointments.map((item) => {

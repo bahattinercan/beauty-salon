@@ -6,10 +6,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
-const rateLimit = require('express-rate-limit');
 const path = require('path');
 const routes = require('./routes');
 const errorHandler = require('./middlewares/errorHandler');
+const { generalLimiter, authLimiter, refreshLimiter } = require('./middlewares/rateLimiters');
 
 const app = express();
 
@@ -44,37 +44,13 @@ app.use(cors({
 }));
 
 // Rate limiting - brute force koruması
-// Test ortamında limitler devre dışı: aksi halde art arda gelen supertest çağrıları
-// 429 döndürüp auth testlerini kırıyor.
-const isTest = process.env.NODE_ENV === 'test';
-
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW) || 60000,
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
-  message: { success: false, message: 'Çok fazla istek gönderildi, lütfen bekleyiniz' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-if (!isTest) app.use(limiter);
-
-// Login/register için sıkı rate limit (brute force)
-const authLimiter = rateLimit({
-  windowMs: 60000,
-  max: 10,
-  message: { success: false, message: 'Çok fazla giriş denemesi, lütfen 1 dakika bekleyiniz' },
-});
-if (!isTest) {
-  app.use('/api/v1/auth/login', authLimiter);
-  app.use('/api/v1/auth/register', authLimiter);
-}
-
-// Refresh token için daha geniş limit (uygulama otomatik çağırır)
-const refreshLimiter = rateLimit({
-  windowMs: 60000,
-  max: 60,
-  message: { success: false, message: 'Çok fazla token yenileme isteği' },
-});
-if (!isTest) app.use('/api/v1/auth/refresh', refreshLimiter);
+// Limitler `middlewares/rateLimiters.js` içinde tanımlı. Test ortamında varsayılan
+// olarak kapalıdır; bir test `setRateLimitEnabled(true)` ile yalnız kendi kapsamında
+// açar ve eşiği env ile düşürür (#32).
+app.use(generalLimiter);
+app.use('/api/v1/auth/login', authLimiter);
+app.use('/api/v1/auth/register', authLimiter);
+app.use('/api/v1/auth/refresh', refreshLimiter);
 
 // ==================== PARSER ====================
 

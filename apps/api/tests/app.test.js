@@ -126,8 +126,47 @@ describe('App-level routing & error handling', () => {
     });
   });
 
-  describe('CORS', () => {
-    it('izinli origin için Access-Control-Allow-Origin döner', async () => {
+  // #32 — rate limit testte varsayılan kapalı; yalnız bu testte açılıp eşik düşürülür
+  describe('rate limit (#32)', () => {
+    it('eşik aşılınca 429 + Türkçe gövde döner (yalnız bu testte açık)', async () => {
+      const { setRateLimitEnabled, authLimiter } = require('../src/middlewares/rateLimiters');
+      const savedMax = process.env.RATE_LIMIT_AUTH_MAX;
+      process.env.RATE_LIMIT_AUTH_MAX = '2';
+
+      // Önce kapalıyken 3 istek de 429 olmamalı (varsayılan davranış korunuyor)
+      const before = [];
+      for (let i = 0; i < 3; i += 1) {
+        before.push(await request.post('/api/v1/auth/login').send({ email: 'yok@test.com', password: 'Yanlis123!' }));
+      }
+      before.forEach((res) => expect(res.status).to.not.equal(429));
+
+      setRateLimitEnabled(true);
+      try {
+        const after = [];
+        for (let i = 0; i < 3; i += 1) {
+          after.push(await request.post('/api/v1/auth/login').send({ email: 'yok@test.com', password: 'Yanlis123!' }));
+        }
+
+        expect(after[0].status).to.not.equal(429);
+        expect(after[1].status).to.not.equal(429);
+        expect(after[2].status).to.equal(429);
+        expect(after[2].body).to.deep.equal({
+          success: false,
+          message: 'Çok fazla giriş denemesi, lütfen 1 dakika bekleyiniz',
+        });
+        expect(after[2].headers).to.have.property('ratelimit-policy');
+      } finally {
+        setRateLimitEnabled(false);
+        if (savedMax === undefined) delete process.env.RATE_LIMIT_AUTH_MAX;
+        else process.env.RATE_LIMIT_AUTH_MAX = savedMax;
+        // Aynı store sonraki testlere sızmasın
+        await authLimiter.resetKey('::ffff:127.0.0.1');
+        await authLimiter.resetKey('127.0.0.1');
+      }
+    });
+  });
+
+  describe('CORS', () => {    it('izinli origin için Access-Control-Allow-Origin döner', async () => {
       const res = await request.get('/api/v1/health').set('Origin', 'http://localhost:3000');
       expect(res.headers['access-control-allow-origin']).to.equal('http://localhost:3000');
     });

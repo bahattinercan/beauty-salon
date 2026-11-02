@@ -636,6 +636,38 @@ describe('Salon API', () => {
         .send({ newPhone: salon1.phone });
 
     });
+
+    // #21 — twilio paketi yok: TWILIO_* env tanımlı olsa da SMS yolu 500 üretmemeli
+    it('should not return 500 when twilio package is missing (#21)', async () => {
+      const saved = {
+        TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+        TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+        TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER,
+      };
+
+      process.env.TWILIO_ACCOUNT_SID = 'AC-test-sid-but-package-missing';
+      process.env.TWILIO_AUTH_TOKEN = 'test-auth-token';
+      process.env.TWILIO_PHONE_NUMBER = '+15550000000';
+
+      try {
+        // Ortam gerçekten twilio'suz olmalı (yeni bağımlılık eklenmedi)
+        expect(() => require.resolve('twilio'), 'twilio kurulu olmamalı').to.throw();
+
+        const res = await supertest(app)
+          .post(`/api/v1/salons/${salon1.id}/request-phone-change`)
+          .set('Authorization', `Bearer ${owner1Token}`)
+          .send({ newPhone: '+905559998877' });
+
+        expect(res.status, 'SMS yolu 500 üretmemeli').to.equal(200);
+        expect(res.body.success).to.equal(true);
+        expect(res.body.data.message).to.include('SMS');
+      } finally {
+        Object.entries(saved).forEach(([key, value]) => {
+          if (value === undefined) delete process.env[key];
+          else process.env[key] = value;
+        });
+      }
+    });
   });
 
   describe('Confirm Email/Phone Change', () => {

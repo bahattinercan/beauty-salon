@@ -409,6 +409,64 @@ describe('Review API', () => {
         .set('Authorization', `Bearer ${token}`);
 
     });
+
+    // #10 — görünürlük değişince salon puanı yeniden hesaplanmalı (gizle ↔ göster)
+    it('should recompute salon ratingAvg when a review is hidden and shown again (#10)', async () => {
+      const { Review, Salon, User } = require('../src/models');
+      const admin = await User.findOne({ where: { role: 'ADMIN' } });
+      const adminToken = createToken(admin);
+
+      // Taze, görünür bir yorum (rating 3) — create zaten recompute ediyor
+      const appt = await newCompletedAppointment(customer, salon1, data.staff.staff1, data.services.service1);
+      const created = await supertest(app)
+        .post('/api/v1/reviews')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({ appointmentId: appt.id, rating: 3, comment: 'Ortalama bir deneyim' });
+
+      expect(created.status).to.equal(201);
+      const reviewId = created.body.data.id;
+
+      // Beklenen değerler görünür yorum kümesinden hesaplanır (create/deleteReview deseni)
+      const expectedStats = async (reviewVisible) => {
+        const rows = await Review.findAll({ where: { salonId: salon1.id }, raw: true });
+        const visible = rows.filter((row) => (row.id === reviewId ? reviewVisible : row.isVisible));
+        const count = visible.length;
+        const avg = count
+          ? Math.round((visible.reduce((sum, row) => sum + row.rating, 0) / count) * 10) / 10
+          : 0;
+        return { avg, count };
+      };
+
+      const before = await Salon.findByPk(salon1.id);
+      const visibleStats = await expectedStats(true);
+      expect(before.ratingAvg).to.equal(visibleStats.avg);
+      expect(before.reviewCount).to.equal(visibleStats.count);
+
+      // 1) Gizle
+      const hide = await supertest(app)
+        .patch(`/api/v1/reviews/${reviewId}/toggle-visibility`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(hide.status).to.equal(200);
+      expect(hide.body.data.isVisible).to.equal(false);
+
+      const afterHide = await Salon.findByPk(salon1.id);
+      const hiddenStats = await expectedStats(false);
+      expect(afterHide.ratingAvg, 'gizlenen yorum ortalamadan düşmeli').to.equal(hiddenStats.avg);
+      expect(afterHide.reviewCount, 'gizlenen yorum sayılmamalı').to.equal(hiddenStats.count);
+
+      // 2) Geri aç
+      const show = await supertest(app)
+        .patch(`/api/v1/reviews/${reviewId}/toggle-visibility`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(show.status).to.equal(200);
+      expect(show.body.data.isVisible).to.equal(true);
+
+      const afterShow = await Salon.findByPk(salon1.id);
+      expect(afterShow.ratingAvg, 'yorum geri açılınca puan eski değerine dönmeli').to.equal(before.ratingAvg);
+      expect(afterShow.reviewCount).to.equal(before.reviewCount);
+    });
   });
 
   describe('Unauthenticated access', () => {
