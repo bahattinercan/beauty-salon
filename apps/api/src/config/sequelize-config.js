@@ -1,41 +1,11 @@
 require('dotenv').config();
 
+const { buildSequelizeOptions } = require('./database');
+
+// sequelize-cli aynı connection factory'yi kullanır; runtime ile CLI arasında
+// ayrı config kopyası yok. CLI environment adları (development/test/production) korunur.
 module.exports = {
-  development: {
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME || 'beauty_salon',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    dialect: 'postgres',
-    define: {
-      underscored: true,
-      timestamps: true,
-    },
-  },
-  test: {
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME_TEST || 'beauty_salon_test',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    dialect: 'postgres',
-    define: {
-      underscored: true,
-      timestamps: true,
-    },
-  },
-  production: {
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT || '5432'),
-    dialect: 'postgres',
-    logging: false,
-    define: {
-      underscored: true,
-      timestamps: true,
-    },
-  },
+  development: buildSequelizeOptions('development'),
+  test: buildSequelizeOptions('test'),
+  production: buildSequelizeOptions('production'),
 };

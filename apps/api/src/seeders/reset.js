@@ -1,4 +1,4 @@
-const { sequelize, dropBackupTables } = require('../config/database');
+const { sequelize } = require('../config/database');
 const models = require('../models');
 const seed = require('./seed');
 
@@ -19,9 +19,7 @@ const TRUNCATE_ORDER = [
 ];
 
 const reset = async () => {
-  await sequelize.sync();
-  await dropBackupTables();
-
+  // Şema migration'lardan gelir; reset yalnız veriyi temizler.
   console.log('Veriler temizleniyor...');
   for (const name of TRUNCATE_ORDER) {
     const Model = models[name];
@@ -40,8 +38,10 @@ module.exports = reset;
 
 if (require.main === module) {
   require('dotenv').config();
-  reset().catch((error) => {
-    console.error('Reset seed hatası:', error.message);
-    process.exit(1);
-  });
+  reset()
+    .then(() => sequelize.close())
+    .catch((error) => {
+      console.error('Reset seed hatası:', error.message);
+      process.exit(1);
+    });
 }

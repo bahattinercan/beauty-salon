@@ -1,23 +1,16 @@
 require('dotenv').config();
 
 const app = require('./app');
-const { sequelize, connectDB, ensureColumns, dropBackupTables } = require('./config/database');
+const { connectDB } = require('./config/database');
 const seed = require('./seeders/seed');
 
 const PORT = process.env.PORT || 3000;
 
 const start = async () => {
   try {
-    // Veritabanı bağlantısı
+    // Bağlantı doğrulaması: connectDB -> sequelize.authenticate()
+    // Şema yalnız migration'lardan oluşur; açılışta tablo/kolon onarımı yok.
     await connectDB();
-
-    // SQLite için eksik tabloları oluştur (alter: true FK hatası veriyor, bkz. ensureColumns)
-    await sequelize.sync();
-    await dropBackupTables();
-    const addedColumns = await ensureColumns();
-    if (addedColumns.length > 0) {
-      console.log(`Eksik kolonlar eklendi: ${addedColumns.join(', ')}`);
-    }
 
     // Seed kontrolü - kullanıcı veya salon yoksa seed çalıştır
     const { User, Salon } = require('./models');

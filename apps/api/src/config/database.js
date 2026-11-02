@@ -1,84 +1,87 @@
 const { Sequelize } = require('sequelize');
 const path = require('path');
 
-// Use test database when in test environment
-const dbStorage = process.env.NODE_ENV === 'test'
-  ? path.join(__dirname, '..', 'test-database.sqlite')
-  : path.join(__dirname, '..', 'database.sqlite');
+// Tek doğruluk kaynağı: dialect env'den gelir (varsayılan postgres).
+const SUPPORTED_DIALECTS = ['postgres', 'sqlite'];
 
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: dbStorage,
-  logging: process.env.NODE_ENV === 'development' ? console.log : false,
-  define: {
-    underscored: true,
-    timestamps: true,
-  },
-});
+// SQLite yalnızca geri dönüş yolu: DB_DIALECT=sqlite verilmedikçe devreye girmez.
+const SQLITE_FALLBACK_FILES = {
+  test: 'test-database.sqlite',
+  development: 'database.sqlite',
+  production: 'database.sqlite',
+};
 
-/**
- * SQLite'ta `sync({ alter: true })` tabloyu yeniden oluşturarak kolon
- * değiştirir; foreign key'ler varsa bu işlem FK constraint hatası verir
- * (ve `*_backup` gibi yetim tablolar bırakır).
- *
- * Bunun yerine eksik kolonları doğrudan `ALTER TABLE ... ADD COLUMN` ile
- * ekliyoruz — SQLite bunu tabloyu yeniden oluşturmadan, güvenli şekilde yapar.
- */
-const ensureColumns = async () => {
-  if (sequelize.dialect.name !== 'sqlite') return [];
-
-  const models = require('../models');
-  const added = [];
-
-  for (const model of Object.values(models)) {
-    const table = model.tableName;
-    const info = await sequelize.query(`PRAGMA table_info(\`${table}\`)`);
-    const existing = new Set(info[0].map((col) => col.name));
-
-    for (const attr of Object.values(model.rawAttributes)) {
-      const column = attr.field || attr.name;
-      if (existing.has(column)) continue;
-
-      let sql = `\`${column}\` ${attr.type.toSql()}`;
-      if (attr.defaultValue !== undefined) {
-        sql += ` DEFAULT ${sequelize.escape(attr.defaultValue)}`;
-      }
-
-      await sequelize.query(`ALTER TABLE \`${table}\` ADD COLUMN ${sql}`);
-      added.push(`${table}.${column}`);
-    }
+const resolveDialect = () => {
+  const dialect = (process.env.DB_DIALECT || 'postgres').toLowerCase();
+  if (!SUPPORTED_DIALECTS.includes(dialect)) {
+    throw new Error(
+      `Geçersiz DB_DIALECT: "${dialect}" (desteklenen: ${SUPPORTED_DIALECTS.join(' | ')})`
+    );
   }
+  return dialect;
+};
 
-  return added;
+const resolveSqliteStorage = (env) => {
+  if (process.env.DB_STORAGE) return path.resolve(process.env.DB_STORAGE);
+  const file = SQLITE_FALLBACK_FILES[env] || SQLITE_FALLBACK_FILES.development;
+  return path.join(__dirname, '..', file);
 };
 
 /**
- * Başarısız alter denemelerinden kalan `*_backup` tablolarını temizler.
+ * Runtime (`server.js`, modeller) ve sequelize-cli (`sequelize-config.js`) için
+ * tek connection factory. Dönen nesne hem `new Sequelize(options)` hem de
+ * sequelize-cli config sözleşmesiyle uyumludur (database/username/password).
  */
-const dropBackupTables = async () => {
-  if (sequelize.dialect.name !== 'sqlite') return [];
+const buildSequelizeOptions = (env = process.env.NODE_ENV || 'development') => {
+  const dialect = resolveDialect();
 
-  const tables = await sequelize.query(
-    "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%_backup'"
-  );
-  const dropped = [];
+  const common = {
+    dialect,
+    // Geliştirmede SQL log'u açık; test ve production sessiz.
+    logging: env === 'development' ? console.log : false,
+    define: {
+      underscored: true,
+      timestamps: true,
+    },
+  };
 
-  for (const t of tables[0]) {
-    await sequelize.query(`DROP TABLE \`${t.name}\``);
-    dropped.push(t.name);
+  if (dialect === 'sqlite') {
+    return {
+      ...common,
+      storage: resolveSqliteStorage(env),
+    };
   }
 
-  return dropped;
+  return {
+    ...common,
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432', 10),
+    database:
+      env === 'test'
+        ? process.env.DB_NAME_TEST || process.env.DB_NAME || 'beauty_salon_test'
+        : process.env.DB_NAME || 'beauty_salon',
+    username: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'postgres',
+    timezone: 'UTC',
+    pool: {
+      max: 10,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+    },
+  };
 };
+
+const sequelize = new Sequelize(buildSequelizeOptions());
 
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
-    console.log('SQLite bağlantısı başarılı');
+    console.log(`${sequelize.dialect.name} bağlantısı başarılı`);
   } catch (error) {
     console.error('Veritabanı bağlantı hatası:', error.message);
     process.exit(1);
   }
 };
 
-module.exports = { sequelize, connectDB, ensureColumns, dropBackupTables };
+module.exports = { sequelize, connectDB, buildSequelizeOptions, resolveDialect };

@@ -175,6 +175,7 @@ Sequelize `INSERT` tüm model kolonlarını listeler → `salons.price_range` yo
 - **Kabul ölçütü:** `DB_DIALECT=postgres node -e "require('./src/config/database').sequelize.authenticate()"`
   → `SELECT 1` başarılı; `DB_DIALECT=sqlite` ile eski dosya hâlâ açılıyor; `database.js` içinde
   `dialect: 'sqlite'` sabiti **0 eşleşme**; `.sqlite` yolu kodda yalnız `DB_DIALECT=sqlite` dalında.
+- **UYGULANDI (2026-11-02):** `database.js` tek `buildSequelizeOptions(env)` factory (dialect `DB_DIALECT`, varsayılan `postgres`; host/port/db/user/pass + `timezone:'UTC'` + pool yalnız postgres dalında, `.sqlite` yolu yalnız `DB_DIALECT=sqlite`), `sequelize-config.js` aynı factory'ye inceltildi, `sync()/ensureColumns()/dropBackupTables()` çağrıları `server.js`/`seeders/reset.js`/`package.json` seed'den kaldırıldı; `.env`/`.env.test` bu fazda `DB_DIALECT=sqlite`; kanıt: pg+sqlite `authenticate` OK, `npm test` 357 passing (TZ=UTC + TZ=Europe/Istanbul), boot log "sqlite bağlantısı başarılı".
 - **Bağımsızlık:** **Bağımsız** — tek başına devreye alınabilir, tek env değişkeniyle geri alınır.
   Diğer tüm fazların **önkoşulu**.
 
