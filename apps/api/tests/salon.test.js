@@ -151,6 +151,91 @@ describe('Salon API', () => {
     });
   });
 
+  // #19 — querySalonValidator: sortBy/priceRange/categoryId/verified beyaz liste + tip doğrulaması
+  describe('GET /salons query doğrulaması (#19)', () => {
+    const hasFieldError = (res, field) => Array.isArray(res.body.errors)
+      && res.body.errors.some((msg) => String(msg).includes(field));
+
+    it('geçersiz sortBy 400 + alan adı döner', async () => {
+      const res = await supertest(app)
+        .get('/api/v1/salons')
+        .query({ sortBy: 'price' });
+
+      expect(res.status).to.equal(400);
+      expect(res.body.success).to.equal(false);
+      expect(hasFieldError(res, 'sortBy')).to.equal(true);
+    });
+
+    it('sayısal olmayan priceRange 400 + alan adı döner', async () => {
+      const res = await supertest(app)
+        .get('/api/v1/salons')
+        .query({ priceRange: 'abc' });
+
+      expect(res.status).to.equal(400);
+      expect(hasFieldError(res, 'priceRange')).to.equal(true);
+    });
+
+    it('aralık dışı priceRange 400 + alan adı döner', async () => {
+      const res = await supertest(app)
+        .get('/api/v1/salons')
+        .query({ priceRange: '9' });
+
+      expect(res.status).to.equal(400);
+      expect(hasFieldError(res, 'priceRange')).to.equal(true);
+    });
+
+    it('UUID olmayan categoryId 400 + alan adı döner', async () => {
+      const res = await supertest(app)
+        .get('/api/v1/salons')
+        .query({ categoryId: 'sac' });
+
+      expect(res.status).to.equal(400);
+      expect(hasFieldError(res, 'categoryId')).to.equal(true);
+    });
+
+    it('geçersiz verified 400 + alan adı döner', async () => {
+      const res = await supertest(app)
+        .get('/api/v1/salons')
+        .query({ verified: 'evet' });
+
+      expect(res.status).to.equal(400);
+      expect(hasFieldError(res, 'verified')).to.equal(true);
+    });
+
+    it('geçerli değerler regresyona uğramaz (sortBy/priceRange/verified/categoryId)', async () => {
+      const queries = [
+        { sortBy: 'rating' },
+        { sortBy: 'newest' },
+        { priceRange: '2' },
+        { verified: 'true' },
+        { verified: 'false' },
+        { categoryId: data.categories[0].id },
+      ];
+
+      for (const query of queries) {
+        const res = await supertest(app)
+          .get('/api/v1/salons')
+          .query(query);
+
+        expect(res.status, `query=${JSON.stringify(query)}`).to.equal(200);
+        expect(res.body.success, `query=${JSON.stringify(query)}`).to.equal(true);
+        expect(res.body.data.data, `query=${JSON.stringify(query)}`).to.be.an('array');
+      }
+    });
+
+    it('priceRange filtresi yalnız eşleşen salonları döner', async () => {
+      const res = await supertest(app)
+        .get('/api/v1/salons')
+        .query({ priceRange: '2' });
+
+      expect(res.status).to.equal(200);
+      const salons = res.body.data.data;
+      expect(salons.length).to.be.greaterThan(0);
+      salons.forEach((salon) => expect(salon.priceRange).to.equal(2));
+      expect(salons.map((s) => s.id)).to.include(salon2.id);
+    });
+  });
+
   describe('GET /salons/nearby', () => {
     it('should return salons within the specified radius', async () => {
       const res = await supertest(app)

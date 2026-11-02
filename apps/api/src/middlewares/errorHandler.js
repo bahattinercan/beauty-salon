@@ -29,15 +29,6 @@ const errorHandler = (err, req, res, _next) => {
     });
   }
 
-  // Express-validator hataları
-  if (err.type === 'validation') {
-    return res.status(400).json({
-      success: false,
-      message: 'Doğrulama hatası',
-      errors: err.errors,
-    });
-  }
-
   // Multer dosya hataları (boyut, adet, yanlış alan adı)
   if (err.name === 'MulterError') {
     const messages = {

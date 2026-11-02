@@ -48,26 +48,6 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-// Opsiyonel auth - giriş yapmamış da olabilir
-const optionalAuth = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findByPk(decoded.sub, {
-        attributes: ['id', 'email', 'fullName', 'role', 'isActive'],
-      });
-      if (user && user.isActive) {
-        req.user = user;
-      }
-    }
-  } catch (_) {
-    // Token geçersizse sessizce devam et
-  }
-  next();
-};
-
 // Rol kontrolü middleware
 const authorize = (...roles) => {
   return (req, res, next) => {
@@ -89,4 +69,4 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { authenticate, optionalAuth, authorize };
+module.exports = { authenticate, authorize };

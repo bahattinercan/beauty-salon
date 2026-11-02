@@ -23,6 +23,18 @@ const querySalonValidator = [
   query('city').optional().trim(),
   query('district').optional().trim(),
   query('minRating').optional().isFloat({ min: 0, max: 5 }),
+  // Beyaz liste: geçersiz değer sessizce yok sayılmaz, 400 + alan adı döner (#19).
+  // sortBy: controller yalnız 'rating' | 'newest' dallarını uygular.
+  query('sortBy').optional().isIn(['rating', 'newest'])
+    .withMessage('sortBy yalnız "rating" veya "newest" olabilir'),
+  // priceRange: Salon modelinde 1-3 aralığı (bkz. Salon.priceRange validasyonu).
+  query('priceRange').optional().isInt({ min: 1, max: 3 })
+    .withMessage('priceRange 1-3 arasında bir tam sayı olmalıdır'),
+  // categoryId: Service.categoryId uuid kolonuna gider.
+  query('categoryId').optional().isUUID()
+    .withMessage('categoryId geçerli bir UUID olmalıdır'),
+  query('verified').optional().isIn(['true', 'false'])
+    .withMessage('verified yalnız "true" veya "false" olabilir'),
 ];
 
 const nearbyValidator = [

@@ -328,6 +328,47 @@ describe('Product API', () => {
 
       await product.destroy();
     });
+
+    // #20 — bozuk mesaj yerine düzgün Türkçe doğrulama mesajı
+    it('negatif fiyat 400 + "Fiyat 0 veya daha büyük olmalıdır" mesajı döner (#20)', async () => {
+      const product = await Product.create({
+        salonId: salon1.id,
+        name: 'Negative Price Target',
+        price: 100,
+      });
+
+      const res = await supertest(app)
+        .patch(`/api/v1/products/${product.id}`)
+        .set('Authorization', `Bearer ${owner1Token}`)
+        .send({ price: -5 });
+
+      expect(res.status).to.equal(400);
+      expect(res.body.errors).to.be.an('array');
+      expect(res.body.errors).to.include('Fiyat 0 veya daha büyük olmalıdır');
+
+      await product.destroy();
+    });
+
+    // #20 — stok için de aynı düzgün mesaj
+    it('negatif stok 400 + "Stok miktarı 0 veya daha büyük olmalıdır" mesajı döner (#20)', async () => {
+      const product = await Product.create({
+        salonId: salon1.id,
+        name: 'Negative Stock Target',
+        price: 100,
+        stockQuantity: 5,
+      });
+
+      const res = await supertest(app)
+        .patch(`/api/v1/products/${product.id}`)
+        .set('Authorization', `Bearer ${owner1Token}`)
+        .send({ stockQuantity: -1 });
+
+      expect(res.status).to.equal(400);
+      expect(res.body.errors).to.be.an('array');
+      expect(res.body.errors).to.include('Stok miktarı 0 veya daha büyük olmalıdır');
+
+      await product.destroy();
+    });
   });
 
   // ==================== DELETE /products/:id ====================
