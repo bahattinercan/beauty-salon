@@ -340,6 +340,40 @@ Sequelize `INSERT` tüm model kolonlarını listeler → `salons.price_range` yo
 - **Kabul ölçütü:** aktarma seçilirse her tabloda SQLite satır sayısı == PG satır sayısı (§1.2 tablosu);
   aktarma seçilmezse `npm run seed` sonrası `users ≥ 4`, `salons ≥ 2`, `service_categories ≥ 6`.
 - **Bağımlılık:** P2 + P3'e bağımlı (şema + seed yeşil olmadan aktarma yapılmaz).
+- **KAPATILDI (2026-11-02 03:42 TSS): aktarma YAPILMADI.** Yukarıdaki aktarma yolu **uygulanmayacak**:
+  `apps/api/scripts/import-sqlite-to-pg.js` yazılmaz, Postgres dev verisi yalnız `npm run seed` ile üretilir.
+  Gerekçe (üç madde, hepsi ölçümle doğrulandı):
+  1. SQLite'taki 27 satırın **tamamı tek bir seed koşumunda** oluşmuş — `created_at` aralığı
+     `2026-11-01 23:34:53.212` – `23:34:54.749` (1,5 s); kullanıcı tarafından elle eklenmiş/uğraşılmış
+     tek kayıt yok (randevu durumları bile seed'in ürettiği COMPLETED/CONFIRMED/PENDING üçlüsü).
+  2. Satırlar **eski seed sürümünün** kimliğini taşıyor (`admin@test.com`, `owner1@test.com` … 5 kullanıcı;
+     salonlar `Elegance Beauty Studio` + `Bella Güzellik`), yani hedef şemaya taşınacak "gerçek" veri değil,
+     güncel seed'in (`@beautysalon.com` × 4) tarihsel bir kopyası. Kullanıcı görseli de yok:
+     `salons.cover_image_url` boş, `gallery_images` = `[]`.
+  3. Seed idempotent ve Postgres zaten dolu (P4b: iki ardışık `npm run seed` sonrası satır sayıları sabit).
+- **Ölçüm (2026-11-02 03:42, salt-okuma; SQLite `sqlite3` SELECT, Postgres `docker exec beauty_postgres psql`):**
+
+| tablo | SQLite (`src/database.sqlite`) | PostgreSQL (`beauty_salon`) | fark |
+|---|---:|---:|---:|
+| users | 5 (`*@test.com`) | 4 (`*@beautysalon.com`) | −1 |
+| salons | 2 | 12 | +10 |
+| staff | 2 | 7 | +5 |
+| service_categories | 6 | 6 | 0 |
+| services | 4 | 16 | +12 |
+| staff_services | 4 | 16 | +12 |
+| appointments | 3 | 9 | +6 |
+| reviews | 1 | 9 | +8 |
+| favorites / products / notifications / settings | 0 / 0 / 0 / 0 | 0 / 0 / 0 / 0 | 0 |
+| **toplam (uygulama tabloları)** | **27** | **79** | **+52** |
+| SequelizeMeta | tablo yok | 17 | — |
+
+  Fark yorumu: Postgres her tabloda **eşit veya daha fazla** satır taşıyor; SQLite'ta Postgres'te
+  bulunmayan tek küme 5 eski `@test.com` kullanıcısıdır ve bunlar da seed ürünüdür (elle açılmış hesap yok).
+  Yani aktarma yapılmaması hâlinde **hiçbir kullanıcı-üretimi veri kaybolmuyor**; SQLite kümesi arşivde
+  olduğu gibi duruyor.
+- **SQLite dosyasının geleceği:** `apps/api/src/database.sqlite` **silinmez**, salt-okuma **arşiv** olarak
+  kalır. Git'te izlenmiyor (`.gitignore:10` → `*.sqlite`; `git ls-files | grep sqlite` boş), bu yüzden
+  `git rm --cached` gerekmez. Not `docs/api/09-seed-and-migrations.md` içine eklendi.
 
 ### P6 — Doküman / CI
 

@@ -77,6 +77,11 @@ Runtime `src/config/database.js` ile **SQLite** kullanır. Sonuçlar:
 - SQLite DB'de `SequelizeMeta` tablosu yoktur → migration'lar hiç uygulanmamıştır; şema `sync()` + `ensureColumns()` ile oluşur.
 - Migration'larda `JSONB`, `DECIMAL(10,8)`, `ON DELETE CASCADE` gibi SQLite'ta farklı davranan tanımlar vardır ve model tanımlarıyla birebir uyuşmaz (ör. `salons.phone` migration'da nullable, modelde `allowNull: false`).
 
+### SQLite arşiv dosyası (DB-001 P5)
+
+`apps/api/src/database.sqlite` (180 224 bayt, 27 satır) **aktarılmadı, arşiv olarak bırakıldı**: içeriğin tamamı 2026-11-01 23:34'teki tek bir `seed` koşumunda üretilmişti ve Postgres dev verisi `npm run seed` ile aynı içeriğin güncel hâlini (79 satır) taşıyor — elle eklenmiş kayıt yok. Dosya silinmez, salt-okuma referans olarak durur; git'te izlenmez (`.gitignore` → `*.sqlite`).
+Karar gerekçesi ve tablo tablo ölçüm: `plans/backend/DB-001-postgres-gecis.md` §3 P5.
+
 ## `ensureColumns()` ve `dropBackupTables()`
 
 `sync({ alter: true })` SQLite'ta tabloyu backup tablosu üzerinden yeniden yaratır ve FK varsa patlar. Bu yüzden:
