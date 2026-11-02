@@ -11,7 +11,7 @@
 | 4 | [plan-4](plan-4-notification-controller.md) | `/notifications` controller + route | ✅ tamam |
 | 5 | [plan-5](plan-5-test-missing.md) | Test eksikleri | ✅ tamam (o tarihte 243 test) |
 | 6 | [plan-6](plan-6-error-handling.md) | Global hata yönetimi | ✅ tamam |
-| 7 | [DB-001](DB-001-postgres-gecis.md) | SQLite → PostgreSQL geçişi | 🚧 P1–P4b ✅ (2026-11-02) · P5/P6 sürüyor |
+| 7 | [DB-001](DB-001-postgres-gecis.md) | SQLite → PostgreSQL geçişi | ✅ tamam (P1–P6, 2026-11-02) — P5 kapandı ("aktarma YAPILMADI" kararı, gerekçe + 27↔79 satır ölçüm tablosu DB-001 §3 P5 içinde) · P6 kapandı (`apps/api/scripts/db-ready.sh` kapısı + 10 doküman hizalandı, DB-001 §3 P6 "UYGULANDI (2026-11-02)" kaydı) |
 
 ## Gerçek durum (2026-10-23 ölçümü)
 

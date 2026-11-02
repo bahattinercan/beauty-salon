@@ -152,9 +152,17 @@ Sequelize `INSERT` tüm model kolonlarını listeler → `salons.price_range` yo
    ifadesi geçersizleşir (P6).
 5. **Ortam ayrımı connection string ile:** dev `beauty_salon`, test `beauty_salon_test`,
    prod `DB_NAME`. Test DB izole ve `drop/migrate` yetkisi yalnız onda.
-6. **SQLite "son nefes" yolu korunur (geçici):** `DB_DIALECT=sqlite` + `DB_STORAGE` ile eski
-   davranış (`sync()` fallback) **yalnız P1–P4 boyunca** çalışır; P5 sonunda kod yolu silinir
-   (bkz. §6). Bu, geri dönüşü tek env değişkenine indirir.
+6. **SQLite geri dönüş yolu KORUNUYOR (tek env ile dönüş):** `DB_DIALECT=sqlite` + `DB_STORAGE`
+   ile eski yol **çalışır durumda tutulur** — dönüş tek env değişkenine iner. Ölçüm (2026-11-02):
+   `apps/api/src/config/database.js:27` ("SQLite yalnızca geri dönüş yolu"), `:28-32`
+   `SQLITE_FALLBACK_FILES`, `:34-42` `resolveDialect` (varsayılan `postgres`), `:68-73`
+   `dialect === 'sqlite'` dalı storage'ı çözer; dialect'e bağlı tek sorgu farkı
+   `apps/api/src/controllers/admin.controller.js:49-52` (`sqlite` → `strftime`, aksi hâlde `date_trunc`);
+   doküman karşılığı `docs/ARCHITECTURE.md:46` ("SQLite yalnızca `DB_DIALECT=sqlite` geri dönüş yolu").
+   `sync()`/`ensureColumns()`/`dropBackupTables()` P1'de kaldırıldı (madde 2) — yani bu dal artık
+   `sync()` fallback'i değil, storage seçimi + migration'lı şemadır. **Kod yolunun silinmesi ayrı bir
+   karardır ve şu an onaylanmadı.** Bu maddedeki önceki "P5 sonunda kod yolu silinir" ifadesi
+   yukarıdaki ölçümle **geçersizdir**; §6 de aynı gerçeğe göre düzeltildi.
 
 ---
 
@@ -450,7 +458,8 @@ Sequelize `INSERT` tüm model kolonlarını listeler → `salons.price_range` yo
 
 **P1 geri alınabilir (son nefes):**
 - `DB_DIALECT=sqlite` + `DB_STORAGE=./src/database.sqlite` ile eski yol **çalışır durumda** bırakılır
-  (P4 sonuna kadar). Geri dönüş = tek env değişkeni + P1 commit'inin `git revert`'i.
+  (P4 boyunca ve P5–P6 sonrasında da — bkz. §2.6: kod yolu korunuyor, kaldırma onaylanmadı).
+  Geri dönüş = tek env değişkeni + P1 commit'inin `git revert`'i.
 - **SQLite dosyaları git'te değil** (`/c/Orca/beauty-salon/.gitignore:10` → `*.sqlite`). Bu yüzden
   P5'e girmeden önce **dosya yedeği** alınır:
   `cp apps/api/src/database.sqlite apps/api/src/database.sqlite.bak-2026-11-01` (yine git dışı).
@@ -464,8 +473,12 @@ Sequelize `INSERT` tüm model kolonlarını listeler → `salons.price_range` yo
   (2) `DB_DIALECT=sqlite` + P1 revert, (3) sunucuyu yeniden başlat.
 - Aktarma sonrası **PG'ye yazılmış yeni veri** SQLite'a geri taşınmaz (ters script kapsam dışı, §8).
   Bu yüzden P5 ancak "artık PG tek yazma hedefi" kararı kesinleştiğinde yapılır.
-- P6 sonrası (kod yolu silindi) dönüş: revert + SQLite yedeği + P1 geri alma; migration'lar
-  `db:migrate:undo:all` ile temizlenir.
+- **P6 sonrası dönüş (kod yolu KORUNUYOR, §2.6):** SQLite dalı silinmedi — ölçüm
+  `apps/api/src/config/database.js:27-32,68-73` + `apps/api/src/controllers/admin.controller.js:49-52`.
+  Bu yüzden P6 sonrası dönüş: (1) `.bak` dosyasını `src/database.sqlite` üzerine kopyala,
+  (2) `DB_DIALECT=sqlite` + `DB_STORAGE` ver, (3) sunucuyu yeniden başlat; PG migration'ları
+  `db:migrate:undo:all` ile temizlenir. Kod yolunun kaldırılması **ayrı bir karardır ve şu an
+  onaylanmadı** (onaylanırsa bu madde ve §2.6 birlikte güncellenir).
 
 ---
 

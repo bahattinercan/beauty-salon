@@ -13,9 +13,9 @@ Aşağıdaki tablo **gerçek** durumu gösteriyor. Kanıt sütunu, doğrulamanı
 
 | Durum | Sayı |
 |-------|------|
-| ✅ Tamamlandı | 49 |
+| ✅ Tamamlandı | 50 |
 | ⚠️ Kısmen | 0 |
-| ❌ Yapılmadı | 1 |
+| ❌ Yapılmadı | 0 |
 
 **Kapandı (2026-10-12):** ADMIN-001, UI-001, salon app provider testleri, 404 fallback testleri.
 **2026-10-23:** test sayıları yeniden ölçüldü — API 291 (`cd apps/api && npm test`),
@@ -25,6 +25,11 @@ customer_app 271, salon_app 84; listede SA-002 (paralelleştirme) dışındaki m
 `docs/api/11-known-issues.md` içinde **31 açık teknik borç kaydı** ve `README.md`'de **7 bilinen sınır**
 (migration, admin test, Swagger, sharp, disk upload vb.) duruyor. SA-002 (dashboard fetch'lerinin
 paralelleştirilmesi) yapılmadı olarak işaretlendi.
+
+**Yeniden ölçüm (2026-11-02):** SA-002 ✅ — yukarıdaki "yapılmadı" işareti 2026-10-26 kaydıydı, güncel kod öyle değil:
+`apps/salon_app/lib/features/dashboard/data/dashboard_provider.dart:115-120` tek HTTP isteği atıyor (`from` → bugün),
+sıralı `await` zinciri yok. Özet tablo bu ölçümle güncellendi: ✅ 50 / ⚠️ 0 / ❌ 0 (toplam 50 madde; ölçüm:
+`grep -c "^| [A-Z][A-Z-]*[0-9][0-9][0-9] " docs/MISSING_FEATURES.md` → 50).
 
 ---
 
@@ -69,7 +74,7 @@ paralelleştirilmesi) yapılmadı olarak işaretlendi.
 | ID | Madde | Durum | Kanıt |
 |----|-------|-------|-------|
 | SA-001 | Dashboard gelir hesabı | ✅ | `dashboard_provider.dart:100-117` — aylık gelir tek istekle geliyor; `salon_app/lib` kodunda paralel toplama (eşzamanlı fetch) yok |
-| SA-002 | Sequential API çağrıları | ❌ | Yapılmadı: `salon_app/lib` kodunda paralel toplama yok; `_fetch` sıralı `await` zinciri (tek `dio.get`, `dashboard_provider.dart:100-117`). Paralelleştirme işi açık. |
+| SA-002 | Sequential API çağrıları | ✅ | `apps/salon_app/lib/features/dashboard/data/dashboard_provider.dart:115-120` — tek istek: `await api.dio.get('/appointments/salon/:id', {from, to})` (`from` = `min(ay başı, bugün-6)`, `to` = bugün); sıralı `await` zinciri/çoklu API çağrısı yok. Dosyadaki yorum geçmişi kaydediyor: önceki hâli gün başına istek atıp açılışta ~39 istek (1+7+31) üretiyor ve 100/dk rate limit'ini tetikliyordu (`:115-116`). Ölçüm 2026-11-02: `grep -n "await" dashboard_provider.dart` → yalnız `:101` (`salonProvider.future`), `:117` (tek `dio.get`), `:154` (`AsyncValue.guard`) |
 | SA-003 | Salon soft delete | ✅ | backend `isActive` filtresi |
 | SA-004 | Salon profile image upload | ✅ | `core/network/upload_service.dart` + profile ekranında "Fotoğraf ekle" (image_picker → `/upload/multiple`) |
 | SA-005 | Staff active/inactive toggle | ✅ | `staff_management_screen.dart` PopupMenu 'toggle' |
