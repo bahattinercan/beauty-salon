@@ -393,6 +393,20 @@ Sequelize `INSERT` tüm model kolonlarını listeler → `salons.price_range` yo
   bağlamındaki ifadeler kalır (0 "runtime SQLite" iddiası); `verify.sh` Postgres yokken **net hata**
   verip 0 dönmez.
 - **Bağımlılık:** P4 + P5'e bağımlı (doküman yeşil sonucu yansıtmalı).
+- **UYGULANDI (2026-11-02):**
+  1. **10 doküman hizalandı:** `docs/ARCHITECTURE.md`, `docs/api/{01-overview,04-data-model,05-endpoints,08-integrations,10-tests,11-known-issues}.md`,
+     `docs/BACKEND-API.md`, `apps/api/CLAUDE.md`, `plans/backend/INDEX.md`. Her düzeltmede yeni gerçek yazıldı:
+     PostgreSQL 16 (docker + `localhost:5433` tüneli), `DB_DIALECT` env (varsayılan `postgres`), **17 migration**
+     (`SequelizeMeta` 17/17), test DB `beauty_salon_test` (migration + truncate; 357 passing), `sync()`/
+     `ensureColumns()`/`dropBackupTables()` kaldırıldı, `pg`/`pg-hstore` runtime sürücüsü, `strftime` →
+     `date_trunc('month', …)` (sqlite dalı yalnız geri dönüş). "SQLite" yalnız geri dönüş/tarihçe bağlamında kaldı.
+  2. **Kapı:** yeni `apps/api/scripts/db-ready.sh` — `.env` + `DB_DIALECT` kontrolü, `DB_HOST:DB_PORT` TCP
+     (varsayılan 5433), `npm run migrate:status` ile bekleyen migration; her hata açık mesaj + `exit 1`.
+     Doğrulandı: normal koşum `exit 0` (17/17 up), `DB_PORT=5999` → `exit 1` (`ECONNREFUSED` + tünel yönlendirmesi).
+  3. **`~/.pi/agent/bin/verify.sh`:** `apps/*/scripts/db-ready.sh` **varsa** o uygulamanın kapısından önce
+     çağrılan genel kanca (proje-özel kod yok; script yoksa davranış aynı). `verify.sh --fast` → `verify: TAMAM ✔`.
+  4. Kalan "SQLite" eşleşmeleri sahiplik dışı dosyalarda (`docs/api/09-seed-and-migrations.md` → P5,
+     `docs/api/README.md:3`, `docs/salon-app/01-overview.md:9`); bu turda dokunulmadı.
 
 ---
 

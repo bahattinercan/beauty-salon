@@ -43,7 +43,7 @@
 |---------|----------|----------|
 | Runtime | Node.js (CommonJS) | |
 | Framework | Express.js 5 | |
-| ORM | Sequelize 6 | SQLite default, PostgreSQL config mevcut |
+| ORM | Sequelize 6 | PostgreSQL (tek dialect; SQLite yalnızca `DB_DIALECT=sqlite` geri dönüş yolu) |
 | Auth | JWT (access 15dk, refresh 7 gün) + bcrypt | |
 | Validation | express-validator | |
 | Upload | Multer (JPEG/PNG/WebP/GIF, max 5MB) | |
@@ -171,6 +171,11 @@
 ---
 
 ## Model & Database
+
+**Runtime veritabanı PostgreSQL 16** (docker, `localhost:5433` tüneli; `apps/api/.env` → `DB_DIALECT=postgres`).
+Şema `sequelize.sync()` ile değil **migration'lardan** oluşur: `apps/api/src/database/migrations/` altında
+**17 migration**, uygulananlar `SequelizeMeta` tablosunda. Dev DB `beauty_salon`, test DB `beauty_salon_test`
+(izole; migration + `TRUNCATE ... CASCADE`). `DB_DIALECT=sqlite` yalnız geri dönüş yoludur (varsayılan değil).
 
 ### User
 - `id` (UUID), `email` (unique), `phone` (unique, nullable), `fullName`, `avatarUrl`, `passwordHash`, `role` (ENUM: CUSTOMER/SALON_OWNER/ADMIN), `isVerified`, `isActive`, `refreshToken`, `passwordResetToken`, `passwordResetTokenExpiry`
@@ -411,7 +416,7 @@ zorunludur (bkz. `.env.example`).
 
 ### .env Değişkenleri
 ```
-DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+DB_DIALECT (postgres | sqlite; varsayılan postgres), DB_HOST, DB_PORT, DB_NAME, DB_NAME_TEST, DB_USER, DB_PASSWORD, DB_STORAGE (yalnız sqlite)
 JWT_SECRET, JWT_REFRESH_SECRET, JWT_EXPIRATION, JWT_REFRESH_EXPIRATION
 PORT, NODE_ENV, API_PREFIX
 UPLOAD_DEST, MAX_FILE_SIZE

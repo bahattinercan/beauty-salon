@@ -1,8 +1,8 @@
 # 🏨 Beauty Salon Backend — Detaylı Dokümantasyon
 
-> Kapsam: `apps/api/` (Node.js 22.23.4 — `.tool-versions` ile pinli / Express 5 / Sequelize 6 / SQLite)
-> Kaynak: `src/` kodundan, `tests/` suite'inden, `src/database.sqlite` şemasından ve canlı sunucu üzerinde yapılan gerçek isteklerden çıkarılmıştır.
-> **Doğrulama tarihi: 2026-10-23** (`npm test` → 291 passing, canlı probe ile teyit edildi)
+> Kapsam: `apps/api/` (Node.js 22.23.4 — `.tool-versions` ile pinli / Express 5 / Sequelize 6 / **PostgreSQL 16**)
+> Kaynak: `src/` kodundan, `tests/` suite'inden, **17 migration**'ın ürettiği Postgres şemasından (`beauty_salon`) ve canlı sunucu üzerinde yapılan gerçek isteklerden çıkarılmıştır.
+> **Doğrulama tarihi: 2026-11-02** (`npm test` → **357 passing / 0 failing**, `TZ=UTC` ve `TZ=Europe/Istanbul`; `npm run migrate:status` → 17/17 `up`)
 >
 > 📁 Modüler asıl dokümantasyon: **`docs/api/`** (README + 01…12 + `openapi.yaml`). Bu dosya tek sayfalık özettir; ayrıntı ve güncel doğrulama `docs/api/` setindedir. Eski (bozuk) içerik `docs/BACKEND-API.md.bak` dosyasında yedeklendi.
 
@@ -28,9 +28,12 @@ npm install
 
 npm run dev        # nodemon (NODE_ENV=development → morgan logging + SQL logging açık)
 npm start          # production
-npm run seed       # manuel seed
-npm test           # node --env-file=.env.test mocha "tests/**/*.test.js"
-npm run migrate    # sequelize-cli (Postgres config'i — bkz. §14)
+bash scripts/db-ready.sh # kapı: tünel/port + DB_DIALECT + .env + bekleyen migration (exit 0/1)
+npm run migrate    # sequelize-cli db:migrate → Postgres (dev: beauty_salon)
+npm run migrate:status   # 17 migration'ın uygulanma durumu
+node tests/helpers/ensure-test-db.js  # test DB (beauty_salon_test) yoksa oluştur + migrate et
+npm run seed       # manuel seed (idempotent)
+npm test           # node --env-file=.env.test mocha "tests/**/*.test.js" (Postgres test DB zorunlu)
 ```
 
 `.env` `PORT=3000` yazar; bu makinede 3000 başka bir projeye ait olduğu için API **3200** ile çalıştırılıyor:
@@ -39,16 +42,17 @@ npm run migrate    # sequelize-cli (Postgres config'i — bkz. §14)
 `src/server.js` açılış sırası:
 
 1. `dotenv` yüklenir
-2. `connectDB()` → SQLite dosyasına bağlanır
-3. `sequelize.sync()` → eksik tabloları oluşturur (**`alter: true` artık kullanılmıyor**)
-4. `dropBackupTables()` → eski `*_backup` tablolarını siler
-5. `ensureColumns()` → eksik kolonları `ALTER TABLE ... ADD COLUMN` ile ekler
-6. `User.count() == 0 || Salon.count() == 0` ise `seed()` çalışır
-7. `app.listen(PORT)`
+2. `connectDB()` → `sequelize.authenticate()` (Postgres; dialect `DB_DIALECT`'ten, varsayılan `postgres`)
+3. `User.count() == 0 || Salon.count() == 0` ise `seed()` çalışır (seed, migration sayısı eksikse `exit 1`)
+4. `app.listen(PORT)`
 
-> ⚠️ `ensureColumns()` bir modelin tablosu yoksa patlar (`PRAGMA table_info` boş döner → `ALTER TABLE` "no such table"). Bu yüzden `sync()` **önce** çalışmalıdır.
+> **DB-001 P1:** Açılışta `sequelize.sync()`, `dropBackupTables()` ve `ensureColumns()` **yoktur**. Şema tek doğruluk
+> kaynağı olan migration'lardan oluşur; eksik şema sessizce onarılmaz, `seed`/`test` açık hata verir.
 
-> ⚠️ **DB dosyası yolu:** `config/database.js` içinde `path.join(__dirname, '..', ...)` ve `__dirname = src/config` → fiilen kullanılan dosyalar `apps/api/src/database.sqlite` ve `apps/api/src/test-database.sqlite`. `apps/api/database.sqlite` eski/yedek dosyadır, kod kullanmaz.
+> **DB (Postgres):** `src/config/database.js` tek `buildSequelizeOptions(env)` factory'si üretir; hem runtime hem
+> `sequelize-cli` aynı factory'yi kullanır. Dev DB `beauty_salon`, test DB `beauty_salon_test` (`.env.test`,
+> `DB_DIALECT=postgres`); erişim `DB_HOST=localhost` + `DB_PORT=5433` (docker + SSH tüneli) üzerinden.
+> Tünel/DB yoksa `scripts/db-ready.sh` **açık hata + exit 1** verir, kapı sessiz geçmez.
 
 ---
 
@@ -69,7 +73,9 @@ npm run migrate    # sequelize-cli (Postgres config'i — bkz. §14)
 | `UPLOAD_DEST` | `./uploads` | Multer hedefi — **artık kullanılıyor** (cwd'e göre çözülür) |
 | `ALLOWED_ORIGINS` | `http://localhost:3000,3001,8080` | `app.js` CORS; development'ta localhost/127.0.0.1 herhangi port da kabul edilir |
 | `SMTP_HOST/PORT/USER/PASS/FROM` | Mailtrap sandbox | `utils/mailer.js` |
-| `DB_HOST/PORT/NAME/NAME_TEST/USER/PASSWORD` | postgres | **yalnızca `sequelize-cli`** (runtime SQLite kullanır) |
+| `DB_DIALECT` | `postgres` | dialect seçimi (`postgres` \| `sqlite`); `sqlite` yalnız geri dönüş yolu |
+| `DB_HOST/PORT/NAME/NAME_TEST/USER/PASSWORD` | postgres | **runtime + `sequelize-cli`** (aynı connection factory); test DB adı `beauty_salon_test` |
+| `DB_STORAGE` | yok | yalnız `DB_DIALECT=sqlite` iken dosya yolu |
 | `TWILIO_ACCOUNT_SID/AUTH_TOKEN/PHONE_NUMBER` | yok | `utils/sms.js` (yoksa konsola OTP yazar) |
 
 ---
@@ -79,23 +85,22 @@ npm run migrate    # sequelize-cli (Postgres config'i — bkz. §14)
 ```
 apps/api/
 ├── src/
-│   ├── server.js                 # entry point (db + sync + seed + listen)
+│   ├── server.js                 # entry point (db authenticate + seed + listen)
 │   ├── app.js                    # Express app: güvenlik, parser, static, routes, error handler
 │   ├── config/
-│   │   ├── database.js           # Sequelize instance (SQLite, underscored, timestamps)
-│   │   └── sequelize-config.js   # sequelize-cli config (Postgres — runtime'da kullanılmaz)
+│   │   ├── database.js           # tek connection factory (DB_DIALECT) + NUMERIC parser
+│   │   └── sequelize-config.js   # sequelize-cli config (aynı factory)
 │   ├── models/                   # 12 model + index.js (ilişkiler)
 │   ├── controllers/              # 14 controller
 │   ├── routes/                   # 14 route dosyası + index.js
 │   ├── middlewares/              # auth, errorHandler, upload, validate
-│   ├── validators/               # auth, salon, appointment, review, product
+│   ├── validators/               # auth, salon, appointment, review, product, uuid
 │   ├── utils/                    # helpers, mailer, sms
 │   ├── seeders/                  # seed.js, reset.js
-│   └── database/migrations/      # 12 migration (Postgres/JSONB tabanlı)
-├── tests/                        # 14 dosya, 291 test
+│   └── database/migrations/      # 17 migration (Postgres)
+├── tests/                        # 14 dosya, 357 test + helpers/
 ├── uploads/                      # yüklenen dosyalar
-├── src/database.sqlite           # ← gerçek runtime DB
-├── database.sqlite               # eski/yedek dosya (kod kullanmıyor)
+├── scripts/db-ready.sh           # kapı: tünel/port + DB_DIALECT + .env + migrate:status
 └── .sequelizerc
 ```
 
@@ -280,7 +285,7 @@ Instance metotları: `comparePassword(p)`, `toSafeJSON()` (passwordHash + refres
 | phone | STRING | |
 | email | STRING | `isEmail` |
 | logo_url / cover_image_url | STRING | |
-| gallery_images | TEXT | JSON get/set (SQLite) |
+| gallery_images | TEXT | JSON string; getter `JSON.parse`, setter `JSON.stringify` (P2 kararı: migration model ile hizalandı, TEXT) |
 | address | STRING | min 5 (validator) |
 | latitude / longitude | FLOAT | -90..90 / -180..180 |
 | city / district | STRING | |
@@ -570,7 +575,7 @@ Tüm route'lar `router.use(authenticate)` ile korunur; sorgular `user_id` ile s�
 
 `dashboard` stats: `totalUsers`, `totalSalons` (aktif), `totalAppointments`, `pendingSalons` (aktif+onaysız), `recentAppointments` (son 7 gün), `newUsersThisWeek`, `totalRevenue` (COMPLETED randevuların hizmet fiyat toplamı, string), `completedAppointments`.
 
-> ✅ SQLite uyumu düzeltildi: `DATE_TRUNC` yerine `strftime('%Y-%m', Appointment.date)` kullanılıyor → canlı testte 200.
+> ✅ Aylık seri dialect'e göre tek ifadeyle üretilir: Postgres → `date_trunc('month', date)`, `DB_DIALECT=sqlite` → `strftime('%Y-%m', date)`; her iki dalda kolon `sequelize.col` ile verilir.
 > `totalRevenue` **string** döner (`toFixed(2)`); `monthlyAppointments` yalnız son 6 ayı ve **ay adını** verir (yıl bilgisi yoktur).
 
 ### 10.15 Settings
@@ -639,18 +644,21 @@ Seed **idempotenttir**: her kayıt `findOrCreate` ile eklenir, `category_id` NUL
 
 ## 14. Migration'lar
 
-`src/database/migrations/` içinde 12 migration var (`20240101000001…12`). `.sequelizerc` → `src/config/sequelize-config.js` (dialect **postgres**).
+`src/database/migrations/` içinde **17 migration** var (`20240101000001…13` + `20261102000014…17`). `.sequelizerc` → `src/config/sequelize-config.js`; bu dosya runtime ile **aynı** connection factory'yi (`buildSequelizeOptions`) kullanır.
 
-Runtime ise `src/config/database.js` ile **SQLite** kullanır. Sonuçlar:
-- `npm run migrate` Postgres'e gider, runtime DB'yi etkilemez.
-- SQLite DB'de `SequelizeMeta` tablosu yoktur → migration'lar hiç uygulanmamıştır; şema `sync()` ile oluşur.
-- Migration'larda `JSONB`, `DECIMAL(10,8)`, `ON DELETE CASCADE` gibi SQLite ile farklı davranan tanımlar vardır; model tanımlarıyla birebir uyuşmaz (ör. `salons.phone` migration'da nullable, modelde `allowNull:false`).
+Runtime da `src/config/database.js` ile **Postgres**'e gider (`DB_DIALECT=postgres`, varsayılan). Sonuçlar:
+- Şema tek doğruluk kaynağıdır: migration'lar hem dev (`beauty_salon`) hem test (`beauty_salon_test`) şemasını üretir; `sequelize.sync()` kaldırıldı.
+- `SequelizeMeta` 17/17 kayıt taşır; `npm run migrate:status` bekleyen migration'ı `down ...` satırıyla gösterir.
+- P2'de eklenen migration'lar: `…14` `settings` tablosu, `…15` 11 eksik kolon, `…16` salon JSON kolonları → TEXT, `…17` `staff_services` timestamps drop. Şema drift'i `information_schema` karşılaştırmasıyla doğrulandı.
+- `DB_DIALECT=sqlite` yalnız geri dönüş yoludur; o modda şema `.sqlite` dosyasında durur ve migration'lar uygulanmaz (bakımı durdurulmuş yol, bkz. DB-001 §6).
 
 ---
 
 ## 15. Testler
 
-14 dosya, **291 test** — 2026-10-23'te bu ortamda tamamı geçiyor:
+14 dosya, **357 test** — 2026-11-02'de Postgres üzerinde tamamı geçiyor (`TZ=UTC` + `TZ=Europe/Istanbul`):
+
+> Aşağıdaki dosya bazı sayılar **2026-10-23 SQLite dönemi** sayımıdır (toplam 291); P4/P4b'de test verisi ve davranış düzeltmeleriyle toplam 357'ye çıktı. Güncel kabul: 357 passing / 0 failing.
 
 | Dosya | Test |
 |---|---|
@@ -672,7 +680,7 @@ Runtime ise `src/config/database.js` ile **SQLite** kullanır. Sonuçlar:
 Altyapı notları:
 
 1. **Paylaşılan connection:** `tests/setup.js` tek `sequelize` instance'ı kullanır; `teardownDB()` bilinçli olarak **no-op**'dur (dosya sonunda `close()` çağırmak sonraki dosyanın `before all` hook'unu kırardı). Bağlantı süreç çıkışında kapatılır.
-2. **Test DB:** `apps/api/src/test-database.sqlite`, `drop()` + `sync({ force: true })` ile kurulur.
+2. **Test DB:** Postgres `beauty_salon_test` (`DB_DIALECT=postgres`); şema migration'lardan kurulur (`tests/helpers/migrator.js`), her test dosyası öncesi `TRUNCATE ... RESTART IDENTITY CASCADE`. `drop()`/`sync()` kullanılmaz; `DB_DIALECT=sqlite` ile test koşumu kasıtlı olarak engellenir.
 3. **Rate limit:** `NODE_ENV=test` ise limiter'lar devre dışı (aksi halde supertest 429 alırdı).
 4. **E-posta:** `NODE_ENV=test` veya SMTP yoksa `[mailer:noop]` — gerçek SMTP'ye bağlanmaz.
 5. **Chai:** `expect(res).to.have.status(N)` kullanılmıyor, `to.have.property('status', N)` tercih ediliyor.
@@ -689,18 +697,18 @@ Altyapı notları:
 | 3 | Randevuda `serviceId` salon uyumu kontrol edilmiyor (staff uyumu kontrol ediliyor) | Yanlış salon kombinasyonu kabul edilebilir |
 | 4 | `workingHours` gün tanımı yoksa çalışma saati kontrolü atlanıyor | Kapalı güne randevu alınabilir |
 | 5 | `workingHours` getter'ı çift-parse toleranslı | Çözüldü — string set edilen değerler de çalışıyor |
-| 6 | `DATE_TRUNC` yerine `strftime` kullanılıyor | Çözüldü — `/admin/dashboard` SQLite'ta 200 |
+| 6 | Aylık seri dialect'e göre seçilir (`date_trunc` postgres / `strftime` sqlite) | Çözüldü — `/admin/dashboard` her iki dalda 200 |
 | 7 | `twilio` bağımlılığı eksik | SMS akışı Twilio env'i ile 500 |
 | 8 | `sharp` bağımlılığı tanımlı ama hiçbir yerde kullanılmıyor | Ölü bağımlılık |
 | 9 | `swagger-jsdoc` + `swagger-ui-express` tanımlı ama swagger mount edilmemiş | OpenAPI çıktısı yok |
-| 10 | `pg`/`pg-hstore` runtime'da kullanılmıyor (SQLite) | Ölü bağımlılık |
+| 10 | `pg`/`pg-hstore` **runtime sürücüsü** (aktif); `sqlite3` yalnız `DB_DIALECT=sqlite` geri dönüşü | Aktif bağımlılık (P1) |
 | 11 | `cookie-parser` kullanılmıyor, `optionalAuth` kullanılmıyor, `createProductValidator`/`queryProductValidator` kullanılmıyor | Ölü kod |
 | 12 | `UPLOAD_DEST` kullanılıyor ama cwd'e göre çözülür | Farklı çalışma diziminde farklı `uploads/` |
 | 13 | Multer `fileFilter` reddi `statusCode = 400` ile düşer | Çözüldü — 400 dönüyor |
 | 14 | `errorHandler`'daki `err.type === 'validation'` dalı ölü | `validate` kendi yanıtlıyor |
 | 15 | User e-posta değişikliği `passwordResetToken` alanını paylaşıyor | İki akış birbirini bozabilir |
-| 16 | `sync()` + `ensureColumns()` kullanılıyor (`alter: true` yok) | Çözüldü; ancak `ensureColumns()` eksik tabloda patlar |
-| 17 | Runtime DB fiilen `apps/api/src/database.sqlite`; `apps/api/database.sqlite` eski/yedek | Şema karışıklığı, yanlış dosyaya bakma |
+| 16 | `sync()` + `ensureColumns()` + `dropBackupTables()` çağrıları kaldırıldı (P1) | Çözüldü — şema yalnız migration'lardan |
+| 17 | Runtime DB artık Postgres (`beauty_salon`); `.sqlite` dosyaları yalnız `DB_DIALECT=sqlite` geri dönüşü | Çözüldü — şema karışıklığı kalmadı (P1–P3) |
 | 18 | `toSafeJSON()` `passwordResetToken` / expiry alanlarını çıkarmaz | Login/register yanıtlarında hassas alan sızıntısı |
 | 19 | `PATCH /users/:id/toggle-active` rol kontrolü yapar, sahiplik kontrolü yapmaz | Kullanıcı kendi aktifliğini kapatabilir |
 | 20 | Settings ayarları hiçbir davranışı etkilemez (`maxLoginAttempts`, `rateLimitingEnabled`, `maintenanceModeEnabled` okunmaz) | Yalnız depolanır/panelde gösterilir |
@@ -756,8 +764,8 @@ curl -s -X POST $BASE/upload/single -H "Authorization: Bearer $TOKEN" -F "file=@
 
 ## 18. Dokümantasyon Notu
 
-Bu dosya `apps/api/` kodunun gerçek davranışını esas alır ve **2026-10-23** doğrulamasıyla hizalandı (canlı probe + `npm test` → 291 passing + `src/database.sqlite` şeması). Modüler ayrıntılı set: `docs/api/`.
+Bu dosya `apps/api/` kodunun gerçek davranışını esas alır; **2026-11-02** doğrulamasıyla hizalandı (canlı probe + `npm test` → 357 passing, `npm run migrate:status` → 17/17 `up`, şema `beauty_salon` Postgres üzerinden). Modüler ayrıntılı set: `docs/api/`.
 
 2026-10-12 öncesindeki sürümde şema tablolarındaki `nullable` bilgileri hatalıydı, `Notifications` ve `Products` endpoint'leri eksikti ve son ~120 satır kopyalanmış "JWT doğrulama" metinlerinden oluşuyordu. Eski hali `docs/BACKEND-API.md.bak` içinde duruyor (gereksizse silinebilir).
 
-`apps/api/CLAUDE.md` ile hâlâ çelişen noktalar: `available-slots` auth gerektirmez, `Notifications`/`Products`/`Settings` endpoint'leri CLAUDE.md'de listelenmemiştir, CLAUDE.md `sync({ alter: true })` der ama kod `sync()` + `ensureColumns()` kullanır, CLAUDE.md `cors()` originlerini sabit listeler ama kod `ALLOWED_ORIGINS` env'ini kullanır. CLAUDE.md'deki test durum tablosu (17 passing / 16 failing) artık geçersiz — suite tamamen geçiyor.
+`apps/api/CLAUDE.md` ile hâlâ çelişen noktalar: `available-slots` auth gerektirmez, `Notifications`/`Products`/`Settings` endpoint'leri CLAUDE.md'de listelenmemiştir, CLAUDE.md `cors()` originlerini sabit listeler ama kod `ALLOWED_ORIGINS` env'ini kullanır. DB tarafında çelişki kalmadı: CLAUDE.md de Postgres + migration şeması diyor (DB-001 P6, 2026-11-02).

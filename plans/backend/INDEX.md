@@ -1,7 +1,7 @@
 # Backend Plan İndeksi
 
-> `apps/api/` · Node.js + Express 5 + Sequelize (SQLite)
-> Doğrulama komutu: `cd apps/api && npm test` (Windows'ta `node --env-file=.env.test` kullanılır)
+> `apps/api/` · Node.js + Express 5 + Sequelize (PostgreSQL)
+> Doğrulama komutu: `cd apps/api && bash scripts/db-ready.sh && npm test` (Windows'ta `node --env-file=.env.test` kullanılır)
 
 | # | Plan | Konu | Durum |
 |---|------|------|-------|
@@ -11,7 +11,7 @@
 | 4 | [plan-4](plan-4-notification-controller.md) | `/notifications` controller + route | ✅ tamam |
 | 5 | [plan-5](plan-5-test-missing.md) | Test eksikleri | ✅ tamam (o tarihte 243 test) |
 | 6 | [plan-6](plan-6-error-handling.md) | Global hata yönetimi | ✅ tamam |
-| 7 | [DB-001](DB-001-postgres-gecis.md) | SQLite → PostgreSQL geçişi | 📋 PLAN (2026-11-01) |
+| 7 | [DB-001](DB-001-postgres-gecis.md) | SQLite → PostgreSQL geçişi | 🚧 P1–P4b ✅ (2026-11-02) · P5/P6 sürüyor |
 
 ## Gerçek durum (2026-10-23 ölçümü)
 

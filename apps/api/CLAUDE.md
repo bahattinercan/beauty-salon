@@ -11,7 +11,7 @@ Güzellik salonları için REST API. Müşteriler salon arayabilir, hizmet seçe
 ## Teknoloji Yığını
 - **Runtime**: Node.js (CommonJS)
 - **Framework**: Express.js 5
-- **ORM**: Sequelize 6 (SQLite default, PostgreSQL config mevcut)
+- **ORM**: Sequelize 6 (PostgreSQL — tek dialect; SQLite yalnızca `DB_DIALECT=sqlite` geri dönüş yolu)
 - **Auth**: JWT (access 15dk, refresh 7 gün) + bcrypt
 - **Validation**: express-validator
 - **Upload**: Multer (JPEG/PNG/WebP/GIF, max 5MB)
@@ -26,17 +26,21 @@ Güzellik salonları için REST API. Müşteriler salon arayabilir, hizmet seçe
 ```bash
 npm start          # production
 npm run dev        # nodemon ile development
-npm run seed       # manuel seed çalıştırma
+npm run migrate    # migration'ları uygula (Postgres, dev: beauty_salon)
+npm run migrate:status  # 17 migration'ın durumu
+bash scripts/db-ready.sh # kapı: tünel/port + DB_DIALECT + .env + bekleyen migration
+node tests/helpers/ensure-test-db.js # test DB'si (beauty_salon_test) hazırlığı
+npm run seed       # manuel seed çalıştırma (idempotent)
 ```
 
 `src/server.js` başlangıçta:
-1. `connectDB()` ile SQLite'a bağlanır
-2. `sequelize.sync()` ile eksik tabloları oluşturur (`alter: true` kullanılmaz)
-3. `dropBackupTables()` + `ensureColumns()` ile şemayı tamamlar
-4. User/ Salon count sıfırsa `seed()` çalıştırır
-5. `app.listen(PORT)` ile sunucuyu açar
+1. `connectDB()` ile Postgres'e bağlanır (`DB_DIALECT`, varsayılan `postgres`)
+2. `User`/`Salon` count sıfırsa `seed()` çalıştırır (seed şema eksikse açık hatayla durur)
+3. `app.listen(PORT)` ile sunucuyu açar
 
-> Runtime DB dosyası fiilen `apps/api/src/database.sqlite`'dir (`config/database.js` → `path.join(__dirname, '..', ...)`, `__dirname = src/config`).
+> Şema **yalnız migration'lardan** oluşur (17 migration, `SequelizeMeta`); `sequelize.sync()` / `ensureColumns()` /
+> `dropBackupTables()` açılıştan kaldırıldı (DB-001 P1). Dev DB `beauty_salon`, test DB `beauty_salon_test`
+> (`localhost:5433` tüneli). `DB_DIALECT=sqlite` yalnız geri dönüş yolu.
 
 ## API Base Path
 `/api/v1` (`.env` → `API_PREFIX` ile değiştirilebilir)
@@ -194,7 +198,7 @@ npm run seed       # manuel seed çalıştırma
 - `id`, `salon_id`, `category_id`, `name`, `description`, `price` (DECIMAL), `duration_minutes`, `image_url`, `isActive`
 
 ### StaffService (join table, no timestamps)
-- `staff_id`, `service_id` — modelde `primaryKey: true` iddiası var ama Sequelize composite PK desteklemez; fiili şemada PK yoktur (duplicate join kaydı engellenmez)
+- `staff_id`, `service_id` — Postgres'te gerçek composite PK: `staff_services_pkey PRIMARY KEY (staff_id, service_id)` (migration `20240101000012`); duplicate bağ engellenir. `created_at`/`updated_at` kolonları `20261102000017` ile drop edildi.
 
 ### Appointment
 - `id`, `customer_id`, `salon_id`, `staff_id`, `service_id`, `date` (DATEONLY), `start_time` (TIME), `end_time` (TIME), `status` (ENUM: PENDING/CONFIRMED/CANCELLED/COMPLETED/NO_SHOW), `note`, `cancellation_reason`
@@ -309,7 +313,7 @@ env değişkenleri zorunludur (NODE_ENV=production'da varsayılan reddedilir).
 
 ## .env Değişkenleri
 ```
-DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+DB_DIALECT (postgres | sqlite; varsayılan postgres), DB_HOST, DB_PORT, DB_NAME, DB_NAME_TEST, DB_USER, DB_PASSWORD, DB_STORAGE (yalnız sqlite)
 JWT_SECRET, JWT_REFRESH_SECRET, JWT_EXPIRATION, JWT_REFRESH_EXPIRATION
 PORT, NODE_ENV, API_PREFIX
 UPLOAD_DEST, MAX_FILE_SIZE
@@ -322,4 +326,4 @@ TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER (opsiyonel)
 ## Test Kullanıcıları (API)
 Backend testleri için seed verilerindeki kullanıcıları kullan.
 
-Testler 2026-10-23 itibarıyla tamamen geçiyor (14 dosya, 291 test). Ayrıntı: `docs/api/10-tests.md`.
+Testler 2026-11-02 itibarıyla tamamen geçiyor (14 dosya, 357 test; Postgres `beauty_salon_test`, `TZ=UTC` + `TZ=Europe/Istanbul`). Ayrıntı: `docs/api/10-tests.md`.

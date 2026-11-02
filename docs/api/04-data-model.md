@@ -1,6 +1,6 @@
 # 04 — Veri modeli
 
-Şema `sequelize.sync()` ile oluşur (`underscored: true`, `timestamps: true` global default). Aşağıdaki şema canlı `apps/api/src/database.sqlite` dosyasından alınmıştır.
+Şema **migration'lardan** oluşur (`apps/api/src/database/migrations/` → **17 dosya**, uygulananlar `SequelizeMeta`'da; DB-001 P2). Global default'lar `underscored: true`, `timestamps: true`. Aşağıdaki şema canlı **PostgreSQL `beauty_salon`** veritabanından (`information_schema`) alınmıştır; `sequelize.sync()` açılışta **çağrılmaz**, şema `sync()` ile oluşmaz (DB-001 P1).
 
 ## ER özeti
 
@@ -133,12 +133,12 @@ Instance metotları: `comparePassword(p)`, `toSafeJSON()` (`passwordHash`, `refr
 
 | Kolon | Tip |
 |---|---|
-| `staff_id` | UUID FK → staff (modelde `primaryKey: true`) |
-| `service_id` | UUID FK → services (`ON DELETE CASCADE ON UPDATE CASCADE`) |
+| `staff_id` | UUID FK → staff (PK, composite) |
+| `service_id` | UUID FK → services (PK, composite; `ON DELETE CASCADE ON UPDATE CASCADE`) |
 
-`timestamps: false`.
+`timestamps: false` (migration `20261102000017` PG'de kalan `created_at`/`updated_at` kolonlarını drop etti).
 
-> Sequelize modelinde `primaryKey: ['staff_id','service_id']` composite PK desteklemez; fiili şemada PK yoktur. Bu, `StaffService.bulkCreate` için sorun yaratmaz ama duplicate kayıt engellenmez.
+> PostgreSQL'de gerçek composite PK vardır: `staff_services_pkey PRIMARY KEY (staff_id, service_id)` (`20240101000006` + `20240101000012`). Aynı bağ iki kez eklenemez.
 
 ---
 
@@ -229,8 +229,8 @@ Instance metotları: `comparePassword(p)`, `toSafeJSON()` (`passwordHash`, `refr
 | Kolon | Tip |
 |---|---|
 | `key` | VARCHAR(255) PK (UNIQUE) |
-| `value` | JSON NOT NULL |
-| `created_at` | DATETIME (`updatedAt: false`) |
+| `value` | JSONB NOT NULL (model `DataTypes.JSON`) |
+| `created_at` | TIMESTAMPTZ (`updatedAt: false`) |
 
 Admin panel ayarları key/value olarak saklanır; DB'de olmayan anahtarlar `settings.controller.js`'teki `DEFAULTS` ile doldurulur.
 

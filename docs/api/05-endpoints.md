@@ -344,7 +344,7 @@ Canlı dashboard:
 
 - `totalRevenue` **string** döner (`toFixed(2)`) — istemci tarafında sayıya çevrilmelidir.
 - `monthlyAppointments` yalnız son 6 ayı içerir ve **ay adı** verir (yıl bilgisi yoktur).
-- SQLite'ta `DATE_TRUNC` olmadığı için `strftime('%Y-%m', Appointment.date)` kullanılır.
+- Aylık seri tek ifadeyle üretilir, dialect'e göre seçilir: PostgreSQL → `date_trunc('month', date)`, `DB_DIALECT=sqlite` geri dönüşünde → `strftime('%Y-%m', date)` (`src/controllers/admin.controller.js:46-54`). Varsayılan yol Postgres'tir (`date_trunc`).
 
 ---
 

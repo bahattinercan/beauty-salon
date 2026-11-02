@@ -33,13 +33,13 @@
 | # | Sorun | Etki |
 |---|---|---|
 | 21 | `twilio` bağımlılığı yok | Twilio env tanımlıysa `require('twilio')` throw → 500 |
-| 22 | `sharp`, `swagger-jsdoc`, `swagger-ui-express` kullanılmıyor; `pg`/`pg-hstore` yalnız `sequelize-cli` postgres yolu için gerekli; `cookie-parser` **aktiftir** (`src/app.js:8`, `src/app.js:83`) | Kısmen ölü bağımlılık |
+| 22 | `sharp`, `swagger-jsdoc`, `swagger-ui-express` kullanılmıyor; `pg`/`pg-hstore` **runtime sürücüsüdür** (Postgres, aktif); `sqlite3` yalnız `DB_DIALECT=sqlite` geri dönüşünde; `cookie-parser` **aktiftir** (`src/app.js:8`, `src/app.js:83`) | Kısmen ölü bağımlılık |
 | 23 | `optionalAuth`, `createProductValidator`, `queryProductValidator` kullanılmıyor | Ölü kod |
 | 24 | `errorHandler`'daki `err.type === 'validation'` dalı ölü | `validate` kendi yanıtlıyor |
-| 25 | `ensureColumns()` eksik tabloda patlar (`PRAGMA` boş → `ALTER TABLE` "no such table") | `sync()` önce çalıştığı için pratikte sorun değil; `ensureColumns()` tek başına çağrılırsa kırılır |
-| 26 | DB dosyası yolu `src/` içine düşüyor | `apps/api/database.sqlite` eski/yedek dosya; gerçek DB `apps/api/src/database.sqlite` |
+| 25 | **Kapatıldı (DB-001 P1):** `ensureColumns()`, `dropBackupTables()`, `sync()` çağrıları kaldırıldı | Şema yalnız migration'lardan; eksik migration `seed`/`test`'te açık hata verir (sessiz onarım yok) |
+| 26 | **Kapatıldı (DB-001 P1–P3):** runtime Postgres; `DB_DIALECT=sqlite` geri dönüşünde dosya `DB_STORAGE` veya `src/*.sqlite` | `.sqlite` dosyaları yalnız geri dönüş penceresi; varsayılan runtime değil |
 | 27 | `UPLOAD_DEST` cwd'e göre çözülür | Farklı çalışma diziminde farklı `uploads/` klasörüne yazılır |
-| 28 | Migration'lar ile model tanımları uyuşmaz (nullable, JSONB, DECIMAL(10,8)) | Postgres'e geçildiğinde şema farkı |
+| 28 | **Kapatıldı (DB-001 P2):** migration ↔ model uyuşmazlığı yeni migration'larla giderildi (`…14` settings tablosu, `…15` 11 kolon, `…16` salon JSON→TEXT, `…17` staff_services timestamps) | Postgres şeması modelle hizalı; drift `information_schema` ile doğrulandı |
 | 29 | `staff_services` composite PK yok → duplicate join kaydı engellenmez | `bulkCreate` ile aynı bağ iki kez eklenebilir |
 | 30 | User e-posta değişikliği `password_reset_token` alanını paylaşıyor | İki akış birbirini bozabilir |
 | 31 | `GET /` endpoint listesi eksik (`/staff`, `/upload`, `/admin`) | Keşif yanıltıcı |

@@ -6,11 +6,14 @@ Framework: **mocha 11 + chai 4 + supertest 7**.
 npm test                 # node --env-file=.env.test mocha "tests/**/*.test.js" --timeout 10000 --exit
 npm run test:watch
 npm run test:coverage    # nyc
+node tests/helpers/ensure-test-db.js   # test DB'si yoksa oluşturur + migration'ları koşar
 ```
 
-## Sonuç (2026-10-23, bu ortamda)
+## Sonuç (2026-11-02, Postgres)
 
-**291 passing**, 0 failing (2026-10-23 ölçümü).
+**357 passing**, 0 failing — hem `TZ=UTC` hem `TZ=Europe/Istanbul` ile, arka arkaya ikinci koşum da yeşil. Suite 14 test dosyasıdır ve **Postgres test DB'si** (`beauty_salon_test`) gerektirir; tünel/DB yoksa `apps/api/scripts/db-ready.sh` açık hata verir.
+
+> Aşağıdaki dosya bazı tablo **2026-10-23 tarihli SQLite dönemi** sayımıdır (toplam 291). Sayılar P4/P4b'de test verisi/davranış düzeltmeleriyle 357'ye çıktığı için tarihsel kayıt olarak duruyor; güncel toplam yukarıdaki 357'dir.
 
 | Dosya | Test |
 |---|---|
@@ -32,7 +35,8 @@ npm run test:coverage    # nyc
 
 ## `tests/setup.js`
 
-- `syncDB()` → `sequelize.drop()` + `sequelize.sync({ force: true })` (test DB: `apps/api/src/test-database.sqlite`)
+- `syncDB()` → **migration'lar** (`tests/helpers/migrator.js`, `src/database/migrations/**` dosyalarını in-process koşar, `SequelizeMeta`'ya yazar) + her test dosyası öncesi `TRUNCATE TABLE … RESTART IDENTITY CASCADE` (SequelizeMeta hariç). Test DB: Postgres **`beauty_salon_test`** (`INET` üzerinden docker; `DB_DIALECT=sqlite` ile test koşumu **kasıtlı olarak engelli**).
+- Ön hazırlık: `node tests/helpers/ensure-test-db.js` (DB yoksa `CREATE DATABASE`, varsa atlar; dev `beauty_salon`'a dokunmaz).
 - Test verisi: 5 kullanıcı (admin, owner1, owner2, customer, customer2), 6 kategori, 2 salon, 2 staff, 4 service, 4 StaffService bağı, 3 randevu (COMPLETED / CONFIRMED / PENDING), 1 yorum
 - `teardownDB()` **no-op**: birden fazla dosya aynı Sequelize bağlantısını paylaşır; dosya sonunda `close()` çağırmak sonraki dosyanın `before all` hook'unu kırardı (`ConnectionManager.getConnection was called after the connection manager was closed`). Bağlantı süreç çıkışında kapatılır.
 
@@ -42,8 +46,8 @@ npm run test:coverage    # nyc
 |---|---|
 | Rate limit | `NODE_ENV=test` ise limiter'lar **devre dışı** (aksi halde supertest 429 alırdı) |
 | E-posta | `NODE_ENV=test` → `[mailer:noop]`, gerçek SMTP'ye bağlanmaz |
-| DB dosyası | `test-database.sqlite` |
-| `.env.test` | `PORT=3099`, ayrı JWT secret'ları, `RATE_LIMIT_MAX=10000` |
+| DB | Postgres `beauty_salon_test` (`DB_DIALECT=postgres`); migration + truncate, `drop()`/`sync()` yok |
+| `.env.test` | `PORT=0`, ayrı JWT secret'ları, `RATE_LIMIT_MAX=10000`, `DB_NAME=DB_NAME_TEST=beauty_salon_test` |
 
 ## Chai notu
 
