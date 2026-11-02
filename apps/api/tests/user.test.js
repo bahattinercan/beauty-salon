@@ -1,5 +1,6 @@
 const supertest = require('supertest');
 const { expect } = require('chai');
+const bcrypt = require('bcryptjs');
 const app = require('../src/app');
 const { syncDB, seedTestData, teardownDB } = require('./setup');
 const jwt = require('jsonwebtoken');
@@ -325,6 +326,167 @@ describe('User API', () => {
       expect(res1.body.data.email).to.not.equal(res2.body.data.email);
       expect(res1.body.data.fullName).to.not.equal(res2.body.data.fullName);
       expect(res1.body.data.id).to.not.equal(res2.body.data.id);
+    });
+  });
+
+  // #30 — e-posta değişikliği ve şifre sıfırlama aynı kolonu (`passwordResetToken`) eziyordu.
+  // Karar: ayrı kolonlar (`pending_email`, `email_change_token`, `email_change_token_expiry`).
+  describe('E-posta değişikliği ↔ şifre sıfırlama ayrımı (#30)', () => {
+    it('#30 e-posta değişiklik isteği passwordResetToken/passwordResetTokenExpiry alanlarını değiştirmez', async () => {
+      const user = await User.findByPk(customer.id);
+
+      // Şifre sıfırlama akışının bıraktığı iz (kullanıcı parolasını sıfırlamak üzere)
+      const resetHash = await bcrypt.hash('111111', 10);
+      const resetExpiry = new Date(Date.now() + 10 * 60 * 1000);
+      await user.update({ passwordResetToken: resetHash, passwordResetTokenExpiry: resetExpiry });
+
+      const res = await supertest(app)
+        .post('/api/v1/users/me/request-email-change')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({ newEmail: 'yeni-adres@test.com' });
+
+      expect(res.status, res.body.message).to.equal(200);
+      expect(res.body.success).to.equal(true);
+
+      await user.reload();
+      // Şifre sıfırlama token'ı AYNEN kalmalı — e-posta akışı onu ezmemeli
+      expect(user.passwordResetToken).to.equal(resetHash);
+      expect(user.passwordResetTokenExpiry).to.not.be.null;
+      expect(new Date(user.passwordResetTokenExpiry).getTime()).to.equal(resetExpiry.getTime());
+
+      // E-posta akışı kendi kolonlarını kullanmalı
+      expect(user.pendingEmail).to.equal('yeni-adres@test.com');
+      expect(user.emailChangeToken).to.be.a('string').and.not.equal('');
+      expect(user.emailChangeToken.startsWith('EMAILCHANGE:'), 'token artık repurpose edilmiş değer taşımamalı').to.equal(false);
+      expect(user.emailChangeTokenExpiry).to.not.be.null;
+    });
+
+    it('#30 şifre sıfırlama isteği email_change_token/pending_email alanlarını bozmaz', async () => {
+      // customer2 üzerinde çalışır: bu describe içindeki e-posta değişiklikleri customer2'yi
+      // değiştirebilir, şifre akışı testi temiz bir kullanıcıda koşar.
+      const target = data.users.customer2;
+      const targetToken = createToken(target);
+      const user = await User.findByPk(target.id);
+
+      const requestRes = await supertest(app)
+        .post('/api/v1/users/me/request-email-change')
+        .set('Authorization', `Bearer ${targetToken}`)
+        .send({ newEmail: 'customer2-yeni@test.com' });
+      expect(requestRes.status, requestRes.body.message).to.equal(200);
+
+      await user.reload();
+      const changeToken = user.emailChangeToken;
+      const changeExpiry = new Date(user.emailChangeTokenExpiry).getTime();
+      expect(changeToken, 'e-posta değişiklik token\'ı yazılmalı').to.be.a('string');
+
+      // Şifre sıfırlama isteği
+      const forgotRes = await supertest(app)
+        .post('/api/v1/auth/forgot-password')
+        .send({ email: target.email });
+      expect(forgotRes.status, forgotRes.body.message).to.equal(200);
+
+      await user.reload();
+      // Şifre sıfırlama kendi kolonlarını yazmalı
+      expect(user.passwordResetToken).to.be.a('string').and.not.equal('');
+      expect(user.passwordResetTokenExpiry).to.not.be.null;
+      // E-posta değişiklik akışı bozulmamalı
+      expect(user.emailChangeToken).to.equal(changeToken);
+      expect(new Date(user.emailChangeTokenExpiry).getTime()).to.equal(changeExpiry);
+      expect(user.pendingEmail).to.equal('customer2-yeni@test.com');
+    });
+
+    it('#30 doğru token ile confirm e-postayı değiştirir ve üç alanı temizler', async () => {
+      const target = data.users.customer2;
+      const targetToken = createToken(target);
+      const user = await User.findByPk(target.id);
+
+      // Confirm, request akışının bıraktığı gerçek durumdan devam eder; OTP hash'i elle kurulur
+      await user.update({
+        pendingEmail: 'customer2-confirm@test.com',
+        emailChangeToken: await bcrypt.hash('246810', 10),
+        emailChangeTokenExpiry: new Date(Date.now() + 10 * 60 * 1000),
+      });
+
+      const res = await supertest(app)
+        .post('/api/v1/users/me/confirm-email-change')
+        .set('Authorization', `Bearer ${targetToken}`)
+        .send({ token: '246810' });
+
+      expect(res.status, res.body.message).to.equal(200);
+      expect(res.body.data.email).to.equal('customer2-confirm@test.com');
+
+      await user.reload();
+      expect(user.email).to.equal('customer2-confirm@test.com');
+      expect(user.pendingEmail).to.be.null;
+      expect(user.emailChangeToken).to.be.null;
+      expect(user.emailChangeTokenExpiry).to.be.null;
+    });
+
+    it('#30 süresi geçmiş e-posta değişiklik token\'ı 400 döner', async () => {
+      const target = data.users.customer2;
+      const targetToken = createToken(target);
+      const user = await User.findByPk(target.id);
+
+      await user.update({
+        pendingEmail: 'suresi-gecmis@test.com',
+        emailChangeToken: await bcrypt.hash('135791', 10),
+        emailChangeTokenExpiry: new Date(Date.now() - 60 * 1000), // 1 dk önce doldu
+      });
+
+      const res = await supertest(app)
+        .post('/api/v1/users/me/confirm-email-change')
+        .set('Authorization', `Bearer ${targetToken}`)
+        .send({ token: '135791' });
+
+      expect(res.status, res.body.message).to.equal(400);
+      expect(res.body.message).to.include('süresi dolmuş');
+
+      await user.reload();
+      // E-posta değişmedi, akış temizlendi
+      expect(user.email).to.not.equal('suresi-gecmis@test.com');
+      expect(user.pendingEmail).to.be.null;
+      expect(user.emailChangeToken).to.be.null;
+      expect(user.emailChangeTokenExpiry).to.be.null;
+    });
+
+    it('#30 login ve profil yanıtı pending_email/email_change_token/email_change_token_expiry sızdırmaz', async () => {
+      const target = data.users.customer2;
+      const targetToken = createToken(target);
+
+      const requestRes = await supertest(app)
+        .post('/api/v1/users/me/request-email-change')
+        .set('Authorization', `Bearer ${targetToken}`)
+        .send({ newEmail: 'sizinti-kontrol@test.com' });
+      expect(requestRes.status, requestRes.body.message).to.equal(200);
+
+      // Gerçekten dolu olduklarını DB'den doğrula (aksi halde "sızmıyor" testi boş olurdu)
+      const user = await User.findByPk(target.id);
+      expect(user.pendingEmail).to.equal('sizinti-kontrol@test.com');
+      expect(user.emailChangeToken).to.be.a('string');
+      expect(user.emailChangeTokenExpiry).to.not.be.null;
+
+      const forbidden = [
+        'pendingEmail', 'pending_email',
+        'emailChangeToken', 'email_change_token',
+        'emailChangeTokenExpiry', 'email_change_token_expiry',
+        'passwordResetToken', 'password_reset_token',
+      ];
+
+      const loginRes = await supertest(app)
+        .post('/api/v1/auth/login')
+        .send({ email: user.email, password: 'Musteri123!' });
+      expect(loginRes.status, loginRes.body.message).to.equal(200);
+      forbidden.forEach((key) => {
+        expect(loginRes.body.data.user, `login yanıtı ${key} içermemeli`).to.not.have.property(key);
+      });
+
+      const profileRes = await supertest(app)
+        .get('/api/v1/users/me')
+        .set('Authorization', `Bearer ${targetToken}`);
+      expect(profileRes.status).to.equal(200);
+      forbidden.forEach((key) => {
+        expect(profileRes.body.data, `profil yanıtı ${key} içermemeli`).to.not.have.property(key);
+      });
     });
   });
 });

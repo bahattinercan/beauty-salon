@@ -5,7 +5,6 @@
 | # | Sorun | Etki |
 |---|---|---|
 | 2 | `GET /reviews/salon/:salonId` public + sahiplik kontrolü yok | Yorumlar zaten public; ancak `is_visible=false` yorumlar da bu endpoint'te görünmez — tutarlı. Asıl risk: salon istatistiklerinin başka sahipler tarafından okunabilmesi |
-| 3 | `GET /appointments/available-slots`'te `authenticate` yok | CLAUDE.md "required" der, fiilen public |
 | 6 | Staff/service sahipliğinde ADMIN yetkili değil | Admin, salon içeriğini düzeltemez (tasarım kararı ama tutarsız) |
 
 ## Doğruluk / davranış
@@ -28,7 +27,6 @@
 | 25 | **Kapatıldı (DB-001 P1):** `ensureColumns()`, `dropBackupTables()`, `sync()` çağrıları kaldırıldı | Şema yalnız migration'lardan; eksik migration `seed`/`test`'te açık hata verir (sessiz onarım yok) |
 | 27 | `UPLOAD_DEST` cwd'e göre çözülür | Farklı çalışma diziminde farklı `uploads/` klasörüne yazılır |
 | 28 | **Kapatıldı (DB-001 P2):** migration ↔ model uyuşmazlığı yeni migration'larla giderildi (`…14` settings tablosu, `…15` 11 kolon, `…16` salon JSON→TEXT, `…17` staff_services timestamps) | Postgres şeması modelle hizalı; drift `information_schema` ile doğrulandı |
-| 30 | User e-posta değişikliği `password_reset_token` alanını paylaşıyor | İki akış birbirini bozabilir |
 | 33 | `src/app.js` statik `/uploads` route'u ile upload middleware'i `UPLOAD_DEST`'u iki ayrı yerde okuyor | İkisi de cwd'ye göre çözülüyor ve davranış tutarlı, ama tek kaynak olmalı → küçük teknik borç |
 
 ## Kapatılanlar (2026-10-23)
@@ -198,6 +196,39 @@
 - `eşik aşılınca 429 + Türkçe gövde döner (yalnız bu testte açık)` — kapalıyken 3 istek 429 **değil**; `RATE_LIMIT_AUTH_MAX=2` + `setRateLimitEnabled(true)` iken 3. istek **429** ve gövde `{ success: false, message: 'Çok fazla giriş denemesi, lütfen 1 dakika bekleyiniz' }`; `finally` bloğunda limit kapatılır, env geri alınır ve store anahtarı sıfırlanır.
 
 **Kapı (Dalga 3: #10/#14/#21/#32):** `cd apps/api && bash scripts/db-ready.sh && npm test` → **381 passing, 0 failing** (baseline 378, +3 yeni test; hiçbir test silinmedi/zayıflatılmadı).
+
+### #30 · Kullanıcı e-posta değişikliği `password_reset_token` kolonunu eziyordu — kapatıldı
+
+**Sorun:** `User` modelinde `pendingEmail` / `emailChangeToken` alanları yoktu; `src/controllers/user.controller.js` → `requestEmailChange`, `passwordResetToken` kolonunu repurpose ediyordu (token'ın içine OTP hash'i + base64 hedef adres gömülüyordu) ve `confirmEmailChange` "aktif istek var mı" kontrolünü `startsWith('EMAILCHANGE:')` ile yapıyordu. Aynı kolonu `auth.controller.js` → `forgotPassword` / `resetPassword` da kullandığı için iki akış birbirini bozuyordu: e-posta değişikliği isteyen kullanıcı sonra "şifremi unuttum" derse önceki akış sessizce geçersizleşiyor (veya tersi), yani kullanıcı hiçbir hata görmüyordu.
+
+**Karar:** **ayrı kolonlar.** Şifre sıfırlama akışının kolonlarına dokunulmadı; davranışı değişmedi.
+
+**Çözüm:**
+- Yeni migration `apps/api/src/database/migrations/20261102000018-add-user-email-change-columns.js` → `users` tablosuna `pending_email` (STRING, nullable), `email_change_token` (STRING, nullable — yalnız bcrypt hash), `email_change_token_expiry` (DATE, nullable). `up()` `describeTable` ile idempotent; `down()` üç kolonu `removeColumn` ile geri alır (`npm run migrate:undo` ile temiz çalıştığı ve tekrar `migrate` edilebildiği doğrulandı).
+- `apps/api/src/models/User.js` → üç alan eklendi (`pendingEmail`, `emailChangeToken`, `emailChangeTokenExpiry`); `toSafeJSON` bu üç alanı da yanıttan çıkarır (mevcut `passwordResetToken` deseni).
+- `apps/api/src/controllers/user.controller.js` → `requestEmailChange` artık `passwordResetToken`'a **yazmaz**: OTP hash → `emailChangeToken`, expiry → `emailChangeTokenExpiry`, hedef adres → `pendingEmail`. `confirmEmailChange` yalnız `emailChangeToken` + `emailChangeTokenExpiry` + `pendingEmail` ile doğrular, e-postayı `pendingEmail`'den alır ve üç alanı temizler; süresi geçmiş token **400** `Doğrulama kodunun süresi dolmuş`. Kolon deseni `salons` tablosundakiyle aynı (`salon.controller.js:205-269`).
+- `grep -rn "EMAILCHANGE" apps/api/src` → **0**.
+
+**Kanıt:** `apps/api/tests/user.test.js` → `E-posta değişikliği ↔ şifre sıfırlama ayrımı (#30)`:
+- `#30 e-posta değişiklik isteği passwordResetToken/passwordResetTokenExpiry alanlarını değiştirmez` — request öncesi yazılan reset hash'i **aynen** kalır; `pendingEmail` dolar, `emailChangeToken` repurpose edilmiş değer taşımaz (önce kırmızı: alan yoktu)
+- `#30 şifre sıfırlama isteği email_change_token/pending_email alanlarını bozmaz` — `POST /auth/forgot-password` sonrası e-posta değişiklik akışı aynen durur (önce kırmızı)
+- `#30 doğru token ile confirm e-postayı değiştirir ve üç alanı temizler` (önce kırmızı: 400 `Doğrulama kodu hatalı`)
+- `#30 süresi geçmiş e-posta değişiklik token'ı 400 döner` (önce kırmızı: 400 ama yanlış mesaj — `Doğrulama kodu hatalı`)
+- `#30 login ve profil yanıtı pending_email/email_change_token/email_change_token_expiry sızdırmaz` — alanlar DB'de **dolu** doğrulanır, sonra `login` + `GET /users/me` yanıtlarında hem camelCase hem snake_case anahtarlar yok (önce kırmızı)
+
+**Kapı (Dalga 4: #30/#3):** `cd apps/api && bash scripts/db-ready.sh && npm run migrate && npm test` → `SequelizeMeta` **18/18**, **388 passing, 0 failing** (baseline 381, +7 yeni test; hiçbir test silinmedi/zayıflatılmadı).
+
+### #3 · `GET /appointments/available-slots`'te `authenticate` yok — tasarım kararı: **public**, sözleşme testiyle kilitlendi
+
+**Sorun (kayıt):** Uçta `authenticate` middleware'i yoktu; `apps/api/CLAUDE.md` "required" derken fiilen public davranıyordu — dokümantasyon ↔ kod çelişkisi.
+
+**Karar: PUBLIC kalır, kod değişikliği yok.** Gerekçe: (1) anonim slot görüntüleme gerçek bir ürün ihtiyacı — müşteri uygulaması randevu oluşturmadan **önce** bu ucu girişsiz çağırıyor (`apps/customer_app/lib/features/booking/data/datasources/booking_remote_datasource.dart:38`); (2) yanıt kişisel veri taşımıyor: dizi elemanları yalnız `{ time, available }` (`src/controllers/appointment.controller.js:204-220`), müşteri/personel kimliği veya randevu sahibi bilgisi dönmez; (3) parametreler zaten doğrulanıyor (`availableSlotsValidator`: `salonId`/`serviceId` UUID, `date` `YYYY-MM-DD`), geçersiz girdi **400**.
+
+**Çözüm:** Route'a dokunulmadı (`src/routes/appointment.routes.js:14`); çelişen dokümantasyon gerçeğe hizalandı (`apps/api/CLAUDE.md:114`, [05-endpoints.md](05-endpoints.md) §5.8) ve davranış **sözleşme testiyle kilitlendi** — ileride birinin `authenticate` eklemesi testi kırar.
+
+**Kanıt:** `apps/api/tests/appointment.test.js` → `available-slots public sözleşmesi (#3)`:
+- `#3 kimlik doğrulama başlığı OLMADAN GET /appointments/available-slots 200 + dizi döner` — `Authorization` başlığı gönderilmez, `200` + `data` dizi, her elemanın anahtarları tam olarak `['available','time']` (kişisel veri yok)
+- `#3 available-slots geçersiz parametrede 400 döner` — UUID olmayan `salonId` + bozuk `date` → **400**
 
 ## Kapatılanlar — kayıt temizliği (2026-11-02)
 

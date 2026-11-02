@@ -184,7 +184,7 @@ Canlı örnek:
 | Method | Path | Auth | Açıklama |
 |---|---|---|---|
 | POST | `/appointments` | required | Randevu oluştur → 201 |
-| GET | `/appointments/available-slots` | **public** (route'ta `authenticate` yok) | 30 dk aralıklı slot listesi |
+| GET | `/appointments/available-slots` | **public** (route'ta `authenticate` yok) | 30 dk aralıklı slot listesi. **#3 karar notu:** public kalır (anonim slot görüntüleme; yanıt yalnız `{ time, available }` taşır, kişisel veri yok; müşteri uygulaması randevu öncesi girişsiz çağırır — `apps/customer_app/lib/features/booking/data/datasources/booking_remote_datasource.dart:38`). Sözleşme testi: `apps/api/tests/appointment.test.js` → `available-slots public sözleşmesi (#3)` |
 | GET | `/appointments/my` | required | Kendi randevuları (`status` filtresi), `date DESC, startTime DESC` |
 | GET | `/appointments/salon/:salonId` | SALON_OWNER / ADMIN | Salon randevuları (`date` veya `from`+`to`, `status`), `date ASC, startTime ASC` |
 | PATCH | `/appointments/:id/status` | SALON_OWNER (sahiplik) / ADMIN | Durum geçişi |

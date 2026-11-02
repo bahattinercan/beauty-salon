@@ -111,7 +111,7 @@ npm run seed       # manuel seed çalıştırma (idempotent)
 | Method | Path | Auth | Açıklama |
 |--------|------|------|----------|
 | POST | `/appointments` | required | Randevu oluştur (salonId, staffId, serviceId, date, startTime, note) |
-| GET | `/appointments/available-slots` | **public** | Boş slotları getir (30dk aralıklı, salon workingHours + çakışma kontrolü) |
+| GET | `/appointments/available-slots` | **public** | Boş slotları getir (30dk aralıklı, salon workingHours + çakışma kontrolü). **#3 karar notu:** public kalır — anonim slot görüntüleme; yanıt yalnız `{ time, available }` taşır, kişisel veri yok; müşteri uygulaması randevu öncesi girişsiz çağırır. Sözleşme testi: `tests/appointment.test.js` → `available-slots public sözleşmesi (#3)` |
 | GET | `/appointments/my` | required | Kendi randevularım |
 | GET | `/appointments/salon/:salonId` | SALON_OWNER, ADMIN | Salon randevuları (date, status filter) |
 | PATCH | `/appointments/:id/status` | SALON_OWNER, ADMIN | Randevu durumu güncelle |

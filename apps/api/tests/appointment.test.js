@@ -983,4 +983,37 @@ describe('Appointment API', () => {
 
     });
   });
+
+  // #3 — `GET /appointments/available-slots` tasarım kararı: PUBLIC kalır (anonim slot
+  // görüntüleme; müşteri uygulaması randevu öncesi girişsiz çağırır:
+  // apps/customer_app/lib/features/booking/data/datasources/booking_remote_datasource.dart:38).
+  // Yanıt yalnız müsait/dolu bilgisi taşır, kişisel veri yok. Sözleşme testle kilitlenir.
+  describe('available-slots public sözleşmesi (#3)', () => {
+    it('#3 kimlik doğrulama başlığı OLMADAN GET /appointments/available-slots 200 + dizi döner', async () => {
+      // Hafta içi bir gün seç: salon workingHours tanımlı (setup.js:93)
+      const date = '2026-11-05'; // 2026-11-05 = perşembe
+
+      const res = await supertest(app)
+        .get('/api/v1/appointments/available-slots')
+        .query({ salonId: salon1.id, staffId: staff1.id, serviceId: service1.id, date });
+      // Not: bilinçli olarak Authorization başlığı gönderilmiyor
+
+      expect(res.status, JSON.stringify(res.body)).to.equal(200);
+      expect(res.body.success).to.equal(true);
+      expect(res.body.data).to.be.an('array');
+      // Her slot yalnız zaman bilgisi taşır — kişisel veri yok (`{ time, available }`)
+      res.body.data.forEach((slot) => {
+        expect(Object.keys(slot).sort()).to.deep.equal(['available', 'time']);
+      });
+    });
+
+    it('#3 available-slots geçersiz parametrede 400 döner', async () => {
+      const res = await supertest(app)
+        .get('/api/v1/appointments/available-slots')
+        .query({ salonId: 'uuid-degil', serviceId: service1.id, date: '05-11-2026' });
+
+      expect(res.status, JSON.stringify(res.body)).to.equal(400);
+      expect(res.body.success).to.equal(false);
+    });
+  });
 });

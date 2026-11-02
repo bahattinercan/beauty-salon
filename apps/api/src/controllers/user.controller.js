@@ -76,10 +76,10 @@ const toggleActive = async (req, res, next) => {
 };
 
 // POST /users/me/request-email-change
-// NOT: User modelinde pendingEmail/emailChangeToken alanları bulunmadığından
-// passwordResetToken alanı repurpose edilmektedir.
-// Token formatı: "EMAILCHANGE:<hashedOtp>:<base64(newEmail)>"
-// Bu sayede confirmEmailChange yeni email'i token'dan parse edebilir.
+// #30 — e-posta değişikliği KENDİ kolonlarını kullanır (pendingEmail, emailChangeToken,
+// emailChangeTokenExpiry). Daha önce `passwordResetToken` repurpose ediliyordu
+// (token içine hash + base64 e-posta gömülüyordu), bu yüzden şifre sıfırlama akışıyla
+// çakışıyordu. Kolon deseni `salons` tablosundakiyle aynıdır (bkz. `salon.controller.js`).
 const requestEmailChange = async (req, res, next) => {
   try {
     const { newEmail } = req.body;
@@ -101,13 +101,10 @@ const requestEmailChange = async (req, res, next) => {
     const hashedOtp = await bcrypt.hash(otp, 10);
     const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 dakika
 
-    // pendingEmail'i token'a encode et (User modeli ayrı alan desteklemiyor)
-    const encodedEmail = Buffer.from(newEmail).toString('base64');
-    const tokenValue = `EMAILCHANGE:${hashedOtp}:${encodedEmail}`;
-
     await req.user.update({
-      passwordResetToken: tokenValue,
-      passwordResetTokenExpiry: expiry,
+      pendingEmail: newEmail,
+      emailChangeToken: hashedOtp,
+      emailChangeTokenExpiry: expiry,
     });
 
     await sendEmailChangeOtp(req.user.email, req.user.fullName, otp);
@@ -129,35 +126,29 @@ const confirmEmailChange = async (req, res, next) => {
 
     const user = await User.findByPk(req.user.id);
 
-    if (!user.passwordResetToken || !user.passwordResetToken.startsWith('EMAILCHANGE:')) {
+    if (!user.emailChangeToken || !user.pendingEmail) {
       return res.status(400).json({ success: false, message: 'Aktif bir e-posta değişiklik isteği yok' });
     }
 
-    if (new Date() > user.passwordResetTokenExpiry) {
-      await user.update({ passwordResetToken: null, passwordResetTokenExpiry: null });
+    if (new Date() > user.emailChangeTokenExpiry) {
+      await user.update({ pendingEmail: null, emailChangeToken: null, emailChangeTokenExpiry: null });
       return res.status(400).json({ success: false, message: 'Doğrulama kodunun süresi dolmuş' });
     }
 
-    // Token formatı: "EMAILCHANGE:<hashedOtp>:<base64(newEmail)>"
-    const parts = user.passwordResetToken.split(':');
-    if (parts.length < 3) {
-      return res.status(400).json({ success: false, message: 'Geçersiz token formatı' });
-    }
-    const storedHash = parts[1];
-    const pendingEmail = Buffer.from(parts[2], 'base64').toString('utf8');
-
-    const isValid = await bcrypt.compare(token, storedHash);
+    const isValid = await bcrypt.compare(token, user.emailChangeToken);
     if (!isValid) {
       return res.status(400).json({ success: false, message: 'Doğrulama kodu hatalı' });
     }
 
+    const newEmail = user.pendingEmail;
     await user.update({
-      email: pendingEmail,
-      passwordResetToken: null,
-      passwordResetTokenExpiry: null,
+      email: newEmail,
+      pendingEmail: null,
+      emailChangeToken: null,
+      emailChangeTokenExpiry: null,
     });
 
-    successResponse(res, { message: 'E-posta başarıyla güncellendi', email: pendingEmail });
+    successResponse(res, { message: 'E-posta başarıyla güncellendi', email: newEmail });
   } catch (error) {
     next(error);
   }

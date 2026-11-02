@@ -68,6 +68,22 @@ const User = sequelize.define('User', {
     allowNull: true,
     field: 'password_reset_token_expiry',
   },
+  // #30 — e-posta değişikliği kendi kolonlarını kullanır; passwordResetToken ile paylaşılmaz
+  pendingEmail: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'pending_email',
+  },
+  emailChangeToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'email_change_token',
+  },
+  emailChangeTokenExpiry: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'email_change_token_expiry',
+  },
 }, {
   tableName: 'users',
   timestamps: true,
@@ -105,6 +121,10 @@ User.prototype.toSafeJSON = function () {
   // Şifre sıfırlama akışının token alanları da yanıta sızmamalı (DB'de kalır)
   delete values.passwordResetToken;
   delete values.passwordResetTokenExpiry;
+  // #30 — e-posta değişikliği akışının alanları da hassas: yanıta sızmamalı
+  delete values.pendingEmail;
+  delete values.emailChangeToken;
+  delete values.emailChangeTokenExpiry;
   return values;
 };
 
