@@ -29,9 +29,13 @@ Canlı decode örneği:
 
 > `req.user` içinde `passwordHash` **yoktur**. Şifre karşılaştırması gereken controller'lar (ör. `change-password`) güncel kullanıcıyı `User.findByPk(req.user.id)` ile yeniden çeker.
 
-## `optionalAuth`
+## Kaldırılan middleware — `optionalAuth`
 
-Token varsa doğrular, yoksa/bozuksa sessizce devam eder. `salon.routes.js`'te import ediliyor ama **hiçbir route'ta kullanılmıyor**.
+> **Kaldırıldı (2026-11-02, commit `51076e9`).** Eskiden üçüncü bir middleware vardı: `optionalAuth` — token varsa doğrular, yoksa/bozuksa sessizce devam ederdi. `salon.routes.js`'te import edilmesine rağmen **hiçbir route'ta middleware olarak kullanılmıyordu**; bu yüzden tanımı, exportu ve importu birlikte silindi.
+>
+> Güncel middleware listesi (tek kaynak `apps/api/src/middlewares/auth.js:72` → `module.exports = { authenticate, authorize }`): **`authenticate`** (yukarıda) ve **`authorize(...roles)`** (aşağıda).
+>
+> Doğrulama: `grep -rn "optionalAuth" apps/api/src` → **0 eşleşme** (`grep -c "module.exports" apps/api/src/middlewares/auth.js` → 1 satır, içeriği yukarıdaki gibi).
 
 ## `authorize(...roles)`
 

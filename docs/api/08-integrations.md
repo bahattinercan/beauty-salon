@@ -67,4 +67,4 @@ Bu ayarlar API davranışını etkilemez — yalnız depolanır ve admin panelde
 | `pg`, `pg-hstore` | **runtime sürücüsü** — Sequelize Postgres dialect'i (aktif) |
 | `sqlite3` | yalnız `DB_DIALECT=sqlite` geri dönüş yolunda kullanılır (varsayılan değil) |
 | `cookie-parser` | mount ediliyor ama hiçbir cookie okunmuyor |
-| `optionalAuth` | tanımlı, route'larda kullanılmıyor |
+| `optionalAuth` | **kaldırıldı** (2026-11-02, commit `51076e9`) — hiçbir route'ta kullanılmıyordu, tanım + export silindi (`middlewares/auth.js:72`) |

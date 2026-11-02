@@ -39,7 +39,9 @@ GET  /health                 → sağlık kontrolü
 /settings      → settings.routes
 ```
 
-`GET /` yanıtındaki `endpoints` listesi günceldir ama `/staff`, `/upload`, `/admin` içermez.
+`GET /` yanıtındaki `endpoints` listesi ile yukarıdaki mount listesi **aynı tek kaynaktan** üretilir: `src/routes/route-table.js` içindeki `ROUTES` tablosu (2026-11-02, commit `51076e9`). `index.js` hem `ROUTES.forEach(route => router.use(route.prefix, route.router))` ile mount eder hem de `endpoints` dizisini `ROUTES.map(...)` ile üretir → yeni bir router eklerken yalnız `route-table.js`'e satır eklenir, keşif listesi kendiliğinden güncel kalır.
+
+Doğrulama: `grep -c "prefix:" apps/api/src/routes/route-table.js` → **14** (14 prefix'in tamamı, `/users`, `/staff`, `/upload`, `/admin` dahil); `grep -n "ROUTES.map" apps/api/src/routes/index.js` → `endpoints` dizisini üreten satır.
 
 ## Yanıt formatı
 

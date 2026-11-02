@@ -2,7 +2,7 @@
 
 > **Kapsam:** `apps/api/` (Node.js 22.23.4 — `.tool-versions` ile pinli / Express 5 / Sequelize 6 / PostgreSQL — SQLite yalnızca `DB_DIALECT=sqlite` geri dönüş yolu)
 > **Kaynak:** `src/` kodu, `tests/` suite'i, `src/database/migrations/**` (17 migration) + canlı Postgres şeması ve canlı sunucu (`http://localhost:3200/api/v1`) üzerinde yapılan gerçek istekler. (`src/database.sqlite` yalnızca arşiv dosyasıdır, şema kaynağı değildir — bkz. `09-seed-and-migrations.md`.)
-> **Doğrulama tarihi:** 2026-10-23 (canlı probe + `npm test` → **291 passing**; SQLite dönemi sayımı). Postgres sonrası güncel test sonucu: `10-tests.md`.
+> **Son doğrulama:** 2026-11-02 (davranış iddiaları `src/` kodu okunarak doğrulandı; güncel test sayısı ve koşum sonucu için `10-tests.md` son bölümüne bak). 2026-10-23 tarihli canlı probe ve SQLite dönemi sayımı **tarihsel kayıttır**, bugünkü durumu göstermez.
 
 Bu dizin, API'nin modül modül bölünmüş dokümantasyonudur. Tek dosya özeti için: `docs/BACKEND-API.md`.
 

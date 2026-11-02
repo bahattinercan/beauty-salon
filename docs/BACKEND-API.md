@@ -186,14 +186,14 @@ GET /api/v1/nope
 | `SequelizeValidationError` | 400 | `Doğrulama hatası` + `errors[]` |
 | `SequelizeUniqueConstraintError` | 409 | `Bu <alan> zaten kullanılıyor` |
 | `SequelizeForeignKeyConstraintError` | 400 | `İlişkili kayıt bulunamadı` |
-| `err.type === 'validation'` | 400 | `Doğrulama hatası` + `errors[]` |
+| `err.type === 'validation'` | — | **Kaldırıldı (2026-11-02, commit `51076e9`):** dal ölüydü — hiçbir yerde bu tipte hata üretilmiyordu |
 | Multer `LIMIT_FILE_SIZE` | 400 | `Dosya boyutu çok büyük (max 5MB)` |
 | `TokenExpiredError` | 401 | `Oturum süresi dolmuş...` (auth middleware'inde) |
 | `JsonWebTokenError` | 401 | `Geçersiz token` (auth middleware'inde) |
 | `err.statusCode` | o kod | `err.message` |
 | Genel | 500 | `Sunucu hatası` (development'ta `stack` eklenir) |
 
-> `err.type === 'validation'` dalı pratikte çalışmaz: `validate` middleware'i doğrulama hatalarını kendi yanıtlar ve `next(error)` çağırmaz.
+> **`err.type === 'validation'` dalı 2026-11-02'de silindi** (commit `51076e9`): `validate` middleware'i doğrulama hatalarını kendi yanıtlar ve `next(error)` çağırmaz, dolayısıyla dal hiç çalışmıyordu. Doğrulama: `grep -rn "err.type" apps/api/src` → **0 eşleşme**.
 > Multer `fileFilter` reddi `error.statusCode = 400` ile düşer → **400** (canlı doğrulandı).
 
 ---
@@ -213,8 +213,9 @@ Refresh token DB'de **bcrypt (12 tur) hash'li** saklanır (`users.refresh_token`
 ### Middleware'ler (`middlewares/auth.js`)
 
 - `authenticate` — `Authorization: Bearer <token>` zorunlu. User `findByPk(decoded.sub)` ile çekilir, `isActive` kontrolü yapılır, `req.user` set edilir. 401 / 500.
-- `optionalAuth` — token varsa doğrular, yoksa/bozuksa sessizce devam eder. **`salon.routes.js`'te import edilip kullanılmıyor.**
 - `authorize(...roles)` — `req.user.role` rol listesinde değilse 403.
+
+> **`optionalAuth` kaldırıldı (2026-11-02, commit `51076e9`).** Eskiden token varsa doğrular, yoksa/bozuksa sessizce devam ederdi; `salon.routes.js`'te import edilmesine rağmen hiçbir route'ta kullanılmıyordu → tanım + export + import silindi. Güncel tek kaynak: `apps/api/src/middlewares/auth.js:72` → `module.exports = { authenticate, authorize }`. Doğrulama: `grep -rn "optionalAuth" apps/api/src` → **0 eşleşme**.
 
 ### Roller
 
@@ -433,7 +434,9 @@ Base: `http://localhost:3000/api/v1`
 | GET | `/salons/:salonId/products` | public | Aktif ürünler |
 | POST | `/salons/:salonId/products` | SALON_OWNER | Ürün ekle |
 
-**`GET /salons` query:** `page`, `limit` (max 100), `search` (name/address/city LIKE), `city`, `district`, `minRating` (≥), `priceRange`, `verified=true`, `categoryId` (INNER JOIN → o kategori hizmeti olan salonlar), `sortBy` = `rating` \| `newest` (default `createdAt DESC`).
+**`GET /salons` query:** `page`, `limit` (max 100), `search` (name/address/city LIKE), `city`, `district`, `minRating` (≥), `priceRange` (1–3), `verified=true|false`, `categoryId` (INNER JOIN → o kategori hizmeti olan salonlar), `sortBy` = `rating` \| `newest` (default `createdAt DESC`).
+
+> **`querySalonValidator` beyaz listesi (2026-11-02, commit `51076e9`):** `sortBy` yalnız `rating`/`newest`, `priceRange` int 1–3, `categoryId` UUID, `verified` yalnız `true`/`false`. Geçersiz değer **sessizce yok sayılmaz** → `validate` middleware'i **400** + alan adını içeren mesaj döner (ör. `sortBy yalnız "rating" veya "newest" olabilir`). Kaynak: `apps/api/src/validators/salon.validator.js:26-37`.
 
 **`GET /salons/nearby`:** `latitude`, `longitude`, `radius` (0.1–100 km), `page`, `limit`. Önce derece bazlı bounding box (`radius/111.32`), sonra Haversine ile kesin mesafe, filtreleme ve mesafeye göre sıralama. Sonuç öğelerinde `distance` (km, 2 ondalık) alanı vardır.
 
@@ -549,7 +552,7 @@ Tüm route'lar `router.use(authenticate)` ile korunur; sorgular `user_id` ile s�
 | PATCH | `/products/:id` | SALON_OWNER (salon sahipliği) | Güncelle |
 | DELETE | `/products/:id` | SALON_OWNER | Soft delete |
 
-> `createProductValidator` ve `queryProductValidator` tanımlı ama route'larda **kullanılmıyor**.
+> `PATCH /products/:id` `updateProductValidator` kullanır. `createProductValidator` / `queryProductValidator` **kaldırıldı** (2026-11-02, commit `51076e9`) — hiçbir route'a bağlı değillerdi; `POST /salons/:salonId/products` body'si doğrulanmadan kabul edilir.
 
 ### 10.13 Upload
 
@@ -597,7 +600,7 @@ Bu ayarlar API davranışını **etkilemez** — yalnız depolanır ve admin pan
 | `salon.validator.js` | `createSalonValidator` (name 2–100, phone E.164, email?, address min5, lat -90..90, lng -180..180, city, district, description max1000, workingHours object), `querySalonValidator`, `nearbyValidator` (radius 0.1–100) |
 | `appointment.validator.js` | `createAppointmentValidator` (3 UUID, date `YYYY-MM-DD`, startTime `HH:MM`, note max500), `availableSlotsValidator` |
 | `review.validator.js` | `createReviewValidator` (appointmentId UUID, rating 1–5, comment max1000, images array max4), `replyValidator` (1–500) |
-| `product.validator.js` | `createProductValidator`, `updateProductValidator` (kullanılan), `queryProductValidator` (kullanılmayan) |
+| `product.validator.js` | yalnız `updateProductValidator` — `PATCH /products/:id`. `createProductValidator`/`queryProductValidator` **kaldırıldı** (2026-11-02, commit `51076e9`) |
 
 `validate` middleware'i `validationResult` boş değilse 400 + `errors[]` döner.
 
@@ -702,10 +705,10 @@ Altyapı notları:
 | 8 | `sharp` bağımlılığı tanımlı ama hiçbir yerde kullanılmıyor | Ölü bağımlılık |
 | 9 | `swagger-jsdoc` + `swagger-ui-express` tanımlı ama swagger mount edilmemiş | OpenAPI çıktısı yok |
 | 10 | `pg`/`pg-hstore` **runtime sürücüsü** (aktif); `sqlite3` yalnız `DB_DIALECT=sqlite` geri dönüşü | Aktif bağımlılık (P1) |
-| 11 | `cookie-parser` kullanılmıyor, `optionalAuth` kullanılmıyor, `createProductValidator`/`queryProductValidator` kullanılmıyor | Ölü kod |
+| 11 | `cookie-parser` kullanılmıyor, `optionalAuth` kullanılmıyor, `createProductValidator`/`queryProductValidator` kullanılmıyor | Kısmen çözüldü — `optionalAuth` + iki product validator **kaldırıldı** (2026-11-02, commit `51076e9`); `cookie-parser` hâlâ mount edilip okunmuyor |
 | 12 | `UPLOAD_DEST` kullanılıyor ama cwd'e göre çözülür | Farklı çalışma diziminde farklı `uploads/` |
 | 13 | Multer `fileFilter` reddi `statusCode = 400` ile düşer | Çözüldü — 400 dönüyor |
-| 14 | `errorHandler`'daki `err.type === 'validation'` dalı ölü | `validate` kendi yanıtlıyor |
+| 14 | `errorHandler`'daki `err.type === 'validation'` dalı ölü | **Çözüldü (2026-11-02, commit `51076e9`)** — dal silindi (`grep -rn "err.type" apps/api/src` → 0) |
 | 15 | User e-posta değişikliği `passwordResetToken` alanını paylaşıyor | İki akış birbirini bozabilir |
 | 16 | `sync()` + `ensureColumns()` + `dropBackupTables()` çağrıları kaldırıldı (P1) | Çözüldü — şema yalnız migration'lardan |
 | 17 | Runtime DB artık Postgres (`beauty_salon`); `.sqlite` dosyaları yalnız `DB_DIALECT=sqlite` geri dönüşü | Çözüldü — şema karışıklığı kalmadı (P1–P3) |
@@ -715,8 +718,8 @@ Altyapı notları:
 | 21 | Review görünürlüğü değişince `ratingAvg` yeniden hesaplanmaz | Puan eski değerinde kalır |
 | 22 | `staff_services` fiili şemada PK yok | Duplicate join kaydı engellenmez |
 | 23 | `POST /salons/:id/staff`, `/services`, `/products` body doğrulanmaz | Yalnız model seviyesi zorunluluklar |
-| 24 | `querySalonValidator` `sortBy`, `priceRange`, `categoryId`, `verified` doğrulamaz | Yanlış parametre sessizce yok sayılır |
-| 25 | `GET /` endpoint listesi eksik (`/staff`, `/upload`, `/admin`) | Keşif yanıltıcı |
+| 24 | `querySalonValidator` `sortBy`, `priceRange`, `categoryId`, `verified` doğrulamaz | **Çözüldü (2026-11-02, commit `51076e9`)** — beyaz liste eklendi: `sortBy` ∈ `rating`\|`newest`, `priceRange` int 1–3, `categoryId` UUID, `verified` ∈ `true`\|`false`; geçersiz değer 400 (`apps/api/src/validators/salon.validator.js:26-37`) |
+| 25 | `GET /` endpoint listesi eksik (`/staff`, `/upload`, `/admin`) | **Çözüldü (2026-11-02, commit `51076e9`)** — liste ve mount'lar artık **tek kaynaktan** (`apps/api/src/routes/route-table.js` `ROUTES` tablosu) üretiliyor; 14 prefix: `/auth`, `/users`, `/salons`, `/staff`, `/services`, `/categories`, `/appointments`, `/reviews`, `/favorites`, `/upload`, `/admin`, `/notifications`, `/products`, `/settings` |
 | 26 | Rate limit testte kapalı, production'ta açık | 429 davranışı test edilmiyor |
 | 17 | Migration'lar ile model tanımları uyuşmuyor (nullable, JSONB, DECIMAL) | Şema tutarsızlığı |
 | 18 | `toJSON()` bazı alanları iki kez basar (`ownerId` + `owner_id`) | İstemci kafa karışıklığı |

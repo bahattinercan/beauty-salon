@@ -283,7 +283,7 @@ Tüm route'lar `router.use(authenticate)` ile korunur ve sorgular `user_id` ile 
 | PATCH | `/products/:id` | SALON_OWNER (salon sahipliği) | Güncelle (`updateProductValidator` kullanılır) |
 | DELETE | `/products/:id` | SALON_OWNER (salon sahipliği) | Soft delete |
 
-> `createProductValidator` ve `queryProductValidator` tanımlı ama route'larda **kullanılmıyor** — POST body'si doğrulanmadan kabul edilir.
+> `createProductValidator` ve `queryProductValidator` **kaldırıldı** (2026-11-02, commit `51076e9`) — hiçbir route'a bağlı değillerdi; `POST /salons/:salonId/products` body'si hâlâ doğrulanmadan kabul edilir.
 
 ---
 
