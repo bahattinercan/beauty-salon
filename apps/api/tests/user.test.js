@@ -259,13 +259,26 @@ describe('User API', () => {
 
     });
 
-    it('should allow users to toggle their own active status', async () => {
-      // Users should be able to deactivate themselves (edge case)
+    // #5 — admin kendi hesabını bu uçtan kapatamaz
+    it('should return 400 when admin tries to deactivate own account (#5)', async () => {
+      const res = await supertest(app)
+        .patch(`/api/v1/users/${admin.id}/toggle-active`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.status).to.equal(400);
+      expect(res.body).to.have.property('success', false);
+      expect(res.body.message).to.include('Kendi hesabınızı pasifleştiremezsiniz');
+
+      await admin.reload();
+      expect(admin.isActive).to.equal(true);
+    });
+
+    it('should not allow a customer to toggle its own active status (admin-only)', async () => {
       const res = await supertest(app)
         .patch(`/api/v1/users/${customer.id}/toggle-active`)
         .set('Authorization', `Bearer ${customerToken}`);
 
-      expect(res).to.have.property('status', 403); // Still admin-only
+      expect(res).to.have.property('status', 403); // uç yalnız ADMIN'e açık
     });
   });
 

@@ -103,6 +103,79 @@ describe('Appointment API', () => {
       expect(res.body).to.have.property('success', false);
     });
 
+    // #7 — hizmet ve personel, randevunun salonuyla aynı olmalı
+    it('should return 400 when service or staff belongs to another salon (#7)', async () => {
+      const { Staff } = require('../src/models');
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+      // service4 salon2'ye ait: salon1 için randevu reddedilmeli
+      const serviceRes = await supertest(app)
+        .post('/api/v1/appointments')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          salonId: salon1.id,
+          staffId: staff1.id,
+          serviceId: data.services.service4.id,
+          date: tomorrowStr,
+          startTime: '11:00',
+        });
+
+      expect(serviceRes.status).to.equal(400);
+      expect(serviceRes.body.success).to.equal(false);
+      expect(serviceRes.body.message).to.include('bu salona ait değil');
+
+      // Başka salonun personeli de reddedilmeli
+      const foreignStaff = await Staff.create({
+        salonId: salon2.id,
+        fullName: 'Yabancı Personel',
+        title: 'Uzman',
+        isActive: true,
+      });
+
+      const staffRes = await supertest(app)
+        .post('/api/v1/appointments')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          salonId: salon1.id,
+          staffId: foreignStaff.id,
+          serviceId: service1.id,
+          date: tomorrowStr,
+          startTime: '11:00',
+        });
+
+      expect(staffRes.status).to.equal(400);
+      expect(staffRes.body.message).to.include('bu salona ait değil');
+
+      await foreignStaff.destroy();
+    });
+
+    it('should accept an appointment when service and staff belong to the salon (#7)', async () => {
+      const { Appointment } = require('../src/models');
+      const d = new Date();
+      d.setDate(d.getDate() + 8);
+      const dateStr = d.toISOString().split('T')[0];
+
+      const res = await supertest(app)
+        .post('/api/v1/appointments')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          salonId: salon1.id,
+          staffId: staff1.id,
+          serviceId: service1.id,
+          date: dateStr,
+          startTime: '16:00',
+        });
+
+      expect(res.status).to.equal(201);
+      expect(res.body.success).to.equal(true);
+      expect(res.body.data.staffId).to.equal(staff1.id);
+      expect(res.body.data.serviceId).to.equal(service1.id);
+
+      await Appointment.destroy({ where: { id: res.body.data.id } });
+    });
+
     it('should return 400 when staff does not provide the selected service', async () => {
       const { Service } = require('../src/models');
       // service2 is Manikür, staff1 (Merve) only does SacKesim and CiltBakimi
@@ -271,6 +344,30 @@ describe('Appointment API', () => {
           sunday: { open: '10:00', close: '18:00' },
         }),
       });
+    });
+
+    // #9 — workingHours'ta tanımlı olmayan gün "kapalı gün" sayılır
+    it('should return 400 when the salon has no working hours for that day (#9)', async () => {
+      // salon2'nin workingHours'unda sunday tanımlı değil
+      const nextSunday = new Date();
+      const deltaToSunday = (7 - nextSunday.getDay()) % 7 || 7;
+      nextSunday.setDate(nextSunday.getDate() + deltaToSunday);
+      const sundayStr = nextSunday.toISOString().split('T')[0];
+      expect(nextSunday.getDay(), 'test tarihi pazar olmalı').to.equal(0);
+
+      const res = await supertest(app)
+        .post('/api/v1/appointments')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          salonId: salon2.id,
+          serviceId: data.services.service4.id,
+          date: sundayStr,
+          startTime: '11:00',
+        });
+
+      expect(res.status).to.equal(400);
+      expect(res.body.success).to.equal(false);
+      expect(res.body.message).to.include('kapalı');
     });
 
     it('should return 409 when there is a time conflict for the staff', async () => {
@@ -447,6 +544,77 @@ describe('Appointment API', () => {
 
       // Clean up
       await Appointment.destroy({ where: { date: tomorrowStr, startTime: '14:00:00' } });
+    });
+
+    // #8 — staffId yoksa: "herhangi bir personel müsaitse slot açık"
+    it('should mark a slot available when another staff is free and staffId is omitted (#8)', async () => {
+      const { Appointment } = require('../src/models');
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      const dateStr = d.toISOString().split('T')[0];
+
+      // service3'ü staff1 ve staff2 birlikte sunuyor; staff1 dolu, staff2 boş
+      const busy = await Appointment.create({
+        customerId: customer.id,
+        salonId: salon1.id,
+        staffId: staff1.id,
+        serviceId: data.services.service3.id,
+        date: dateStr,
+        startTime: '14:00:00',
+        endTime: '15:00:00',
+        status: 'CONFIRMED',
+      });
+
+      const res = await supertest(app)
+        .get('/api/v1/appointments/available-slots')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .query({
+          salonId: salon1.id,
+          serviceId: data.services.service3.id,
+          date: dateStr,
+        });
+
+      expect(res.body).to.have.property('success', true);
+      const slot = res.body.data.find((s) => s.time === '14:00');
+      expect(slot, '14:00 slotu yanıtta yok').to.exist;
+      expect(slot.available).to.equal(true); // staff2 boş olduğu için müsait
+
+      await busy.destroy();
+    });
+
+    it('should mark a slot unavailable when the requested staff is busy (#8)', async () => {
+      const { Appointment } = require('../src/models');
+      const d = new Date();
+      d.setDate(d.getDate() + 9);
+      const dateStr = d.toISOString().split('T')[0];
+
+      const busy = await Appointment.create({
+        customerId: customer.id,
+        salonId: salon1.id,
+        staffId: staff1.id,
+        serviceId: data.services.service3.id,
+        date: dateStr,
+        startTime: '14:00:00',
+        endTime: '15:00:00',
+        status: 'CONFIRMED',
+      });
+
+      const res = await supertest(app)
+        .get('/api/v1/appointments/available-slots')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .query({
+          salonId: salon1.id,
+          staffId: staff1.id,
+          serviceId: data.services.service3.id,
+          date: dateStr,
+        });
+
+      expect(res.body).to.have.property('success', true);
+      const slot = res.body.data.find((s) => s.time === '14:00');
+      expect(slot, '14:00 slotu yanıtta yok').to.exist;
+      expect(slot.available).to.equal(false); // staff1 dolu
+
+      await busy.destroy();
     });
   });
 

@@ -6,16 +6,12 @@
 |---|---|---|
 | 2 | `GET /reviews/salon/:salonId` public + sahiplik kontrolü yok | Yorumlar zaten public; ancak `is_visible=false` yorumlar da bu endpoint'te görünmez — tutarlı. Asıl risk: salon istatistiklerinin başka sahipler tarafından okunabilmesi |
 | 3 | `GET /appointments/available-slots`'te `authenticate` yok | CLAUDE.md "required" der, fiilen public |
-| 5 | `PATCH /users/:id/toggle-active` rol kontrolü yapar, sahiplik kontrolü yapmaz | Kullanıcı kendi `isActive`'ünü ADMIN endpoint'i üzerinden kapatabilir (test bunu doğruluyor) |
 | 6 | Staff/service sahipliğinde ADMIN yetkili değil | Admin, salon içeriğini düzeltemez (tasarım kararı ama tutarsız) |
-| 7 | `serviceId` salon uyumu doğrulanmaz | Başka salonun hizmeti bu salonun çalışanına bağlanmışsa randevu kabul edilir |
-| 8 | `available-slots`'te `staffId` opsiyonel ama filtre olarak kullanılır | `staffId` yoksa tüm çalışanların randevuları dikkate alınır |
 
 ## Doğruluk / davranış
 
 | # | Sorun | Etki |
 |---|---|---|
-| 9 | `workingHours` gün tanımı yoksa çalışma saati kontrolü atlanır | Kapalı güne randevu alınabilir |
 | 10 | Review görünürlüğü değişince `ratingAvg` yeniden hesaplanmaz | Admin yorumu gizlerse puan eski değerinde kalır |
 | 11 | `change-password` min 6, `register` min 8 | Tutarlılık |
 | 12 | `DELETE /categories/:id` hard delete, diğerleri soft delete | Davranış tutarsızlığı |
@@ -122,4 +118,47 @@
 - `GET /api/v1 endpoint listesi mount edilen tüm router prefixlerini içerir (#31)` (tablodaki her prefix listede + `/health` + yinelenen kayıt yok)
 - `route tablosundaki her kayıt gerçek bir express router (#31)` (prefix biçimi, mount edilebilirlik, tekrar yok)
 
-**Kapı:** `cd apps/api && bash scripts/db-ready.sh && npm test` → **372 passing, 0 failing** (baseline 357, +15 yeni test).
+### #5 · `PATCH /users/:id/toggle-active` sahiplik kontrolü yoktu — kapatıldı
+
+**Sorun:** Uç yalnızca `authorize('ADMIN')` ile korunuyordu; admin **kendi** hesabını da pasifleştirebiliyordu. Sonuç: admin kendini kilitliyor, hesabı geri açmak için başka bir admin gerekiyordu.
+
+**Çözüm:** `apps/api/src/controllers/user.controller.js` → `toggleActive`: hedef kullanıcı `req.user.id` ile aynıysa **400** ve `Kendi hesabınızı pasifleştiremezsiniz`. Başka kullanıcılar için davranış (404 / toggle / 403 rol kontrolü) aynen korundu.
+
+**Kanıt:** `apps/api/tests/user.test.js` → `PATCH /users/:id/toggle-active (Admin)` →
+- `should return 400 when admin tries to deactivate own account (#5)` (admin `isActive` true kalır)
+- `should not allow a customer to toggle its own active status (admin-only)` — adı yanıltıcı olan eski `should allow users to toggle their own active status` testi, gerçek davranışı (403, uç yalnız ADMIN'e açık) kanıtlayacak şekilde yeniden adlandırıldı; beklenti aynı
+
+### #7 · `serviceId` salon uyumu doğrulanmıyordu — kapatıldı
+
+**Sorun:** `POST /appointments` yalnız `Service.findByPk(serviceId)` + `Salon.findByPk(salonId)` yapıyordu; ikisi arasında `service.salonId === salonId` karşılaştırması yoktu. Başka salonun hizmeti (ve o hizmeti sunmayan yabancı personel) bu salon adına randevuya bağlanabiliyor ya da yanlış mesajla ("bu çalışan seçilen hizmeti sunmuyor") reddediliyordu.
+
+**Çözüm:** `apps/api/src/controllers/appointment.controller.js` → `create`: salon yüklendikten sonra `service.salonId !== salon.id` ise **400** `Seçilen hizmet bu salona ait değil`; `staffId` verilmişse personel `salonId` ile karşılaştırılır, uyuşmazsa **400** `Seçilen çalışan bu salona ait değil`. Personel tarafı ayrıca mevcut `candidates` (`where: { salonId }`) filtresiyle de korunur.
+
+**Kanıt:** `apps/api/tests/appointment.test.js` → `POST /appointments` →
+- `should return 400 when service or staff belongs to another salon (#7)` (yabancı hizmet + yabancı personel; düzeltme öncesi mesaj `Bu çalışan seçilen hizmeti sunmuyor` idi)
+- `should accept an appointment when service and staff belong to the salon (#7)` (aynı salonda **201**)
+
+### #8 · `available-slots`'te `staffId` yokken tüm personelin randevuları slotu blokluyordu — kapatıldı
+
+**Sorun:** `GET /appointments/available-slots` mevcut randevuları `where: { staffId, date, … }` ile çekiyordu; `staffId` verilmezse anahtar düşüyor ve **tarihteki her personelin** randevusu slotu kapatıyordu. Oysa `staffId` opsiyoneldir (`query('staffId').optional()`): atama "herhangi bir çalışan" mantığıyla yapılır.
+
+**Çözüm:** `apps/api/src/controllers/appointment.controller.js` → `getAvailableSlots`: personel havuzu hesaplanır — `staffId` varsa yalnız o personel, yoksa hizmeti sunan (`StaffService`) ve salona ait **aktif** personelin tamamı. Randevular havuz için bir kez çekilir; slot `available` değeri "havuzdaki **herhangi biri** müsaitse true" (union) olarak hesaplanır. Yanıt sözleşmesi değişmedi: `[{ time, available }]`, alan adları ve 30 dk ızgara aynı; hizmeti sunan personel yoksa `[]` döner.
+
+**Kanıt:** `apps/api/tests/appointment.test.js` → `GET /appointments/available-slots` →
+- `should mark a slot available when another staff is free and staffId is omitted (#8)` (staff1 dolu, staff2 boş → `14:00` available **true**; düzeltme öncesi yanıt `success: false` idi)
+- `should mark a slot unavailable when the requested staff is busy (#8)` (`staffId=staff1` → `14:00` available **false**)
+- Mevcut testler korundu: `should return available slots for a staff member`, `should return empty array when salon is closed on that day`, `should mark slots as unavailable when they conflict with existing appointments`
+
+### #9 · `workingHours` gün tanımı yoksa çalışma saati kontrolü atlanıyordu — kapatıldı
+
+**Sorun:** `create` içindeki kontrol `if (daySchedule && daySchedule.open && daySchedule.close)` biçimindeydi: gün `workingHours`'ta tanımlı değilse blok tamamen atlanıyor ve **kapalı güne randevu kabul ediliyordu**. Aynı durumda `available-slots` `[]` dönüyordu — iki uç çelişiyordu.
+
+**Çözüm:** `apps/api/src/controllers/appointment.controller.js` → `create`: gün tanımsız ya da `open`/`close` eksikse **400** `Salon seçilen gün kapalı, randevu alınamaz` (sessiz geçiş yok). Saat aralığı kontrolü aynen korundu; mevcut kapalı-gün/çalışma-saati davranışı bozulmadı.
+
+**Kanıt:** `apps/api/tests/appointment.test.js` → `POST /appointments` →
+- `should return 400 when the salon has no working hours for that day (#9)` (salon2'de `sunday` tanımsız; düzeltme öncesi **409** dönüyordu)
+- Mevcut test korundu: `should return 400 when time is outside salon working hours` (`çalışma saatleri` mesajı)
+
+**Kapı (Dalga 1: #19/#20/#23/#24/#31):** `cd apps/api && bash scripts/db-ready.sh && npm test` → **372 passing, 0 failing** (baseline 357, +15 yeni test).
+
+**Kapı (Dalga 2: #5/#7/#8/#9):** `cd apps/api && bash scripts/db-ready.sh && npm test` → **378 passing, 0 failing** (baseline 372, +6 yeni test; hiçbir test silinmedi/zayıflatılmadı).

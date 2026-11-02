@@ -37,16 +37,30 @@ const create = async (req, res, next) => {
     const dayOfWeek = dayNames[new Date(date).getDay()];
     const daySchedule = salon.workingHours?.[dayOfWeek];
 
-    if (daySchedule && daySchedule.open && daySchedule.close) {
-      const [openH, openM] = daySchedule.open.split(':').map(Number);
-      const [closeH, closeM] = daySchedule.close.split(':').map(Number);
-      const openMin = openH * 60 + openM;
-      const closeMin = closeH * 60 + closeM;
-      const startMin = startH * 60 + startM;
-
-      if (startMin < openMin || totalMinutes > closeMin) {
-        return res.status(400).json({ success: false, message: 'Seçilen saat, salonun çalışma saatleri dışında' });
+    // Salon uyumu: hizmet ve (varsa) personel randevunun salonuna ait olmalı (#7)
+    if (service.salonId !== salon.id) {
+      return res.status(400).json({ success: false, message: 'Seçilen hizmet bu salona ait değil' });
+    }
+    if (staffId) {
+      const staff = await Staff.findByPk(staffId, { attributes: ['id', 'salonId'] });
+      if (!staff || staff.salonId !== salon.id) {
+        return res.status(400).json({ success: false, message: 'Seçilen çalışan bu salona ait değil' });
       }
+    }
+
+    // workingHours'ta tanımlı olmayan gün "kapalı gün"dür: kontrol atlanmaz (#9)
+    if (!daySchedule || !daySchedule.open || !daySchedule.close) {
+      return res.status(400).json({ success: false, message: 'Salon seçilen gün kapalı, randevu alınamaz' });
+    }
+
+    const [openH, openM] = daySchedule.open.split(':').map(Number);
+    const [closeH, closeM] = daySchedule.close.split(':').map(Number);
+    const openMin = openH * 60 + openM;
+    const closeMin = closeH * 60 + closeM;
+    const startMin = startH * 60 + startM;
+
+    if (startMin < openMin || totalMinutes > closeMin) {
+      return res.status(400).json({ success: false, message: 'Seçilen saat, salonun çalışma saatleri dışında' });
     }
 
     // 5. Çalışan seçimi
@@ -149,15 +163,45 @@ const getAvailableSlots = async (req, res, next) => {
     const openMin = openH * 60 + openM;
     const closeMin = closeH * 60 + closeM;
 
-    // Mevcut randevular
+    // Personel havuzu: staffId verilirse yalnız o personel; verilmezse hizmeti sunan
+    // salon personelinin tamamı — slot, "herhangi biri müsaitse" açık sayılır (#8)
+    let staffPool;
+    if (staffId) {
+      staffPool = [staffId];
+    } else {
+      const serviceStaffIds = (await StaffService.findAll({ where: { serviceId } })).map((ss) => ss.staffId);
+      const staffRows = await Staff.findAll({
+        where: { id: serviceStaffIds, salonId, isActive: true },
+        attributes: ['id'],
+      });
+      staffPool = staffRows.map((row) => row.id);
+      // Hizmeti sunan personel yoksa dönülecek slot da yok
+      if (!staffPool.length) return successResponse(res, []);
+    }
+
+    // Mevcut randevular (yalnız ilgili personel)
     const existing = await Appointment.findAll({
       where: {
-        staffId,
+        staffId: { [Op.in]: staffPool },
         date,
         status: { [Op.in]: ['PENDING', 'CONFIRMED'] },
       },
       order: [['startTime', 'ASC']],
     });
+
+    const toMinutes = (time) => {
+      const [h, m] = String(time).split(':').map(Number);
+      return h * 60 + m;
+    };
+
+    const busyByStaff = new Map(staffPool.map((id) => [id, []]));
+    existing.forEach((apt) => {
+      if (busyByStaff.has(apt.staffId)) busyByStaff.get(apt.staffId).push(apt);
+    });
+
+    const isStaffFree = (id, slotStart, slotEnd) => !busyByStaff
+      .get(id)
+      .some((apt) => slotStart < toMinutes(apt.endTime) && slotEnd > toMinutes(apt.startTime));
 
     // Slot üret
     const slots = [];
@@ -169,15 +213,9 @@ const getAvailableSlots = async (req, res, next) => {
       const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
       const slotEnd = min + service.durationMinutes;
 
-      const isConflicting = existing.some(apt => {
-        const [ah, am] = apt.startTime.split(':').map(Number);
-        const [eh, em] = apt.endTime.split(':').map(Number);
-        const aptStart = ah * 60 + am;
-        const aptEnd = eh * 60 + em;
-        return min < aptEnd && slotEnd > aptStart;
-      });
+      const available = staffPool.some((id) => isStaffFree(id, min, slotEnd));
 
-      slots.push({ time: timeStr, available: !isConflicting });
+      slots.push({ time: timeStr, available });
     }
 
     successResponse(res, slots);

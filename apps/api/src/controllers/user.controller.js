@@ -63,6 +63,11 @@ const toggleActive = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
     }
 
+    // Admin kendi hesabını bu uçtan kapatamaz (#5)
+    if (user.id === req.user.id) {
+      return res.status(400).json({ success: false, message: 'Kendi hesabınızı pasifleştiremezsiniz' });
+    }
+
     await user.update({ isActive: !user.isActive });
     successResponse(res, { id: user.id, isActive: user.isActive });
   } catch (error) {
